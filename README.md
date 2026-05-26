@@ -105,6 +105,34 @@ El plan gratuito tiene 50k lecturas/día. La arquitectura usa **denormalización
 
 Las sesiones antiguas (sin `resumen`) se ignoran en los gráficos. El fallback a queries individuales solo ocurre si se necesita explícitamente.
 
+## Testing
+
+**49 tests** — unitarios y de componentes.
+
+```bash
+npm run test        # modo watch (re-corre al guardar)
+npm run test:run    # una sola pasada (para antes de hacer push)
+```
+
+### Cobertura
+
+| Área | Tests |
+|---|---|
+| `getEjerciciosUsadosConGrupoLocal` | 4 |
+| `getVolumenPorSesionLocal` | 4 |
+| `getRegistrosPorEjercicioLocal` | 3 |
+| `getStreaksLocal` | 7 |
+| `getUltimaVezEjercicioLocal` | 6 |
+| `Calendario` (componente) | 9 |
+| `BottomNav` (componente) | 8 |
+| `SeleccionarEjercicio` (componente) | 8 |
+
+### GitHub Actions
+
+Los tests corren automáticamente en cada push y pull request a `main`. Ver resultados en la pestaña **Actions** del repositorio.
+
+---
+
 ## Archivos clave
 
 ```
