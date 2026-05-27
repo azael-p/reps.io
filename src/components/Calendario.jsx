@@ -151,10 +151,10 @@ const s = {
   card: {
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
+    borderTop: '1px solid var(--highlight)',
     borderRadius: 'var(--r-lg)',
     padding: '14px 14px 12px',
     boxShadow: 'var(--shadow-sm)',
-    maxWidth: '420px',
     width: '100%',
     boxSizing: 'border-box',
   },

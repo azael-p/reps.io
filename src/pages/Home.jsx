@@ -9,6 +9,9 @@ import Calendario from '../components/Calendario'
 import Onboarding from '../components/Onboarding'
 import PullToRefresh from '../components/PullToRefresh'
 import { useDesktop } from '../hooks/useDesktop'
+import { Layers, Zap, TrendingUp, ChevronRight, LogOut } from 'lucide-react'
+
+const ICON_STYLE = { color: 'rgba(255,255,255,0.95)', strokeWidth: 1.8 }
 
 const SECCIONES = [
   {
@@ -18,7 +21,8 @@ const SECCIONES = [
     gradient: 'var(--green-grad)',
     accent: 'var(--green)',
     glow: 'var(--green-glow)',
-    icon: '📋',
+    shadow: 'var(--shadow-green)',
+    icon: <Layers size={22} {...ICON_STYLE} />,
   },
   {
     label: 'Entrenar hoy',
@@ -27,7 +31,8 @@ const SECCIONES = [
     gradient: 'var(--orange-grad)',
     accent: 'var(--orange)',
     glow: 'var(--orange-glow)',
-    icon: '🔥',
+    shadow: 'var(--shadow-orange)',
+    icon: <Zap size={22} {...ICON_STYLE} />,
   },
   {
     label: 'Mi progreso',
@@ -36,7 +41,8 @@ const SECCIONES = [
     gradient: 'var(--blue-grad)',
     accent: 'var(--blue)',
     glow: 'var(--blue-glow)',
-    icon: '📈',
+    shadow: 'var(--shadow-blue)',
+    icon: <TrendingUp size={22} {...ICON_STYLE} />,
   },
 ]
 
@@ -108,8 +114,9 @@ export default function Home() {
           onClick={() => { logout(); navigate('/') }}
           whileTap={{ scale: 0.95 }}
           whileHover={{ borderColor: 'var(--border-strong)' }}
+          title="Salir"
         >
-          Salir
+          <LogOut size={16} strokeWidth={2} color="var(--text-mute)" />
         </motion.button>
       </motion.div>
 
@@ -143,12 +150,15 @@ export default function Home() {
                 >
                   <div style={{ ...s.seccionBg, background: sec.gradient }} />
                   <div style={{ ...s.seccionGlow, background: `radial-gradient(circle at 50% 0%, ${sec.glow}, transparent 70%)` }} />
-                  <div style={s.seccionIcon}>{sec.icon}</div>
+                  <div style={s.seccionNoise} />
+                  <div style={s.seccionIcon}>
+                    {sec.icon}
+                  </div>
                   <div style={s.seccionTexto}>
                     <span style={s.seccionLabel}>{sec.label}</span>
                     <span style={s.seccionSub}>{sec.sub}</span>
                   </div>
-                  <span style={s.seccionFlecha}>→</span>
+                  <ChevronRight size={18} color="rgba(255,255,255,0.7)" style={{ zIndex: 1, flexShrink: 0 }} />
                 </motion.button>
               ))}
             </div>
@@ -172,7 +182,7 @@ export default function Home() {
                     <span style={s.bannerLabel}>Entrenamiento en curso</span>
                     <span style={s.bannerDia}>{sesionPendiente.diaNombre}</span>
                   </div>
-                  <span style={s.bannerFlecha}>→</span>
+                  <ChevronRight size={16} color="var(--text-mute)" style={{ flexShrink: 0 }} />
                 </motion.button>
               )}
             </AnimatePresence>
@@ -284,16 +294,17 @@ const s = {
     alignItems: 'flex-start',
     flexShrink: 0,
   },
-  saludo: { fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.02em' },
+  saludo: { fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1 },
   nombreAccent: { color: 'var(--orange)' },
-  sub: { marginTop: '4px', color: 'var(--text-mute)', fontSize: '0.9rem' },
+  sub: { marginTop: '6px', color: 'var(--text-mute)', fontSize: '0.9rem' },
   logoutBtn: {
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
+    borderTop: '1px solid var(--highlight)',
     color: 'var(--text-mute)',
-    padding: '10px 16px',
+    padding: '10px 12px',
     borderRadius: 'var(--r-md)',
-    fontSize: '0.9rem',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
     flexShrink: 0,
   },
   bannerSesion: {
@@ -301,10 +312,11 @@ const s = {
     padding: '14px 16px',
     background: 'var(--bg-card)',
     border: '1px solid rgba(240, 153, 123, 0.45)',
+    borderTop: '1px solid rgba(240, 153, 123, 0.6)',
     borderRadius: 'var(--r-lg)',
     color: 'var(--text)',
     textAlign: 'left',
-    boxShadow: '0 0 0 1px rgba(240,153,123,0.15), 0 6px 20px rgba(199,90,48,0.12)',
+    boxShadow: '0 0 0 1px rgba(240,153,123,0.18), 0 8px 32px rgba(199,90,48,0.32)',
     flexShrink: 0,
     width: '100%',
     boxSizing: 'border-box',
@@ -323,9 +335,10 @@ const s = {
   secciones: { display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 },
   seccionCard: {
     position: 'relative',
-    border: '1px solid var(--border)',
+    border: '1px solid rgba(255,255,255,0.18)',
+    borderTop: '1px solid rgba(255,255,255,0.36)',
     borderRadius: 'var(--r-lg)',
-    padding: '16px 18px',
+    padding: '18px 18px',
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
@@ -333,7 +346,7 @@ const s = {
     overflow: 'hidden',
     textAlign: 'left',
     color: '#fff',
-    boxShadow: 'var(--shadow-md)',
+    boxShadow: '0 12px 40px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35)',
   },
   seccionBg: {
     position: 'absolute', inset: 0,
@@ -345,20 +358,29 @@ const s = {
     zIndex: 0,
     pointerEvents: 'none',
   },
+  seccionNoise: {
+    position: 'absolute', inset: 0,
+    zIndex: 0,
+    pointerEvents: 'none',
+    backgroundImage: 'var(--noise)',
+    backgroundSize: '200px 200px',
+    opacity: 0.04,
+    mixBlendMode: 'overlay',
+  },
   seccionIcon: {
     width: '44px', height: '44px',
     borderRadius: '14px',
     background: 'rgba(255,255,255,0.18)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '1.5rem',
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)',
-    backdropFilter: 'blur(8px)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
+    border: '1px solid rgba(255,255,255,0.15)',
+    position: 'relative',
     zIndex: 1, flexShrink: 0,
   },
-  seccionTexto: { display: 'flex', flexDirection: 'column', flex: 1, zIndex: 1 },
-  seccionLabel: { fontSize: '1.05rem', fontWeight: 700, letterSpacing: '-0.01em' },
-  seccionSub: { color: 'rgba(255,255,255,0.7)', fontSize: '0.88rem', marginTop: '2px' },
-  seccionFlecha: { color: 'rgba(255,255,255,0.85)', fontSize: '1.2rem', zIndex: 1 },
+  seccionTexto: { display: 'flex', flexDirection: 'column', flex: 1, position: 'relative', zIndex: 1 },
+  seccionLabel: { fontSize: '1.05rem', fontWeight: 700, letterSpacing: '-0.02em' },
+  seccionSub: { color: 'rgba(255,255,255,0.65)', fontSize: '0.83rem', marginTop: '3px' },
+  seccionFlecha: { zIndex: 1 },
   calSkeleton: { width: '100%', height: '280px', borderRadius: 'var(--r-lg)' },
   desktopGrid: {
     display: 'grid',

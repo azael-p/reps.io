@@ -42,7 +42,7 @@ describe('SeleccionarEjercicio', () => {
   it('renders the custom exercise button', async () => {
     render(<SeleccionarEjercicio {...defaultProps} />)
     await waitFor(() =>
-      expect(screen.getByText('+ Ejercicio personalizado')).toBeInTheDocument()
+      expect(screen.getByText('Ejercicio personalizado')).toBeInTheDocument()
     )
   })
 
@@ -87,7 +87,7 @@ describe('SeleccionarEjercicio', () => {
     await waitFor(() => screen.getByText('Press Banca'))
 
     await user.type(screen.getByPlaceholderText('Buscar...'), 'curl')
-    await user.click(screen.getByRole('button', { name: '✕' }))
+    await user.click(screen.getByRole('button', { name: 'Limpiar búsqueda' }))
 
     await waitFor(() => {
       expect(screen.getByText('Press Banca')).toBeInTheDocument()

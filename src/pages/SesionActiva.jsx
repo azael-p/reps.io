@@ -6,11 +6,12 @@ import { db } from '../firebase/config'
 import { getEjerciciosDia } from '../firebase/ejerciciosDia'
 import { agregarRegistro, editarRegistro, getUltimaVezEjercicioLocal, getRegistrosSesion } from '../firebase/registros'
 import { getSesionesConResumen, eliminarSesion } from '../firebase/sesiones'
-import { ConfirmDialog } from '../components/ui'
+import { ConfirmDialog, Badge } from '../components/ui'
 import RestTimer from '../components/RestTimer'
 import { useUser } from '../context/UserContext'
 import { logEvento } from '../firebase/analytics'
 import { useDesktop } from '../hooks/useDesktop'
+import { CornerUpLeft } from 'lucide-react'
 
 function tiempoRelativo(timestamp) {
   if (!timestamp) return ''
@@ -358,7 +359,7 @@ export default function SesionActiva() {
             >
               <div style={s.tituloRow}>
                 <h1 style={s.ejercicioNombre}>{ejercicio.nombre}</h1>
-                <span style={s.grupoBadge}>{ejercicio.grupoMuscular}</span>
+                <Badge color="orange">{ejercicio.grupoMuscular}</Badge>
               </div>
               <div style={s.serieRow}>
                 <p style={s.serieLabel}>
@@ -466,7 +467,7 @@ export default function SesionActiva() {
             <AnimatePresence>
               {historial.length > 0 && (
                 <motion.button style={s.volverBtn} onClick={retroceder} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} transition={{ duration: 0.2 }} whileTap={{ scale: 0.96 }}>
-                  ← Corregir serie anterior
+                  <CornerUpLeft size={15} style={{ flexShrink: 0 }} /> Corregir serie anterior
                 </motion.button>
               )}
             </AnimatePresence>
@@ -650,12 +651,14 @@ const s = {
     padding: '16px 12px',
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
+    borderTop: '1px solid var(--highlight)',
     borderRadius: 'var(--r-lg)',
     color: 'var(--text)',
     fontSize: '1.6rem', fontWeight: 800,
     outline: 'none', textAlign: 'center',
     width: '100%', boxSizing: 'border-box',
     letterSpacing: '-0.03em',
+    fontVariantNumeric: 'tabular-nums',
   },
   notaBtn: {
     background: 'transparent',
@@ -699,6 +702,7 @@ const s = {
     color: 'var(--text-mute)',
     borderRadius: 'var(--r-lg)',
     fontSize: '0.92rem', fontWeight: 600,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
   },
   muted: { color: 'var(--text-mute)', textAlign: 'center', padding: '32px 16px' },
   celebrate: {

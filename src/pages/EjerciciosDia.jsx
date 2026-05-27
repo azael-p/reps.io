@@ -5,8 +5,9 @@ import { getEjerciciosDia, agregarEjercicioDia, editarEjercicioDia, eliminarEjer
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import SeleccionarEjercicio from '../components/SeleccionarEjercicio'
-import { Header, Modal, ListSkeleton, EmptyState, PageWrapper, ConfirmDialog } from '../components/ui'
+import { Header, Modal, ListSkeleton, EmptyState, PageWrapper, ConfirmDialog, Badge } from '../components/ui'
 import DnDList from '../components/DnDList'
+import { GripVertical, Pencil, Trash2, Dumbbell } from 'lucide-react'
 
 export default function EjerciciosDia() {
   const { programaId, diaId } = useParams()
@@ -67,7 +68,6 @@ export default function EjerciciosDia() {
     setConfirmData({
       titulo: `¿Eliminar "${e.nombre}"?`,
       descripcion: 'Esta acción no se puede deshacer.',
-      icon: '🗑️',
       onConfirm: async () => {
         await eliminarEjercicioDia(e.id)
         cargar()
@@ -98,7 +98,7 @@ export default function EjerciciosDia() {
       {cargando ? (
         <ListSkeleton height={120} />
       ) : ejercicios.length === 0 ? (
-        <EmptyState mensaje="Este día no tiene ejercicios" icon="💪" sub="Agregá los ejercicios que vas a hacer" action={{ label: 'Agregar ejercicio', onClick: () => setPicker(true) }} />
+        <EmptyState mensaje="Este día no tiene ejercicios" icon={Dumbbell} sub="Agregá los ejercicios que vas a hacer" action={{ label: 'Agregar ejercicio', onClick: () => setPicker(true) }} />
       ) : (
         <DnDList
           items={ejercicios}
@@ -115,25 +115,29 @@ export default function EjerciciosDia() {
               layout
             >
               <div style={s.cardTop}>
-                <span style={s.dragHandle} {...dragHandleProps}>⠿</span>
+                <span style={s.dragHandle} {...dragHandleProps}><GripVertical size={16} /></span>
                 <span style={s.cardNum}>{String(i + 1).padStart(2, '0')}</span>
-                <span style={s.cardGrupo}>{e.grupoMuscular}</span>
+                <Badge color="green">{e.grupoMuscular}</Badge>
               </div>
               <span style={s.cardNombre}>{e.nombre}</span>
               <div style={s.cardSeriesWrap}>
                 <div style={s.serieBadge}>
-                  <span style={s.serieNum}>{e.seriesEsperadas}</span>
+                  <span style={s.serieNum} className="num">{e.seriesEsperadas}</span>
                   <span style={s.serieTxt}>series</span>
                 </div>
                 <span style={s.serieX}>×</span>
                 <div style={s.serieBadge}>
-                  <span style={s.serieNum}>{e.repsEsperadas}</span>
+                  <span style={s.serieNum} className="num">{e.repsEsperadas}</span>
                   <span style={s.serieTxt}>reps</span>
                 </div>
               </div>
               <div style={s.acciones}>
-                <motion.button style={s.accionBtn} onClick={() => abrirEditar(e)} whileTap={{ scale: 0.96 }}>Editar</motion.button>
-                <motion.button style={{ ...s.accionBtn, ...s.accionEliminar }} onClick={() => eliminar(e)} whileTap={{ scale: 0.96 }}>Eliminar</motion.button>
+                <motion.button style={s.accionBtn} onClick={() => abrirEditar(e)} whileTap={{ scale: 0.96 }}>
+                  <Pencil size={14} /><span>Editar</span>
+                </motion.button>
+                <motion.button style={{ ...s.accionBtn, ...s.accionEliminar }} onClick={() => eliminar(e)} whileTap={{ scale: 0.96 }}>
+                  <Trash2 size={14} /><span>Eliminar</span>
+                </motion.button>
               </div>
             </motion.div>
           )}
@@ -168,14 +172,15 @@ export default function EjerciciosDia() {
 
 const s = {
   dragHandle: {
-    fontSize: '1.1rem', color: 'var(--text-dim)',
+    color: 'var(--text-dim)',
     cursor: 'grab', padding: '4px', flexShrink: 0,
-    touchAction: 'none',
+    touchAction: 'none', display: 'flex', alignItems: 'center',
   },
   lista: { display: 'flex', flexDirection: 'column', gap: '10px', padding: '14px 14px 0' },
   card: {
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
+    borderTop: '1px solid var(--highlight)',
     borderRadius: 'var(--r-lg)',
     padding: '16px',
     display: 'flex', flexDirection: 'column', gap: '10px',
@@ -183,14 +188,6 @@ const s = {
   },
   cardTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   cardNum: { fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 700, letterSpacing: '0.08em' },
-  cardGrupo: {
-    fontSize: '0.7rem', fontWeight: 700,
-    color: 'var(--green)',
-    background: 'var(--green-glow)',
-    padding: '3px 10px', borderRadius: '20px',
-    border: '1px solid rgba(93, 202, 165, 0.25)',
-    textTransform: 'uppercase', letterSpacing: '0.04em',
-  },
   cardNombre: { fontSize: '1.05rem', fontWeight: 600, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   cardSeriesWrap: { display: 'flex', alignItems: 'center', gap: '10px' },
   serieBadge: {
@@ -199,18 +196,19 @@ const s = {
     background: 'var(--bg-input)',
     borderRadius: '10px',
     border: '1px solid var(--border)',
+    borderTop: '1px solid var(--highlight)',
   },
   serieNum: { fontSize: '1.1rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' },
   serieTxt: { fontSize: '0.62rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 },
   serieX: { color: 'var(--text-dim)', fontSize: '0.9rem' },
   acciones: { display: 'flex', gap: '8px' },
-  accionBtn: { flex: 1, padding: '14px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', fontSize: '0.9rem', fontWeight: 500 },
+  accionBtn: { flex: 1, padding: '12px 14px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', fontSize: '0.88rem', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' },
   accionEliminar: { color: 'var(--danger)', background: 'var(--danger-bg)', borderColor: 'rgba(255,107,107,0.18)' },
   modalTitulo: { margin: 0, fontSize: '1.15rem', fontWeight: 700, letterSpacing: '-0.01em' },
   row: { display: 'flex', gap: '10px' },
   field: { display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 },
   label: { fontSize: '0.78rem', color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 },
-  inputNum: { padding: '14px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', color: 'var(--text)', fontSize: '1.6rem', fontWeight: 700, outline: 'none', textAlign: 'center', width: '100%', boxSizing: 'border-box' },
+  inputNum: { padding: '14px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderTop: '1px solid var(--highlight)', borderRadius: 'var(--r-md)', color: 'var(--text)', fontSize: '1.6rem', fontWeight: 700, outline: 'none', textAlign: 'center', width: '100%', boxSizing: 'border-box', fontVariantNumeric: 'tabular-nums' },
   modalBtns: { display: 'flex', gap: '10px' },
   cancelBtn: { flex: 1, padding: '14px', background: 'var(--bg-input)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', fontSize: '0.95rem' },
   saveBtn: { flex: 1, padding: '14px', background: 'var(--green-grad)', color: '#fff', border: 'none', borderRadius: 'var(--r-md)', fontSize: '0.95rem', fontWeight: 700, boxShadow: '0 6px 18px rgba(12, 122, 95, 0.35)' },

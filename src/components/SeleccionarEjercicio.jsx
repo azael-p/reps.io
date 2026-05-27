@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { getCatalogo } from '../firebase/catalogo'
+import { Search, X, ChevronLeft, Plus } from 'lucide-react'
+import { Badge } from './ui'
 
 const GRUPOS = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Bíceps', 'Tríceps', 'Core', 'Pantorrillas', 'Cardio']
 
@@ -73,7 +75,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
             onClick={() => window.history.back()}
             whileTap={{ scale: 0.9, x: -2 }}
           >
-            ←
+            <ChevronLeft size={20} strokeWidth={2} />
           </motion.button>
           <div style={s.headerInfo}>
             <p style={s.headerSub}>Configurar</p>
@@ -144,7 +146,9 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
       transition={{ duration: 0.25 }}
     >
       <div style={s.header}>
-        <motion.button style={s.back} onClick={() => window.history.back()} whileTap={{ scale: 0.9 }}>←</motion.button>
+        <motion.button style={s.back} onClick={() => window.history.back()} whileTap={{ scale: 0.9 }}>
+          <ChevronLeft size={20} strokeWidth={2} />
+        </motion.button>
         <div style={s.headerInfo}>
           <p style={s.headerSub}>Catálogo</p>
           <h2 style={s.titulo}>Elegir ejercicio</h2>
@@ -153,7 +157,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
 
       <div style={s.searchWrap}>
         <div style={s.searchInner}>
-          <span style={s.searchIcon}>🔍</span>
+          <span style={s.searchIcon}><Search size={16} /></span>
           <input
             style={s.search}
             placeholder="Buscar..."
@@ -162,13 +166,14 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
           />
           {busqueda && (
             <motion.button
+              aria-label="Limpiar búsqueda"
               style={s.clearBtn}
               onClick={() => setBusqueda('')}
               initial={{ opacity: 0, scale: 0.6 }}
               animate={{ opacity: 1, scale: 1 }}
               whileTap={{ scale: 0.9 }}
             >
-              ✕
+              <X size={14} />
             </motion.button>
           )}
         </div>
@@ -223,7 +228,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
                   whileTap={{ scale: 0.98, backgroundColor: 'var(--bg-card-hover)' }}
                 >
                   <span style={s.ejercicioNombre}>{e.nombre}</span>
-                  <span style={s.ejercicioGrupo}>{e.grupoMuscular}</span>
+                  <Badge color="green">{e.grupoMuscular}</Badge>
                 </motion.button>
               ))
             )}
@@ -236,7 +241,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
         onClick={() => setCustomMode(true)}
         whileTap={{ scale: 0.97 }}
       >
-        + Ejercicio personalizado
+        <Plus size={16} style={{ flexShrink: 0 }} /> Ejercicio personalizado
       </motion.button>
     </motion.div>
   )
@@ -263,8 +268,9 @@ const s = {
     background: 'var(--bg-card)', border: '1px solid var(--border)',
     color: 'var(--text-mute)',
     width: '44px', height: '44px',
-    borderRadius: '12px', fontSize: '1.2rem',
+    borderRadius: '12px',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
   },
   headerInfo: { flex: 1 },
   headerSub: { margin: 0, fontSize: '0.7rem', color: 'var(--green)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' },
@@ -329,6 +335,7 @@ const s = {
   ejercicioItem: {
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
+    borderTop: '1px solid var(--highlight)',
     color: 'var(--text)',
     padding: '14px 16px',
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -356,6 +363,7 @@ const s = {
     borderRadius: 'var(--r-md)',
     fontSize: '0.95rem',
     fontWeight: 600,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
   },
   muted: { color: 'var(--text-dim)', textAlign: 'center', padding: '32px 16px' },
   skel: { height: '54px', borderRadius: 'var(--r-md)' },

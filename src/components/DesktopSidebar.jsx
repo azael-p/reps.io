@@ -1,45 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
+import { Home, Zap, Layers, TrendingUp, LogOut } from 'lucide-react'
 
 const TABS = [
-  {
-    label: 'Inicio',
-    ruta: '/home',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
-      </svg>
-    ),
-  },
-  {
-    label: 'Entrenar',
-    ruta: '/entrenar',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4M6 9h12M6 15h12"/>
-      </svg>
-    ),
-  },
-  {
-    label: 'Programas',
-    ruta: '/programas',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-        <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-      </svg>
-    ),
-  },
-  {
-    label: 'Progreso',
-    ruta: '/progreso',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-      </svg>
-    ),
-  },
+  { label: 'Inicio',    Icon: Home,       ruta: '/home' },
+  { label: 'Entrenar',  Icon: Zap,        ruta: '/entrenar' },
+  { label: 'Programas', Icon: Layers,     ruta: '/programas' },
+  { label: 'Progreso',  Icon: TrendingUp, ruta: '/progreso' },
 ]
 
 export default function DesktopSidebar() {
@@ -73,9 +40,11 @@ export default function DesktopSidebar() {
                 title={tab.label}
               >
                 {active && <div style={s.activeLine} />}
-                <span style={{ color: active ? 'var(--orange)' : 'var(--text-dim)' }}>
-                  {tab.icon}
-                </span>
+                <tab.Icon
+                  size={21}
+                  strokeWidth={active ? 2.2 : 1.8}
+                  color={active ? 'var(--orange)' : 'var(--text-dim)'}
+                />
               </button>
               <div style={s.tooltip}>{tab.label}</div>
             </div>
@@ -86,7 +55,8 @@ export default function DesktopSidebar() {
       {/* Avatar / logout */}
       <div style={s.avatarWrap} className="sidebar-item-wrap">
         <button style={s.avatar} onClick={logout} title="Salir">
-          {inicial}
+          <span style={s.avatarInitial}>{inicial}</span>
+          <span style={s.avatarLogout}><LogOut size={14} strokeWidth={2} /></span>
         </button>
         <div style={s.tooltip}>Salir</div>
       </div>
@@ -198,5 +168,19 @@ const s = {
     fontSize: '0.9rem', fontWeight: 700,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     cursor: 'pointer',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  avatarInitial: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'opacity 0.15s',
+  },
+  avatarLogout: {
+    position: 'absolute', inset: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    opacity: 0,
+    background: 'rgba(255,107,107,0.15)',
+    color: 'var(--danger)',
+    transition: 'opacity 0.15s',
   },
 }

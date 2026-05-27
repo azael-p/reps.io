@@ -7,6 +7,7 @@ import { Header, Modal, ListSkeleton, EmptyState, PageWrapper, ConfirmDialog } f
 import DnDList from '../components/DnDList'
 import SwipeToDelete from '../components/SwipeToDelete'
 import { useDesktop } from '../hooks/useDesktop'
+import { GripVertical, Pencil, Trash2, ChevronRight, Layers } from 'lucide-react'
 
 export default function Programas() {
   const isDesktop = useDesktop()
@@ -70,7 +71,7 @@ export default function Programas() {
       {cargando ? (
         <ListSkeleton />
       ) : programas.length === 0 ? (
-        <EmptyState mensaje="No tenés programas todavía" icon="📋" sub="Creá tu primera rutina para empezar a entrenar" action={{ label: 'Crear programa', onClick: abrirCrear }} />
+        <EmptyState mensaje="No tenés programas todavía" icon={Layers} sub="Creá tu primera rutina para empezar a entrenar" action={{ label: 'Crear programa', onClick: abrirCrear }} />
       ) : isDesktop ? (
           <div style={s.desktopGrid}>
             {programas.map((p, i) => (
@@ -88,11 +89,15 @@ export default function Programas() {
                     <span style={s.cardLabel}>Programa</span>
                     <span style={s.cardNombre}>{p.nombre}</span>
                   </div>
-                  <span style={s.cardHint}>Ver días →</span>
+                  <ChevronRight size={16} color="var(--text-dim)" style={{ flexShrink: 0 }} />
                 </div>
                 <div style={s.acciones} onClick={e => e.stopPropagation()}>
-                  <motion.button style={s.accionBtn} onClick={() => abrirEditar(p)} whileTap={{ scale: 0.96 }}>Renombrar</motion.button>
-                  <motion.button style={{ ...s.accionBtn, ...s.accionEliminar }} onClick={() => eliminar(p)} whileTap={{ scale: 0.96 }}>Eliminar</motion.button>
+                  <motion.button style={s.accionBtn} onClick={() => abrirEditar(p)} whileTap={{ scale: 0.96 }} title="Renombrar">
+                    <Pencil size={14} /><span>Renombrar</span>
+                  </motion.button>
+                  <motion.button style={{ ...s.accionBtn, ...s.accionEliminar }} onClick={() => eliminar(p)} whileTap={{ scale: 0.96 }} title="Eliminar">
+                    <Trash2 size={14} /><span>Eliminar</span>
+                  </motion.button>
                 </div>
               </motion.div>
             ))}
@@ -114,16 +119,20 @@ export default function Programas() {
                   layout
                 >
                   <div style={s.cardMain}>
-                    <span style={s.dragHandle} data-dnd-handle {...dragHandleProps}>⠿</span>
+                    <span style={s.dragHandle} data-dnd-handle {...dragHandleProps}><GripVertical size={16} /></span>
                     <div style={{ flex: 1 }}>
                       <span style={s.cardLabel}>Programa</span>
                       <span style={s.cardNombre}>{p.nombre}</span>
                     </div>
-                    <span style={s.cardHint}>Ver días →</span>
+                    <ChevronRight size={16} color="var(--text-dim)" style={{ flexShrink: 0 }} />
                   </div>
                   <div style={s.acciones} data-skip-swipe onClick={e => e.stopPropagation()}>
-                    <motion.button style={s.accionBtn} onClick={() => abrirEditar(p)} whileTap={{ scale: 0.96 }}>Renombrar</motion.button>
-                    <motion.button style={{ ...s.accionBtn, ...s.accionEliminar }} onClick={() => eliminar(p)} whileTap={{ scale: 0.96 }}>Eliminar</motion.button>
+                    <motion.button style={s.accionBtn} onClick={() => abrirEditar(p)} whileTap={{ scale: 0.96 }}>
+                      <Pencil size={14} /><span>Renombrar</span>
+                    </motion.button>
+                    <motion.button style={{ ...s.accionBtn, ...s.accionEliminar }} onClick={() => eliminar(p)} whileTap={{ scale: 0.96 }}>
+                      <Trash2 size={14} /><span>Eliminar</span>
+                    </motion.button>
                   </div>
                 </motion.div>
               </SwipeToDelete>
@@ -163,14 +172,15 @@ export default function Programas() {
 
 const s = {
   dragHandle: {
-    fontSize: '1.1rem', color: 'var(--text-dim)',
+    color: 'var(--text-dim)',
     cursor: 'grab', padding: '4px', flexShrink: 0,
-    touchAction: 'none',
+    touchAction: 'none', display: 'flex', alignItems: 'center',
   },
   lista: { display: 'flex', flexDirection: 'column', gap: '10px', padding: '14px 14px 0' },
   card: {
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
+    borderTop: '1px solid var(--highlight)',
     borderRadius: 'var(--r-lg)',
     padding: '16px',
     display: 'flex', flexDirection: 'column', gap: '12px',
@@ -182,7 +192,7 @@ const s = {
   cardNombre: { fontSize: '1.05rem', fontWeight: 600, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   cardHint: { fontSize: '0.82rem', color: 'var(--green)', flexShrink: 0 },
   acciones: { display: 'flex', gap: '8px' },
-  accionBtn: { flex: 1, padding: '14px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', fontSize: '0.9rem', fontWeight: 500 },
+  accionBtn: { flex: 1, padding: '12px 14px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', fontSize: '0.88rem', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' },
   accionEliminar: { color: 'var(--danger)', background: 'var(--danger-bg)', borderColor: 'rgba(255,107,107,0.18)' },
   desktopGrid: {
     display: 'grid',

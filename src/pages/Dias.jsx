@@ -7,6 +7,7 @@ import { db } from '../firebase/config'
 import { Header, Modal, ListSkeleton, EmptyState, PageWrapper, ConfirmDialog } from '../components/ui'
 import DnDList from '../components/DnDList'
 import { useDesktop } from '../hooks/useDesktop'
+import { GripVertical, Pencil, Trash2, ChevronRight, CalendarDays } from 'lucide-react'
 
 export default function Dias() {
   const isDesktop = useDesktop()
@@ -56,7 +57,6 @@ export default function Dias() {
     setConfirmData({
       titulo: `¿Eliminar "${d.nombre}"?`,
       descripcion: 'Se eliminarán también todos sus ejercicios. Esta acción no se puede deshacer.',
-      icon: '🗑️',
       onConfirm: async () => {
         await eliminarDia(d.id)
         cargar()
@@ -78,7 +78,7 @@ export default function Dias() {
       {cargando ? (
         <ListSkeleton />
       ) : dias.length === 0 ? (
-        <EmptyState mensaje="Este programa no tiene días" icon="📅" sub="Agregá los días de la semana que entrenás" action={{ label: 'Agregar día', onClick: abrirCrear }} />
+        <EmptyState mensaje="Este programa no tiene días" icon={CalendarDays} sub="Agregá los días de la semana que entrenás" action={{ label: 'Agregar día', onClick: abrirCrear }} />
       ) : isDesktop ? (
         <div style={s.desktopGrid}>
           {dias.map((d, i) => (
@@ -96,11 +96,15 @@ export default function Dias() {
                   <span style={s.cardOrden}>Día {i + 1}</span>
                   <span style={s.cardNombre}>{d.nombre}</span>
                 </div>
-                <span style={s.cardHint}>Ver ejercicios →</span>
+                <ChevronRight size={16} color="var(--text-dim)" style={{ flexShrink: 0 }} />
               </div>
               <div style={s.acciones} onClick={e => e.stopPropagation()}>
-                <motion.button style={s.accionBtn} onClick={() => abrirEditar(d)} whileTap={{ scale: 0.96 }}>Renombrar</motion.button>
-                <motion.button style={{ ...s.accionBtn, ...s.accionEliminar }} onClick={() => eliminar(d)} whileTap={{ scale: 0.96 }}>Eliminar</motion.button>
+                <motion.button style={s.accionBtn} onClick={() => abrirEditar(d)} whileTap={{ scale: 0.96 }}>
+                  <Pencil size={14} /><span>Renombrar</span>
+                </motion.button>
+                <motion.button style={{ ...s.accionBtn, ...s.accionEliminar }} onClick={() => eliminar(d)} whileTap={{ scale: 0.96 }}>
+                  <Trash2 size={14} /><span>Eliminar</span>
+                </motion.button>
               </div>
             </motion.div>
           ))}
@@ -122,16 +126,20 @@ export default function Dias() {
               layout
             >
               <div style={s.cardMain}>
-                <span style={s.dragHandle} {...dragHandleProps}>⠿</span>
+                <span style={s.dragHandle} {...dragHandleProps}><GripVertical size={16} /></span>
                 <div style={{ flex: 1 }}>
                   <span style={s.cardOrden}>Día {i + 1}</span>
                   <span style={s.cardNombre}>{d.nombre}</span>
                 </div>
-                <span style={s.cardHint}>Ver ejercicios →</span>
+                <ChevronRight size={16} color="var(--text-dim)" style={{ flexShrink: 0 }} />
               </div>
               <div style={s.acciones} onClick={e => e.stopPropagation()}>
-                <motion.button style={s.accionBtn} onClick={() => abrirEditar(d)} whileTap={{ scale: 0.96 }}>Renombrar</motion.button>
-                <motion.button style={{ ...s.accionBtn, ...s.accionEliminar }} onClick={() => eliminar(d)} whileTap={{ scale: 0.96 }}>Eliminar</motion.button>
+                <motion.button style={s.accionBtn} onClick={() => abrirEditar(d)} whileTap={{ scale: 0.96 }}>
+                  <Pencil size={14} /><span>Renombrar</span>
+                </motion.button>
+                <motion.button style={{ ...s.accionBtn, ...s.accionEliminar }} onClick={() => eliminar(d)} whileTap={{ scale: 0.96 }}>
+                  <Trash2 size={14} /><span>Eliminar</span>
+                </motion.button>
               </div>
             </motion.div>
           )}
@@ -170,14 +178,15 @@ export default function Dias() {
 
 const s = {
   dragHandle: {
-    fontSize: '1.1rem', color: 'var(--text-dim)',
+    color: 'var(--text-dim)',
     cursor: 'grab', padding: '4px', flexShrink: 0,
-    touchAction: 'none',
+    touchAction: 'none', display: 'flex', alignItems: 'center',
   },
   lista: { display: 'flex', flexDirection: 'column', gap: '10px', padding: '14px 14px 0' },
   card: {
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
+    borderTop: '1px solid var(--highlight)',
     borderRadius: 'var(--r-lg)',
     padding: '16px',
     display: 'flex', flexDirection: 'column', gap: '12px',
@@ -187,9 +196,8 @@ const s = {
   cardMain: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' },
   cardOrden: { display: 'block', fontSize: '0.68rem', color: 'var(--green)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '4px' },
   cardNombre: { fontSize: '1.05rem', fontWeight: 600, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  cardHint: { fontSize: '0.82rem', color: 'var(--green)', flexShrink: 0 },
   acciones: { display: 'flex', gap: '8px' },
-  accionBtn: { flex: 1, padding: '14px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', fontSize: '0.9rem', fontWeight: 500 },
+  accionBtn: { flex: 1, padding: '12px 14px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', fontSize: '0.88rem', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' },
   accionEliminar: { color: 'var(--danger)', background: 'var(--danger-bg)', borderColor: 'rgba(255,107,107,0.18)' },
   desktopGrid: {
     display: 'grid',

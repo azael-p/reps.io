@@ -5,7 +5,7 @@ import { useUser } from '../context/UserContext'
 import { getSesionesConResumen, getEjerciciosUsadosConGrupoLocal, getVolumenPorSesionLocal, getRegistrosPorEjercicioLocal, getStreaksLocal, eliminarSesion } from '../firebase/sesiones'
 import { getHistorialPeso, agregarPeso } from '../firebase/peso'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { PageWrapper, EmptyState, ConfirmDialog, Modal } from '../components/ui'
+import { PageWrapper, EmptyState, ConfirmDialog, Modal, Badge } from '../components/ui'
 import PullToRefresh from '../components/PullToRefresh'
 import { useDesktop } from '../hooks/useDesktop'
 
@@ -839,6 +839,7 @@ const s = {
     padding: '32px',
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
+    borderTop: '1px solid var(--highlight)',
     borderRadius: 'var(--r-xl)',
     boxShadow: 'var(--shadow-md)',
   },
@@ -851,6 +852,7 @@ const s = {
     backgroundClip: 'text',
     color: 'transparent',
     lineHeight: 1,
+    fontVariantNumeric: 'tabular-nums',
   },
   streakLabel: { fontSize: '0.78rem', color: 'var(--text-mute)', fontWeight: 600 },
   streakFire: { fontSize: '2.5rem' },
@@ -860,10 +862,11 @@ const s = {
     marginTop: '10px',
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
+    borderTop: '1px solid var(--highlight)',
     borderRadius: 'var(--r-lg)',
     boxShadow: 'var(--shadow-sm)',
   },
-  streakMetaNum: { fontSize: '1.6rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em' },
+  streakMetaNum: { fontSize: '1.6rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' },
   streakMetaLabel: { fontSize: '0.7rem', color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700 },
   registrarPesoBtn: {
     width: '100%', padding: '14px',

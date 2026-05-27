@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
+import { ChevronLeft, Plus, Sparkles, AlertTriangle } from 'lucide-react'
 
 const ACCENT_GRAD = {
   'var(--green)':  'var(--green-grad)',
@@ -22,7 +23,7 @@ export function Header({ titulo, subtitulo, accent = 'var(--green)', onBack, onA
         onClick={onBack ?? (() => navigate(-1))}
         whileTap={{ scale: 0.9, x: -2 }}
       >
-        ←
+        <ChevronLeft size={20} strokeWidth={2} />
       </motion.button>
       <div style={hs.info}>
         {breadcrumbs && (
@@ -46,7 +47,7 @@ export function Header({ titulo, subtitulo, accent = 'var(--green)', onBack, onA
           whileHover={{ scale: 1.05 }}
           transition={{ type: 'spring', stiffness: 320, damping: 18 }}
         >
-          +
+          <Plus size={20} strokeWidth={2.5} />
         </motion.button>
       )}
       {right}
@@ -107,7 +108,9 @@ export function ListSkeleton({ count = 3, height = 92 }) {
   )
 }
 
-export function EmptyState({ mensaje, icon = '✨', action, sub }) {
+export function EmptyState({ mensaje, icon, action, sub }) {
+  const Icon = icon && typeof icon !== 'string' ? icon : null
+  const emojiIcon = typeof icon === 'string' ? icon : null
   return (
     <motion.div
       style={es.wrap}
@@ -116,7 +119,10 @@ export function EmptyState({ mensaje, icon = '✨', action, sub }) {
       transition={{ delay: 0.1 }}
     >
       <div style={es.iconWrap}>
-        <span style={es.icon}>{icon}</span>
+        {Icon
+          ? <Icon size={26} color="var(--text-dim)" strokeWidth={1.5} />
+          : <span style={es.icon}>{emojiIcon ?? '✨'}</span>
+        }
       </div>
       <p style={es.text}>{mensaje}</p>
       {sub && <p style={es.sub}>{sub}</p>}
@@ -139,7 +145,10 @@ export function ConfirmDialog({ open, data, onClose }) {
       {data && (
         <>
           <div style={cd.iconWrap}>
-            <span style={cd.icon}>{data.icon || '⚠️'}</span>
+            {data.icon && typeof data.icon !== 'string'
+              ? <data.icon size={24} color="var(--danger)" strokeWidth={1.5} />
+              : <AlertTriangle size={24} color="var(--danger)" strokeWidth={1.5} />
+            }
           </div>
           <h2 style={cd.titulo}>{data.titulo}</h2>
           {data.descripcion && <p style={cd.descripcion}>{data.descripcion}</p>}
@@ -194,6 +203,62 @@ export function PageWrapper({ children, style }) {
         </a>
       </div>
     </motion.div>
+  )
+}
+
+const BADGE_COLORS = {
+  green:   { bg: 'rgba(93, 202, 165, 0.14)',  color: 'var(--green)',  border: 'rgba(93, 202, 165, 0.22)' },
+  orange:  { bg: 'rgba(240, 153, 123, 0.14)', color: 'var(--orange)', border: 'rgba(240, 153, 123, 0.22)' },
+  blue:    { bg: 'rgba(133, 183, 235, 0.14)', color: 'var(--blue)',   border: 'rgba(133, 183, 235, 0.22)' },
+  red:     { bg: 'rgba(255, 107, 107, 0.14)', color: 'var(--danger)', border: 'rgba(255, 107, 107, 0.22)' },
+  default: { bg: 'var(--bg-input)',           color: 'var(--text-mute)', border: 'var(--border)' },
+}
+
+export function Badge({ children, color = 'default' }) {
+  const c = BADGE_COLORS[color] || BADGE_COLORS.default
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center',
+      padding: '2px 8px',
+      borderRadius: '6px',
+      fontSize: '0.7rem', fontWeight: 600,
+      letterSpacing: '0.02em',
+      background: c.bg, color: c.color,
+      border: `1px solid ${c.border}`,
+      whiteSpace: 'nowrap',
+    }}>
+      {children}
+    </span>
+  )
+}
+
+export function SectionLabel({ children, action }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '0 16px',
+      marginBottom: '6px',
+    }}>
+      <span style={{
+        fontSize: '0.68rem', fontWeight: 700,
+        textTransform: 'uppercase', letterSpacing: '0.07em',
+        color: 'var(--text-dim)',
+      }}>
+        {children}
+      </span>
+      {action && (
+        <button
+          onClick={action.onClick}
+          style={{
+            background: 'none', border: 'none', padding: 0,
+            fontSize: '0.78rem', color: 'var(--orange)',
+            fontWeight: 600, cursor: 'pointer',
+          }}
+        >
+          {action.label}
+        </button>
+      )}
+    </div>
   )
 }
 
