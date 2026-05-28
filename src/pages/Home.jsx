@@ -70,15 +70,14 @@ export default function Home() {
         const { fechas: ms } = JSON.parse(cached)
         if (mountedRef.current) setFechas(ms.map(t => ({ toDate: () => new Date(t), toMillis: () => t })))
         if (mountedRef.current) setCargandoCal(false)
-      } else {
-        const fetched = await getFechasSesiones(usuario.id)
-        if (mountedRef.current) {
-          setFechas(fetched)
-          localStorage.setItem(cacheKey, JSON.stringify({
-            fechas: fetched.map(f => f?.toMillis?.() ?? null).filter(Boolean),
-          }))
-          setCargandoCal(false)
-        }
+      }
+      const fetched = await getFechasSesiones(usuario.id)
+      if (mountedRef.current) {
+        setFechas(fetched)
+        localStorage.setItem(cacheKey, JSON.stringify({
+          fechas: fetched.map(f => f?.toMillis?.() ?? null).filter(Boolean),
+        }))
+        if (!cached) setCargandoCal(false)
       }
     } catch (e) { console.error(e); if (mountedRef.current) setCargandoCal(false) }
 
