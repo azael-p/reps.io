@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Plus, Sparkles, AlertTriangle } from 'lucide-react'
+import { ChevronLeft, Plus, AlertTriangle } from 'lucide-react'
 
 const ACCENT_GRAD = {
   'var(--green)':  'var(--green-grad)',
@@ -57,16 +57,27 @@ export function Header({ titulo, subtitulo, accent = 'var(--green)', onBack, onA
 
 export function Modal({ open, onClose, children }) {
   const onCloseRef = useRef(onClose)
+  const firstFocusRef = useRef(null)
+  const triggerRef = useRef(null)
   useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
   useEffect(() => {
     if (!open) return
+    triggerRef.current = document.activeElement
     window.history.pushState({ modal: true }, '')
     const handler = () => { onCloseRef.current?.() }
     window.addEventListener('popstate', handler)
+    requestAnimationFrame(() => {
+      const btns = document.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+      if (btns.length) {
+        firstFocusRef.current = btns[0]
+        btns[0].focus()
+      }
+    })
     return () => {
       window.removeEventListener('popstate', handler)
       if (window.history.state?.modal) window.history.back()
+      triggerRef.current?.focus()
     }
   }, [open])
 
@@ -75,6 +86,8 @@ export function Modal({ open, onClose, children }) {
       {open && (
         <motion.div
           style={ms.overlay}
+          role="dialog"
+          aria-modal="true"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

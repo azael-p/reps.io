@@ -1,6 +1,6 @@
 import { db } from './config'
 import {
-  collection, addDoc, updateDoc, deleteDoc, writeBatch,
+  collection, addDoc, updateDoc, writeBatch,
   doc, query, where, getDocs,
 } from 'firebase/firestore'
 
@@ -10,9 +10,7 @@ export async function getProgramas(usuarioId) {
 }
 
 export async function crearPrograma(usuarioId, nombre) {
-  const snap = await getDocs(query(collection(db, 'programas'), where('usuarioId', '==', usuarioId)))
-  const orden = snap.docs.length
-  const ref = await addDoc(collection(db, 'programas'), { usuarioId, nombre, orden })
+  const ref = await addDoc(collection(db, 'programas'), { usuarioId, nombre, orden: Date.now() })
   return ref.id
 }
 
@@ -22,12 +20,17 @@ export async function editarPrograma(id, nombre) {
 
 export async function eliminarPrograma(programaId) {
   const diasSnap = await getDocs(query(collection(db, 'dias'), where('programaId', '==', programaId)))
-  for (const d of diasSnap.docs) {
-    const ejSnap = await getDocs(query(collection(db, 'ejerciciosDia'), where('diaId', '==', d.id)))
-    for (const e of ejSnap.docs) await deleteDoc(doc(db, 'ejerciciosDia', e.id))
-    await deleteDoc(doc(db, 'dias', d.id))
-  }
-  await deleteDoc(doc(db, 'programas', programaId))
+  const diasIds = diasSnap.docs.map(d => d.id)
+  const ejSnaps = await Promise.all(
+    diasIds.map(diaId =>
+      getDocs(query(collection(db, 'ejerciciosDia'), where('diaId', '==', diaId)))
+    )
+  )
+  const batch = writeBatch(db)
+  ejSnaps.forEach(snap => snap.docs.forEach(e => batch.delete(e.ref)))
+  diasSnap.docs.forEach(d => batch.delete(d.ref))
+  batch.delete(doc(db, 'programas', programaId))
+  await batch.commit()
 }
 
 export async function reordenarProgramas(items) {

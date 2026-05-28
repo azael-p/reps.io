@@ -20,16 +20,32 @@ service cloud.firestore {
       allow create: if request.auth != null && request.resource.data.usuarioId == request.auth.uid;
     }
 
+    function esDuenoDeDia(diaId) {
+      let dia = get(/databases/$(database)/documents/dias/$(diaId)).data;
+      return get(/databases/$(database)/documents/programas/$(dia.programaId)).data.usuarioId == request.auth.uid;
+    }
+
+    function esDuenoDeSesion(sesionId) {
+      return get(/databases/$(database)/documents/sesiones/$(sesionId)).data.usuarioId == request.auth.uid;
+    }
+
     match /dias/{id} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null
+        && get(/databases/$(database)/documents/programas/$(resource.data.programaId)).data.usuarioId == request.auth.uid;
+      allow create: if request.auth != null
+        && get(/databases/$(database)/documents/programas/$(request.resource.data.programaId)).data.usuarioId == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && get(/databases/$(database)/documents/programas/$(resource.data.programaId)).data.usuarioId == request.auth.uid;
     }
 
     match /ejerciciosDia/{id} {
-      allow read, write: if request.auth != null;
+      allow read, update, delete: if request.auth != null && esDuenoDeDia(resource.data.diaId);
+      allow create: if request.auth != null && esDuenoDeDia(request.resource.data.diaId);
     }
 
     match /registros/{id} {
-      allow read, write: if request.auth != null;
+      allow read, update, delete: if request.auth != null && esDuenoDeSesion(resource.data.sesionId);
+      allow create: if request.auth != null && esDuenoDeSesion(request.resource.data.sesionId);
     }
 
     match /ejerciciosCatalogo/{id} {

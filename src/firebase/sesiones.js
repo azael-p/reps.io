@@ -1,5 +1,5 @@
 import { db } from './config'
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDoc, query, where, getDocs } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, doc, getDoc, query, where, getDocs, writeBatch } from 'firebase/firestore'
 
 export async function crearSesion(usuarioId, diaId) {
   const ref = await addDoc(collection(db, 'sesiones'), {
@@ -135,8 +135,10 @@ export async function getFechasSesiones(usuarioId) {
 
 export async function eliminarSesion(sesionId) {
   const rSnap = await getDocs(query(collection(db, 'registros'), where('sesionId', '==', sesionId)))
-  for (const r of rSnap.docs) await deleteDoc(doc(db, 'registros', r.id))
-  await deleteDoc(doc(db, 'sesiones', sesionId))
+  const batch = writeBatch(db)
+  rSnap.docs.forEach(r => batch.delete(r.ref))
+  batch.delete(doc(db, 'sesiones', sesionId))
+  await batch.commit()
 }
 
 export async function getStreaks(usuarioId) {

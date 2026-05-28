@@ -2,7 +2,7 @@
 
 > Documento de ejecución para `claude-code`. Abrir en una sesión nueva y trabajar de arriba hacia abajo. Cada bloque está priorizado y trae los paths exactos a tocar. **Hacer un commit por sección.** No saltar a la siguiente sección hasta que el checklist de la sección esté completo.
 
-**Stack:** React 19 + Vite + Firebase Firestore + motion v12 + recharts + vite-plugin-pwa. Vitest para tests. Sin Firebase Auth real (PINs hardcodeados via `src/firebase/auth.js`).
+**Stack:** React 19 + Vite + Firebase Firestore + motion v12 + recharts + vite-plugin-pwa. Vitest para tests. Firebase Auth con Google (`signInWithPopup` + `GoogleAuthProvider`); el `uid` de Firebase se usa como `usuarioId` en todas las colecciones.
 
 **Prioridad:** 🔴 crítico · 🟠 alto · 🟡 medio · 🟢 bajo.
 
@@ -26,13 +26,7 @@ Cualquier usuario autenticado puede leer/borrar los días, ejercicios y registro
 ### Problema B — Modo prueba caduca pronto
 Las reglas estaban en "modo prueba" creado el 2026-05-20 con expiración a 30 días → vencen ~**2026-06-19**. Hoy 2026-05-28 → quedan ~3 semanas.
 
-### Problema C — Mismatch con autenticación real
-La app usa **PINs hardcodeados** (`src/firebase/auth.js`), no Firebase Auth. Hay que decidir:
-
-- **Opción 1 (recomendada):** migrar a `signInAnonymously()` de Firebase Auth y mapear `uid` ↔ `usuarioId` interno. Las rules existentes pasan a ser efectivas.
-- **Opción 2 (rápida):** dejar la app como está y endurecer reglas suponiendo "app privada de 3 personas", aceptando que cualquier persona que conozca un PIN tiene acceso a todo.
-
-### Fix — endurecer rules con cascada (asume Opción 1)
+### Fix — endurecer rules con cascada
 
 Reemplazar bloques 23–33 por:
 
@@ -75,8 +69,7 @@ firebase deploy --only firestore:rules
 Después verificar en la consola de Firebase que el caducamiento de "modo prueba" desapareció.
 
 ### Checklist
-- [ ] Decidir Opción 1 vs 2 con el usuario
-- [ ] Reemplazar reglas según opción elegida
+- [ ] Reemplazar reglas con las de cascada
 - [ ] `firebase deploy --only firestore:rules`
 - [ ] Probar manualmente: crear día, agregar ejercicio, completar sesión
 - [ ] Verificar que la fecha de expiración "modo prueba" ya no aparece

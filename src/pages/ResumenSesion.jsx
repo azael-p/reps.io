@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, useMotionValue, useTransform, animate } from 'motion/react'
 import { doc, getDoc } from 'firebase/firestore'
@@ -86,9 +86,10 @@ export default function ResumenSesion() {
       setDiaNombre(diaNombreVal)
 
       if (!sesionData.completada) {
-        await completarSesion(sesionId, buildResumen(regs, diaNombreVal))
+        await backfillResumen(sesionId, buildResumen(regs, diaNombreVal))
+        await completarSesion(sesionId)
       } else if (!sesionData.resumen && regs.length > 0) {
-        backfillResumen(sesionId, buildResumen(regs, diaNombreVal))
+        await backfillResumen(sesionId, buildResumen(regs, diaNombreVal))
       }
     } catch (e) { console.error(e); setError('Error al cargar la sesión') }
     setCargando(false)
@@ -143,11 +144,11 @@ export default function ResumenSesion() {
     setTimeout(() => setNotaGuardada(false), 1800)
   }
 
-  const porEjercicio = registros.reduce((acc, r) => {
+  const porEjercicio = useMemo(() => registros.reduce((acc, r) => {
     if (!acc[r.nombreEjercicio]) acc[r.nombreEjercicio] = []
     acc[r.nombreEjercicio].push(r)
     return acc
-  }, {})
+  }, {}), [registros])
 
   const totalVolumen = registros.reduce((acc, r) => acc + r.pesoUsado * r.repsHechas, 0)
 

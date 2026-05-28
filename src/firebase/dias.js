@@ -1,6 +1,6 @@
 import { db } from './config'
 import {
-  collection, addDoc, updateDoc, deleteDoc, writeBatch,
+  collection, addDoc, updateDoc, writeBatch,
   doc, query, where, getDocs,
 } from 'firebase/firestore'
 
@@ -22,8 +22,10 @@ export async function editarDia(id, nombre) {
 
 export async function eliminarDia(diaId) {
   const ejSnap = await getDocs(query(collection(db, 'ejerciciosDia'), where('diaId', '==', diaId)))
-  for (const e of ejSnap.docs) await deleteDoc(doc(db, 'ejerciciosDia', e.id))
-  await deleteDoc(doc(db, 'dias', diaId))
+  const batch = writeBatch(db)
+  ejSnap.docs.forEach(e => batch.delete(e.ref))
+  batch.delete(doc(db, 'dias', diaId))
+  await batch.commit()
 }
 
 export async function reordenarDias(items) {

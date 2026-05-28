@@ -62,6 +62,7 @@ export default function Calendario({ fechas = [] }) {
           onClick={irMesAnterior}
           whileTap={{ scale: 0.85 }}
           whileHover={{ background: 'rgba(255,255,255,0.06)' }}
+          aria-label="Mes anterior"
         >
           ‹
         </motion.button>
@@ -95,6 +96,7 @@ export default function Calendario({ fechas = [] }) {
           onClick={irMesSiguiente}
           whileTap={{ scale: 0.85 }}
           whileHover={{ background: 'rgba(255,255,255,0.06)' }}
+          aria-label="Mes siguiente"
         >
           ›
         </motion.button>
@@ -119,6 +121,7 @@ export default function Calendario({ fechas = [] }) {
               const sesion = tieneSesion(dia)
               const hoyFlag = esHoy(dia)
               const futuro = esFuturo(dia)
+              const fechaLabel = `${dia} de ${MESES[mes]}, ${sesion ? 'sesión registrada' : 'sin sesión'}`
               return (
                 <motion.div
                   key={i}
@@ -128,6 +131,7 @@ export default function Calendario({ fechas = [] }) {
                     ...(hoyFlag ? s.diaHoy : {}),
                     ...(futuro ? s.diaFuturo : {}),
                   }}
+                  aria-label={fechaLabel}
                   initial={sesion ? { scale: 0.5, opacity: 0 } : false}
                   animate={sesion ? { scale: 1, opacity: 1 } : {}}
                   transition={{ delay: 0.02 * (i % 14), type: 'spring', stiffness: 320, damping: 20 }}

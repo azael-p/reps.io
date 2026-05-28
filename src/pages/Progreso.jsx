@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { useUser } from '../context/UserContext'
 import { getSesionesConResumen, getEjerciciosUsadosConGrupoLocal, getVolumenPorSesionLocal, getRegistrosPorEjercicioLocal, getStreaksLocal, eliminarSesion } from '../firebase/sesiones'
 import { getHistorialPeso, agregarPeso } from '../firebase/peso'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { PageWrapper, EmptyState, ConfirmDialog, Modal, Badge } from '../components/ui'
+import { PageWrapper, EmptyState, ConfirmDialog, Modal } from '../components/ui'
 import PullToRefresh from '../components/PullToRefresh'
 import { useDesktop } from '../hooks/useDesktop'
 
@@ -159,7 +159,7 @@ export default function Progreso() {
       .slice(-8)
   }
 
-  const frec = frecuenciaSemanal()
+  const frec = useMemo(() => frecuenciaSemanal(), [sesiones])
   const maxFrec = Math.max(7, ...frec.map(f => f.dias))
 
   const headerContent = (

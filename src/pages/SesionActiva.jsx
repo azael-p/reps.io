@@ -362,7 +362,7 @@ export default function SesionActiva() {
                 <Badge color="orange">{ejercicio.grupoMuscular}</Badge>
               </div>
               <div style={s.serieRow}>
-                <p style={s.serieLabel}>
+                <p style={s.serieLabel} aria-live="polite">
                   Serie <strong style={s.serieStrong}>{serieActual}</strong> de {totalSeries}
                 </p>
                 <div style={s.serieDots}>
@@ -408,7 +408,7 @@ export default function SesionActiva() {
               <label style={s.inputLabel}>Peso (kg)</label>
               <div style={s.stepper}>
                 <motion.button style={s.stepperBtn} onClick={() => setPesoUsado(p => String(Math.round(Math.max(0, (Number(p) || 0) - 2.5) * 10) / 10))} whileTap={{ scale: 0.92 }}>−</motion.button>
-                <motion.input style={s.inputBig} type="number" inputMode="decimal" placeholder="0" value={pesoUsado} onChange={e => setPesoUsado(e.target.value)} whileFocus={{ borderColor: 'var(--orange)', boxShadow: '0 0 0 4px var(--orange-glow)' }} />
+                <motion.input style={s.inputBig} type="number" inputMode="decimal" placeholder="0" value={pesoUsado} onChange={e => setPesoUsado(e.target.value)} aria-label="Peso (kg)" whileFocus={{ borderColor: 'var(--orange)', boxShadow: '0 0 0 4px var(--orange-glow)' }} />
                 <motion.button style={s.stepperBtn} onClick={() => setPesoUsado(p => String(Math.round(((Number(p) || 0) + 2.5) * 10) / 10))} whileTap={{ scale: 0.92 }}>+</motion.button>
               </div>
             </div>
@@ -416,7 +416,7 @@ export default function SesionActiva() {
               <label style={s.inputLabel}>Reps</label>
               <div style={s.stepper}>
                 <motion.button style={s.stepperBtn} onClick={() => setRepsHechas(r => String(Math.max(1, (Number(r) || 10) - 1)))} whileTap={{ scale: 0.92 }}>−</motion.button>
-                <motion.input style={s.inputBig} type="number" inputMode="numeric" value={repsHechas} onChange={e => setRepsHechas(e.target.value)} whileFocus={{ borderColor: 'var(--orange)', boxShadow: '0 0 0 4px var(--orange-glow)' }} />
+                <motion.input style={s.inputBig} type="number" inputMode="numeric" value={repsHechas} onChange={e => setRepsHechas(e.target.value)} aria-label="Repeticiones" whileFocus={{ borderColor: 'var(--orange)', boxShadow: '0 0 0 4px var(--orange-glow)' }} />
                 <motion.button style={s.stepperBtn} onClick={() => setRepsHechas(r => String((Number(r) || 10) + 1))} whileTap={{ scale: 0.92 }}>+</motion.button>
               </div>
             </div>
