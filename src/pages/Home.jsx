@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useUser } from '../context/UserContext'
 import { useNavigate } from 'react-router-dom'
@@ -56,6 +56,8 @@ export default function Home() {
   const [onboardingDone, setOnboardingDone] = useState(
     () => localStorage.getItem(`onboarding_${usuario?.id}`) === '1'
   )
+  const mountedRef = useRef(true)
+  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false } }, [])
 
   const recargar = useCallback(async () => {
     const cacheKey = `calendario_${usuario.id}`
@@ -63,17 +65,19 @@ export default function Home() {
       const cached = localStorage.getItem(cacheKey)
       if (cached) {
         const { fechas: ms } = JSON.parse(cached)
-        setFechas(ms.map(t => ({ toDate: () => new Date(t), toMillis: () => t })))
-        setCargandoCal(false)
+        if (mountedRef.current) setFechas(ms.map(t => ({ toDate: () => new Date(t), toMillis: () => t })))
+        if (mountedRef.current) setCargandoCal(false)
       } else {
         const fetched = await getFechasSesiones(usuario.id)
-        setFechas(fetched)
-        localStorage.setItem(cacheKey, JSON.stringify({
-          fechas: fetched.map(f => f?.toMillis?.() ?? null).filter(Boolean),
-        }))
-        setCargandoCal(false)
+        if (mountedRef.current) {
+          setFechas(fetched)
+          localStorage.setItem(cacheKey, JSON.stringify({
+            fechas: fetched.map(f => f?.toMillis?.() ?? null).filter(Boolean),
+          }))
+          setCargandoCal(false)
+        }
       }
-    } catch (e) { console.error(e); setCargandoCal(false) }
+    } catch (e) { console.error(e); if (mountedRef.current) setCargandoCal(false) }
 
     try {
       const stored = localStorage.getItem(`sesion_activa_${usuario.id}`)
@@ -84,7 +88,7 @@ export default function Home() {
         return
       }
       const diaSnap = await getDoc(doc(db, 'dias', snap.data().diaId))
-      setSesionPendiente({ sesionId: stored, diaNombre: diaSnap.data()?.nombre ?? 'Entrenamiento' })
+      if (mountedRef.current) setSesionPendiente({ sesionId: stored, diaNombre: diaSnap.data()?.nombre ?? 'Entrenamiento' })
     } catch (e) { console.error(e) }
   }, [usuario])
 

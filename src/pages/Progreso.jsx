@@ -38,6 +38,7 @@ export default function Progreso() {
   const [confirmData, setConfirmData] = useState(null)
   const [datosVolumen, setDatosVolumen] = useState([])
   const [streaks, setStreaks] = useState({ actual: 0, maxima: 0 })
+  const [displayCount, setDisplayCount] = useState(20)
   const [modoGrafico, setModoGrafico] = useState('peso')
   const [historialPeso, setHistorialPeso] = useState([])
   const [cargandoPeso, setCargandoPeso] = useState(false)
@@ -61,6 +62,7 @@ export default function Progreso() {
     } catch (e) { console.error(e) }
     setHistorialPeso([])
     setPesoCargado(false)
+    setDisplayCount(20)
     setCargando(false)
   }, [usuario])
 
@@ -194,7 +196,7 @@ export default function Progreso() {
             <p style={s.secLabel}>Frecuencia semanal</p>
             <div style={s.barras}>
               {frec.map(({ semana, dias }, i) => (
-                <div key={`${semana}-${i}`} style={s.barraItem}>
+                <div key={semana} style={s.barraItem}>
                   <div style={s.barraWrap}>
                     <span style={s.barraNum}>{dias}</span>
                     <motion.div
@@ -213,7 +215,7 @@ export default function Progreso() {
           <p style={{ ...s.secLabel, padding: '8px 16px' }}>Sesiones</p>
           <div style={s.lista}>
             <AnimatePresence>
-              {sesiones.map((sesion, i) => (
+              {sesiones.slice(0, displayCount).map((sesion, i) => (
                 <motion.div
                   key={sesion.id}
                   style={s.sesionCard}
@@ -264,6 +266,15 @@ export default function Progreso() {
                 </motion.div>
               ))}
             </AnimatePresence>
+            {sesiones.length > displayCount && (
+              <motion.button
+                style={s.verMasBtn}
+                onClick={() => setDisplayCount(c => c + 20)}
+                whileTap={{ scale: 0.97 }}
+              >
+                Ver más ({sesiones.length - displayCount} restantes)
+              </motion.button>
+            )}
           </div>
         </>
       )}
@@ -785,6 +796,7 @@ const s = {
   sesionAcciones: { display: 'flex', gap: '8px' },
   accionBtn: { flex: 1, padding: '14px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', fontSize: '0.9rem', fontWeight: 500 },
   accionEliminar: { color: 'var(--danger)', background: 'var(--danger-bg)', borderColor: 'rgba(255,107,107,0.18)' },
+  verMasBtn: { width: '100%', padding: '14px', background: 'var(--bg-card)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', fontSize: '0.9rem', fontWeight: 500 },
   graficoWrap: { padding: 0 },
   selector: { padding: '16px 16px 0' },
   chips: { display: 'flex', flexWrap: 'wrap', gap: '8px' },

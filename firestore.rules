@@ -2,6 +2,15 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function esDuenoDeDia(diaId) {
+      let dia = get(/databases/$(database)/documents/dias/$(diaId)).data;
+      return get(/databases/$(database)/documents/programas/$(dia.programaId)).data.usuarioId == request.auth.uid;
+    }
+
+    function esDuenoDeSesion(sesionId) {
+      return get(/databases/$(database)/documents/sesiones/$(sesionId)).data.usuarioId == request.auth.uid;
+    }
+
     match /usuarios/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
 
@@ -18,15 +27,6 @@ service cloud.firestore {
     match /sesiones/{id} {
       allow read, write: if request.auth != null && resource.data.usuarioId == request.auth.uid;
       allow create: if request.auth != null && request.resource.data.usuarioId == request.auth.uid;
-    }
-
-    function esDuenoDeDia(diaId) {
-      let dia = get(/databases/$(database)/documents/dias/$(diaId)).data;
-      return get(/databases/$(database)/documents/programas/$(dia.programaId)).data.usuarioId == request.auth.uid;
-    }
-
-    function esDuenoDeSesion(sesionId) {
-      return get(/databases/$(database)/documents/sesiones/$(sesionId)).data.usuarioId == request.auth.uid;
     }
 
     match /dias/{id} {

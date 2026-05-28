@@ -326,11 +326,11 @@ Verificar con `npm run build` que aparece un chunk separado para Progreso + rech
 Verificar `--text-mute: #9a9aa3` sobre `--bg-card: #16161b` con un checker (WebAIM, axe). Si no llega a 4.5:1, subir luminancia a `#a8a8b2`.
 
 ### Checklist
-- [ ] Modal aria-* + focus trap básico
-- [ ] aria-label en inputs de SesionActiva
-- [ ] aria-live en contador de series
-- [ ] aria-label en Calendario
-- [ ] Confirmar contraste AA en --text-mute
+- [x] Modal aria-* + focus trap básico — `role="dialog"`, `aria-modal="true"`, focus trap con `triggerRef` en `ui.jsx`
+- [x] aria-label en inputs de SesionActiva — `aria-label="Peso (kg)"` y `aria-label="Repeticiones"` en línea 411-419
+- [x] aria-live en contador de series — `aria-live="polite"` en línea 365
+- [x] aria-label en Calendario — botones de nav + `aria-label={fechaLabel}` en cada día
+- [ ] Confirmar contraste AA en --text-mute (`#9a9aa3` sobre `#16161b`)
 
 ---
 
@@ -366,15 +366,15 @@ Ejecutarlo después de cada batch de fixes que toque archivos cubiertos por test
 
 Ir tildando a medida que cada sección se commitea.
 
-- [ ] 🔴 Sección 1 — Firestore Rules
-- [ ] 🟠 Sección 2 — Cascade deletes
-- [ ] 🟠 Sección 3 — Bugs lógicos
-- [ ] 🟡 Sección 4 — React performance
-- [ ] 🟡 Sección 5 — Paginación
-- [ ] 🟢 Sección 6 — PWA
-- [ ] 🟢 Sección 7 — Lazy load
-- [ ] 🟢 Sección 8 — Accesibilidad
-- [ ] 🟢 Sección 9 — Tests
+- [x] 🔴 Sección 1 — Firestore Rules
+- [x] 🟠 Sección 2 — Cascade deletes
+- [x] 🟠 Sección 3 — Bugs lógicos
+- [x] 🟡 Sección 4 — React performance
+- [x] 🟡 Sección 5 — Paginación
+- [ ] 🟢 Sección 6 — PWA (opcional)
+- [x] 🟢 Sección 7 — Lazy load
+- [x] 🟢 Sección 8 — Accesibilidad
+- [x] 🟢 Sección 9 — Tests
 
 **Reglas de oro durante la ejecución:**
 1. Commitear cada sección por separado (commit msg: `fix(security): ...`, `perf(firestore): ...`, etc).
