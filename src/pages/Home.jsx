@@ -22,6 +22,7 @@ const SECCIONES = [
     accent: 'var(--green)',
     glow: 'var(--green-glow)',
     shadow: 'var(--shadow-green)',
+    borderToken: 'var(--border-green)',
     icon: <Layers size={22} {...ICON_STYLE} />,
   },
   {
@@ -32,6 +33,7 @@ const SECCIONES = [
     accent: 'var(--orange)',
     glow: 'var(--orange-glow)',
     shadow: 'var(--shadow-orange)',
+    borderToken: 'var(--border-orange)',
     icon: <Zap size={22} {...ICON_STYLE} />,
   },
   {
@@ -42,6 +44,7 @@ const SECCIONES = [
     accent: 'var(--blue)',
     glow: 'var(--blue-glow)',
     shadow: 'var(--shadow-blue)',
+    borderToken: 'var(--border-blue)',
     icon: <TrendingUp size={22} {...ICON_STYLE} />,
   },
 ]
@@ -144,7 +147,7 @@ export default function Home() {
               {SECCIONES.map((sec, i) => (
                 <motion.button
                   key={sec.ruta}
-                  style={s.seccionCard}
+                  style={{ ...s.seccionCard, borderColor: sec.borderToken }}
                   onClick={() => navigate(sec.ruta)}
                   initial={{ opacity: 0, y: 24, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -181,6 +184,11 @@ export default function Home() {
                   transition={{ type: 'spring', stiffness: 260, damping: 22 }}
                   whileTap={{ scale: 0.98 }}
                 >
+                  <motion.div
+                    style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: 'var(--orange-glow)', opacity: 0 }}
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
                   <div style={s.bannerDot} className="pulse" />
                   <div style={s.bannerTexto}>
                     <span style={s.bannerLabel}>Entrenamiento en curso</span>
@@ -216,6 +224,11 @@ export default function Home() {
                 transition={{ type: 'spring', stiffness: 260, damping: 22 }}
                 whileTap={{ scale: 0.98 }}
               >
+                <motion.div
+                  style={{ position: 'absolute', inset: 0, borderRadius: 'inherit', background: 'var(--orange-glow)', opacity: 0 }}
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
                 <div style={s.bannerDot} className="pulse" />
                 <div style={s.bannerTexto}>
                   <span style={s.bannerLabel}>Entrenamiento en curso</span>
@@ -230,7 +243,7 @@ export default function Home() {
             {SECCIONES.map((sec, i) => (
               <motion.button
                 key={sec.ruta}
-                style={s.seccionCard}
+                style={{ ...s.seccionCard, borderColor: sec.borderToken }}
                 onClick={() => navigate(sec.ruta)}
                 initial={{ opacity: 0, y: 24, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -339,7 +352,7 @@ const s = {
   secciones: { display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 },
   seccionCard: {
     position: 'relative',
-    border: '1px solid rgba(255,255,255,0.18)',
+    border: '1px solid var(--border-orange)',
     borderTop: '1px solid rgba(255,255,255,0.36)',
     borderRadius: 'var(--r-lg)',
     padding: '18px 18px',

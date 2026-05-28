@@ -130,7 +130,9 @@ export default function Calendario({ fechas = [] }) {
                     ...(sesion ? s.diaSesion : {}),
                     ...(hoyFlag ? s.diaHoy : {}),
                     ...(futuro ? s.diaFuturo : {}),
+                    ...(!sesion && !hoyFlag ? { border: '1px solid var(--border)', borderRadius: 8 } : {}),
                   }}
+                  whileHover={!sesion && !futuro ? { scale: 1.05, borderColor: 'var(--border-strong)' } : {}}
                   aria-label={fechaLabel}
                   initial={sesion ? { scale: 0.5, opacity: 0 } : false}
                   animate={sesion ? { scale: 1, opacity: 1 } : {}}
@@ -140,7 +142,21 @@ export default function Calendario({ fechas = [] }) {
                     color: futuro ? 'var(--text-dim)' : sesion ? '#fff' : hoyFlag ? 'var(--text)' : 'var(--text-dim)',
                     fontWeight: sesion || hoyFlag ? 700 : 500,
                     opacity: futuro ? 0.35 : 1,
+                    position: 'relative', zIndex: 1,
                   }}>{dia}</span>
+                  {hoyFlag && (
+                    <span
+                      className="pulse"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: 'inherit',
+                        border: '2px solid var(--orange)',
+                        opacity: 0.6,
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  )}
                 </motion.div>
               )
             })}
@@ -214,6 +230,7 @@ const s = {
   },
   diaEmpty: { aspectRatio: '1' },
   dia: {
+    position: 'relative',
     aspectRatio: '1',
     display: 'flex',
     alignItems: 'center',

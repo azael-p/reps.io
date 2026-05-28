@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Plus, AlertTriangle } from 'lucide-react'
+import { ChevronLeft, Plus, AlertTriangle, AlertCircle } from 'lucide-react'
 
 const ACCENT_GRAD = {
   'var(--green)':  'var(--green-grad)',
@@ -97,6 +97,10 @@ export function Modal({ open, onClose, children }) {
           <motion.div
             style={ms.box}
             onClick={e => e.stopPropagation()}
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.4 }}
+            onDragEnd={(_, info) => { if (info.offset.y > 80) onClose() }}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -121,6 +125,43 @@ export function ListSkeleton({ count = 3, height = 92 }) {
   )
 }
 
+export function CardSkeleton({ lines = 2 }) {
+  return (
+    <div className="card-elevated" style={{ padding: 16 }}>
+      <div className="skeleton" style={{ height: 18, width: '60%', marginBottom: 12 }} />
+      {Array.from({ length: lines }).map((_, i) => (
+        <div key={i} className="skeleton" style={{ height: 12, width: `${90 - i * 15}%`, marginBottom: 8 }} />
+      ))}
+    </div>
+  )
+}
+
+export function ChartSkeleton() {
+  return <div className="skeleton" style={{ height: 220, width: '100%', borderRadius: 'var(--r-lg)' }} />
+}
+
+export function ErrorState({ titulo = 'Algo salió mal', mensaje, onRetry }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 32 }}
+    >
+      <div style={{
+        width: 56, height: 56, borderRadius: '50%',
+        background: 'var(--danger-bg)',
+        border: '1px solid rgba(255,107,107,0.3)',
+        display: 'grid', placeItems: 'center',
+      }}>
+        <AlertCircle color="var(--danger)" />
+      </div>
+      <h3 style={{ color: 'var(--text)' }}>{titulo}</h3>
+      {mensaje && <p style={{ color: 'var(--text-mute)', textAlign: 'center' }}>{mensaje}</p>}
+      {onRetry && <button className="btn btn-secondary" onClick={onRetry}>Reintentar</button>}
+    </motion.div>
+  )
+}
+
 export function EmptyState({ mensaje, icon, action, sub }) {
   const Icon = icon && typeof icon !== 'string' ? icon : null
   const emojiIcon = typeof icon === 'string' ? icon : null
@@ -133,7 +174,14 @@ export function EmptyState({ mensaje, icon, action, sub }) {
     >
       <div style={es.iconWrap}>
         {Icon
-          ? <Icon size={26} color="var(--text-dim)" strokeWidth={1.5} />
+          ? (
+            <motion.div
+              animate={{ y: [0, -4, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Icon size={26} color="var(--text-dim)" strokeWidth={1.5} />
+            </motion.div>
+          )
           : <span style={es.icon}>{emojiIcon ?? '✨'}</span>
         }
       </div>
@@ -325,12 +373,13 @@ const ms = {
     gap: '14px',
     border: '1px solid var(--border)',
     borderBottom: 'none',
+    boxShadow: '0 -12px 32px rgba(0,0,0,0.5), var(--shadow-inner)',
   },
   handle: {
-    width: '36px', height: '4px',
+    width: '40px', height: '4px',
     background: 'var(--border-strong)',
-    borderRadius: '2px',
-    margin: '0 auto 4px',
+    borderRadius: '999px',
+    margin: '8px auto 16px',
   },
 }
 

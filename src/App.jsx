@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useEffect, lazy, Suspense } from 'react'
-import { AnimatePresence } from 'motion/react'
+import { useEffect, lazy, Suspense, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { UserProvider, useUser } from './context/UserContext'
 import { logPaginaVista } from './firebase/analytics'
 import BottomNav from './components/BottomNav'
@@ -26,26 +26,39 @@ function PrivateRoute({ children }) {
 
 function AppRoutes() {
   const location = useLocation()
+  const [prevPath, setPrevPath] = useState(location.pathname)
+  const [direction, setDirection] = useState(1)
 
   useEffect(() => {
     logPaginaVista(location.pathname)
+    setDirection(location.pathname.length >= prevPath.length ? 1 : -1)
+    setPrevPath(location.pathname)
   }, [location.pathname])
 
   return (
     <>
       <UpdateBanner />
-      <AnimatePresence mode="wait" initial={false}>
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<ErrorBoundary><Login /></ErrorBoundary>} />
-          <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
-          <Route path="/programas" element={<PrivateRoute><Suspense fallback={null}><Programas /></Suspense></PrivateRoute>} />
-          <Route path="/programas/:programaId" element={<PrivateRoute><Suspense fallback={null}><Dias /></Suspense></PrivateRoute>} />
-          <Route path="/programas/:programaId/:diaId" element={<PrivateRoute><Suspense fallback={null}><EjerciciosDia /></Suspense></PrivateRoute>} />
-          <Route path="/entrenar" element={<PrivateRoute><Suspense fallback={null}><Entrenar /></Suspense></PrivateRoute>} />
-          <Route path="/sesion/:sesionId" element={<PrivateRoute><Suspense fallback={null}><SesionActiva /></Suspense></PrivateRoute>} />
-          <Route path="/sesion/:sesionId/resumen" element={<PrivateRoute><Suspense fallback={null}><ResumenSesion /></Suspense></PrivateRoute>} />
-          <Route path="/progreso" element={<PrivateRoute><Suspense fallback={null}><Progreso /></Suspense></PrivateRoute>} />
-        </Routes>
+      <AnimatePresence mode="wait" initial={false} custom={direction}>
+        <motion.div
+          key={location.pathname}
+          custom={direction}
+          initial={d => ({ x: d > 0 ? 40 : -40, opacity: 0 })}
+          animate={{ x: 0, opacity: 1 }}
+          exit={d => ({ x: d > 0 ? -40 : 40, opacity: 0 })}
+          transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+        >
+          <Routes location={location}>
+            <Route path="/" element={<ErrorBoundary><Login /></ErrorBoundary>} />
+            <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+            <Route path="/programas" element={<PrivateRoute><Suspense fallback={null}><Programas /></Suspense></PrivateRoute>} />
+            <Route path="/programas/:programaId" element={<PrivateRoute><Suspense fallback={null}><Dias /></Suspense></PrivateRoute>} />
+            <Route path="/programas/:programaId/:diaId" element={<PrivateRoute><Suspense fallback={null}><EjerciciosDia /></Suspense></PrivateRoute>} />
+            <Route path="/entrenar" element={<PrivateRoute><Suspense fallback={null}><Entrenar /></Suspense></PrivateRoute>} />
+            <Route path="/sesion/:sesionId" element={<PrivateRoute><Suspense fallback={null}><SesionActiva /></Suspense></PrivateRoute>} />
+            <Route path="/sesion/:sesionId/resumen" element={<PrivateRoute><Suspense fallback={null}><ResumenSesion /></Suspense></PrivateRoute>} />
+            <Route path="/progreso" element={<PrivateRoute><Suspense fallback={null}><Progreso /></Suspense></PrivateRoute>} />
+          </Routes>
+        </motion.div>
       </AnimatePresence>
       <BottomNav />
     </>

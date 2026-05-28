@@ -45,7 +45,14 @@ export default function BottomNav() {
             >
               {active && (
                 <motion.div
-                  style={s.pill}
+                  style={{
+                    position: 'absolute',
+                    inset: '6px 10px',
+                    borderRadius: '12px',
+                    background: 'rgba(240, 153, 123, 0.14)',
+                    border: '1px solid rgba(240, 153, 123, 0.3)',
+                    boxShadow: '0 0 16px rgba(240,153,123,0.4)',
+                  }}
                   layoutId="nav-pill"
                   transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                 />
@@ -53,8 +60,8 @@ export default function BottomNav() {
               <t.Icon
                 size={21}
                 strokeWidth={active ? 2.2 : 1.8}
-                color={active ? 'var(--orange)' : 'var(--text-dim)'}
-                style={{ position: 'relative', zIndex: 1 }}
+                color={active ? 'var(--orange)' : 'var(--text-mute)'}
+                style={{ position: 'relative', zIndex: 1, transition: 'color var(--transition-base)' }}
               />
               <span style={{ ...s.label, color: active ? 'var(--orange)' : 'var(--text-dim)', position: 'relative', zIndex: 1 }}>
                 {t.label}

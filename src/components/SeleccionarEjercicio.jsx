@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { getCatalogo } from '../firebase/catalogo'
 import { Search, X, ChevronLeft, Plus } from 'lucide-react'
@@ -62,7 +63,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
   }
 
   if (ejercicioElegido || customMode) {
-    return (
+    return createPortal(
       <motion.div
         style={s.page}
         initial={{ opacity: 0, y: 12 }}
@@ -133,11 +134,12 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
             Agregar ejercicio
           </motion.button>
         </div>
-      </motion.div>
+      </motion.div>,
+      document.body
     )
   }
 
-  return (
+  return createPortal(
     <motion.div
       style={s.page}
       initial={{ opacity: 0, y: 30 }}
@@ -243,7 +245,8 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
       >
         <Plus size={16} style={{ flexShrink: 0 }} /> Ejercicio personalizado
       </motion.button>
-    </motion.div>
+    </motion.div>,
+    document.body
   )
 }
 

@@ -630,14 +630,14 @@ export default function Progreso() {
               return (
                 <motion.button
                   key={t}
-                  style={s.tab}
+                  style={{ ...s.tab, position: 'relative' }}
                   onClick={() => setTab(t)}
                   whileTap={{ scale: 0.97 }}
                 >
-                  <span style={{ ...s.tabLabel, color: activo ? 'var(--blue)' : 'var(--text-dim)' }}>{t}</span>
+                  <span style={{ ...s.tabLabel, color: activo ? 'var(--orange)' : 'var(--text-mute)' }}>{t}</span>
                   {activo && (
                     <motion.div
-                      layoutId="tab-indicator"
+                      layoutId="progresoTabUnderline"
                       style={s.tabIndicator}
                       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                     />
@@ -738,11 +738,11 @@ const s = {
   tabLabel: { fontSize: '0.88rem', fontWeight: 600 },
   tabIndicator: {
     position: 'absolute',
-    bottom: -1, left: '20%', right: '20%',
+    bottom: -1, left: 0, right: 0,
     height: '2px',
-    background: 'var(--blue-grad)',
+    background: 'var(--orange-grad)',
     borderRadius: '2px',
-    boxShadow: '0 0 10px var(--blue-glow)',
+    boxShadow: '0 0 8px rgba(240,153,123,0.5)',
   },
   frecuenciaCard: {
     margin: '16px',
