@@ -29,10 +29,11 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
   const handlerRef = useRef(() => onCerrarRef.current?.())
 
   useEffect(() => {
-    window.history.pushState({ pickerLevel: 0 }, '')
+    const timer = setTimeout(() => window.history.pushState({ pickerLevel: 0 }, ''), 0)
     const dispatch = () => handlerRef.current?.()
     window.addEventListener('popstate', dispatch)
     return () => {
+      clearTimeout(timer)
       window.removeEventListener('popstate', dispatch)
       if (window.history.state?.pickerLevel != null) window.history.back()
     }
