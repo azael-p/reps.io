@@ -244,6 +244,7 @@ select:focus-visible {
   background: var(--bg-card-hover);
 }
 .input.num { font-variant-numeric: tabular-nums; text-align: center; font-size: 22px; font-weight: 600; }
+.input-error { border-color: var(--danger) !important; box-shadow: var(--shadow-inner), 0 0 0 3px rgba(255,107,107,0.15); }
 
 /* Button system */
 .btn {
