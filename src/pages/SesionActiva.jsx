@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { doc, getDoc } from 'firebase/firestore'
@@ -20,6 +20,47 @@ const INPUT_FOCUS = { borderColor: 'var(--orange)', boxShadow: '0 0 0 4px var(--
 const BTN_TAP_SMALL = { scale: 0.92 }
 const BTN_TAP = { scale: 0.96 }
 const BTN_TAP_FIRM = { scale: 0.94 }
+const CONFETTI_COLORS = ['#f0997b', '#5dcaa5', '#85b7eb', '#ffd166']
+const CONFETTI_STYLE = {
+  position: 'absolute',
+  bottom: '120px',
+  left: '50%',
+  transform: 'translateX(-50%)',
+  pointerEvents: 'none',
+  zIndex: 99,
+}
+const CONFETTI_PARTICLE = {
+  position: 'absolute',
+  width: '8px', height: '8px',
+  borderRadius: '2px',
+  top: 0, left: 0,
+}
+
+const Confetti = memo(function Confetti() {
+  return (
+    <motion.div
+      style={CONFETTI_STYLE}
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 0 }}
+      transition={{ duration: 0.55 }}
+    >
+      {Array.from({ length: 10 }).map((_, i) => (
+        <motion.span
+          key={i}
+          style={{ ...CONFETTI_PARTICLE, background: CONFETTI_COLORS[i % 4] }}
+          initial={{ x: 0, y: 0, scale: 0 }}
+          animate={{
+            x: Math.cos((i / 10) * Math.PI * 2) * 90,
+            y: Math.sin((i / 10) * Math.PI * 2) * 90 - 30,
+            scale: [0, 1, 0],
+            rotate: 360,
+          }}
+          transition={{ duration: 0.6 }}
+        />
+      ))}
+    </motion.div>
+  )
+})
 
 function tiempoRelativo(timestamp) {
   if (!timestamp) return ''
@@ -604,35 +645,7 @@ export default function SesionActiva() {
         )}
       </AnimatePresence>
 
-      {/* Confetti burst */}
-      <AnimatePresence>
-        {celebrar && (
-          <motion.div
-            style={s.celebrate}
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 0 }}
-            transition={{ duration: 0.55 }}
-          >
-            {Array.from({ length: 10 }).map((_, i) => (
-              <motion.span
-                key={i}
-                style={{
-                  ...s.confetti,
-                  background: ['#f0997b', '#5dcaa5', '#85b7eb', '#ffd166'][i % 4],
-                }}
-                initial={{ x: 0, y: 0, scale: 0 }}
-                animate={{
-                  x: (Math.cos((i / 10) * Math.PI * 2)) * 90,
-                  y: (Math.sin((i / 10) * Math.PI * 2)) * 90 - 30,
-                  scale: [0, 1, 0],
-                  rotate: 360,
-                }}
-                transition={{ duration: 0.6 }}
-              />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AnimatePresence>{celebrar && <Confetti />}</AnimatePresence>
     </motion.div>
   )
 }
@@ -821,20 +834,6 @@ const s = {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
   },
   muted: { color: 'var(--text-mute)', textAlign: 'center', padding: '32px 16px' },
-  celebrate: {
-    position: 'absolute',
-    bottom: '120px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    pointerEvents: 'none',
-    zIndex: 99,
-  },
-  confetti: {
-    position: 'absolute',
-    width: '8px', height: '8px',
-    borderRadius: '2px',
-    top: 0, left: 0,
-  },
   pageDesktop: {
     minHeight: '100dvh', color: 'var(--text)',
     display: 'flex', flexDirection: 'column', position: 'relative',

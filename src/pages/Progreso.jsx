@@ -732,21 +732,18 @@ export default function Progreso() {
               <span className="spinner" style={{ color: 'var(--blue)' }} />
             </div>
           ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={tab}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.22 }}
-              >
-                {tab === 'Historial' && historialContent}
-                {tab === 'Gráfico' && graficoContent}
-                {tab === 'Volumen' && volumenContent}
-                {tab === 'Rachas' && rachasContent}
-                {tab === 'Peso' && pesoContent}
-              </motion.div>
-            </AnimatePresence>
+            <motion.div
+              key={tab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18 }}
+            >
+              {tab === 'Historial' && historialContent}
+              {tab === 'Gráfico' && graficoContent}
+              {tab === 'Volumen' && volumenContent}
+              {tab === 'Rachas' && rachasContent}
+              {tab === 'Peso' && pesoContent}
+            </motion.div>
           )}
         </>
       )}
