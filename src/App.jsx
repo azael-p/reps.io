@@ -71,9 +71,9 @@ function AppShell() {
   return (
     <>
       {!isLogin && <DesktopSidebar />}
-      <div className={isLogin ? '' : 'app-main'}>
+      <main className={isLogin ? '' : 'app-main'}>
         <AppRoutes />
-      </div>
+      </main>
     </>
   )
 }
