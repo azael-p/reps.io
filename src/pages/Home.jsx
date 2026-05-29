@@ -217,7 +217,7 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        <>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <AnimatePresence>
             {sesionPendiente && (
               <motion.button
@@ -272,7 +272,6 @@ export default function Home() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45, duration: 0.4 }}
-            style={{ marginTop: '20px' }}
           >
             {cargandoCal ? (
               <div style={s.calSkeleton} className="skeleton" />
@@ -280,7 +279,7 @@ export default function Home() {
               <Calendario fechas={fechas} />
             )}
           </motion.div>
-        </>
+        </div>
       )}
       </PullToRefresh>
       <div style={{ textAlign: 'center', padding: '24px 0 8px', color: 'var(--text-dim)', fontSize: '0.72rem' }}>
@@ -330,6 +329,8 @@ const s = {
     flexShrink: 0,
   },
   bannerSesion: {
+    position: 'relative',
+    overflow: 'hidden',
     display: 'flex', alignItems: 'center', gap: '12px',
     padding: '14px 16px',
     background: 'var(--bg-card)',
