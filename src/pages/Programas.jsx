@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useUser } from '../context/UserContext'
-import { getProgramas, crearPrograma, editarPrograma, eliminarPrograma, reordenarProgramas } from '../firebase/programas'
-import { Header, Modal, ListSkeleton, EmptyState, PageWrapper, ConfirmDialog } from '../components/ui'
+import { getProgramas, crearPrograma, editarPrograma, marcarParaEliminar, desmarcarParaEliminar, eliminarProgramaDefinitivo, reordenarProgramas } from '../firebase/programas'
+import { Header, Modal, ListSkeleton, EmptyState, PageWrapper } from '../components/ui'
+import { useToast } from '../components/Toast'
+import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
 import DnDList from '../components/DnDList'
 import SwipeToDelete from '../components/SwipeToDelete'
 import { useDesktop } from '../hooks/useDesktop'
@@ -13,10 +15,10 @@ export default function Programas() {
   const isDesktop = useDesktop()
   const { usuario } = useUser()
   const navigate = useNavigate()
+  const { show } = useToast()
   const [programas, setProgramas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState(null)
-  const [confirmData, setConfirmData] = useState(null)
   const [nombre, setNombre] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
@@ -30,6 +32,8 @@ export default function Programas() {
 
   useEffect(() => { setCargando(true); cargar() }, [cargar]) // eslint-disable-line
 
+  useKeyboardShortcut('n', abrirCrear, [])
+
   function abrirCrear() { setNombre(''); setModal('crear') }
   function abrirEditar(p) { setNombre(p.nombre); setModal(p) }
 
@@ -38,23 +42,33 @@ export default function Programas() {
     setErrorMsg('')
     setGuardando(true)
     try {
-      if (modal === 'crear') await crearPrograma(usuario.id, nombre.trim())
-      else await editarPrograma(modal.id, nombre.trim())
+      if (modal === 'crear') {
+        await crearPrograma(usuario.id, nombre.trim())
+        show({ message: 'Programa creado', variant: 'success' })
+      } else {
+        await editarPrograma(modal.id, nombre.trim())
+        show({ message: 'Programa actualizado', variant: 'success' })
+      }
       setModal(null)
     } catch (e) { console.error(e); setErrorMsg('Error al guardar. Intentá de nuevo.') }
     setGuardando(false)
     cargar()
   }
 
-  function eliminar(p) {
-    setConfirmData({
-      titulo: `¿Eliminar "${p.nombre}"?`,
-      descripcion: 'Se eliminarán también todos sus días y ejercicios. Esta acción no se puede deshacer.',
-      icon: '🗑️',
-      onConfirm: async () => {
-        await eliminarPrograma(p.id)
-        cargar()
+  async function eliminar(p) {
+    await marcarParaEliminar(p.id)
+    setProgramas(prev => prev.filter(prog => prog.id !== p.id))
+    show({
+      message: `"${p.nombre}" eliminado`,
+      action: {
+        label: 'Deshacer',
+        onClick: async () => {
+          await desmarcarParaEliminar(p.id)
+          cargar()
+        },
       },
+      duration: 5000,
+      onTimeout: () => eliminarProgramaDefinitivo(p.id),
     })
   }
 
@@ -164,8 +178,6 @@ export default function Programas() {
           </motion.button>
         </div>
       </Modal>
-
-      <ConfirmDialog open={!!confirmData} data={confirmData} onClose={() => setConfirmData(null)} />
     </PageWrapper>
   )
 }

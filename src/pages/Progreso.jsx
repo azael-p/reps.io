@@ -39,6 +39,8 @@ export default function Progreso() {
   const [datosVolumen, setDatosVolumen] = useState([])
   const [streaks, setStreaks] = useState({ actual: 0, maxima: 0 })
   const [displayCount, setDisplayCount] = useState(20)
+  const [filtroPrograma, setFiltroPrograma] = useState('todos')
+  const [filtroMes, setFiltroMes] = useState('todos')
   const [modoGrafico, setModoGrafico] = useState('peso')
   const [historialPeso, setHistorialPeso] = useState([])
   const [cargandoPeso, setCargandoPeso] = useState(false)
@@ -164,6 +166,66 @@ export default function Progreso() {
   const frec = useMemo(() => frecuenciaSemanal(), [sesiones])
   const maxFrec = Math.max(7, ...frec.map(f => f.dias))
 
+  const uniqueProgramas = useMemo(() => {
+    const names = new Set(sesiones.map(s => s.diaNombre).filter(Boolean))
+    return ['todos', ...Array.from(names)]
+  }, [sesiones])
+
+  const uniqueMeses = useMemo(() => {
+    const meses = new Set()
+    sesiones.forEach(s => {
+      if (!s.fecha) return
+      const d = s.fecha.toDate ? s.fecha.toDate() : new Date(s.fecha)
+      meses.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+    })
+    return ['todos', ...Array.from(meses).sort().reverse()]
+  }, [sesiones])
+
+  const sesionesFiltradas = useMemo(() => {
+    return sesiones.filter(s => {
+      if (filtroPrograma !== 'todos' && s.diaNombre !== filtroPrograma) return false
+      if (filtroMes !== 'todos') {
+        const d = s.fecha?.toDate ? s.fecha.toDate() : new Date(s.fecha)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        if (key !== filtroMes) return false
+      }
+      return true
+    })
+  }, [sesiones, filtroPrograma, filtroMes])
+
+  const ChipsFiltro = ({ values, selected, onChange }) => (
+    <div style={{ display: 'flex', gap: '6px', padding: '0 16px 8px', overflowX: 'auto', flexWrap: 'nowrap' }}>
+      {values.map(v => (
+        <motion.button
+          key={v}
+          style={{
+            padding: '6px 12px',
+            borderRadius: '20px',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            ...(selected === v ? {
+              background: 'var(--green-grad)',
+              color: '#fff',
+              border: 'none',
+              boxShadow: 'var(--shadow-green)',
+            } : {
+              background: 'var(--bg-card)',
+              color: 'var(--text-mute)',
+              border: '1px solid var(--border)',
+              borderTopColor: 'var(--highlight)',
+            }),
+          }}
+          onClick={() => onChange(v)}
+          whileTap={{ scale: 0.94 }}
+        >
+          {v === 'todos' ? 'Todos' : v}
+        </motion.button>
+      ))}
+    </div>
+  )
+
   const headerContent = (
     <motion.div
       style={isDesktop ? s.headerDesktop : s.header}
@@ -189,7 +251,7 @@ export default function Progreso() {
   const historialContent = (
     <div>
       {sesiones.length === 0 ? (
-        <EmptyState mensaje="Todavía no hay sesiones registradas." icon="📊" />
+        <EmptyState mensaje="Cero sesiones. ¿La primera?" icon="📊" sub="Empezá a entrenar para ver tu progreso acá" action={{ label: 'Empezar entrenamiento', onClick: () => navigate('/entrenar') }} />
       ) : (
         <>
           <div style={s.frecuenciaCard}>
@@ -213,9 +275,11 @@ export default function Progreso() {
           </div>
 
           <p style={{ ...s.secLabel, padding: '8px 16px' }}>Sesiones</p>
+          {uniqueProgramas.length > 2 && <ChipsFiltro values={uniqueProgramas} selected={filtroPrograma} onChange={setFiltroPrograma} />}
+          {uniqueMeses.length > 2 && <ChipsFiltro values={uniqueMeses} selected={filtroMes} onChange={setFiltroMes} />}
           <div style={s.lista}>
             <AnimatePresence>
-              {sesiones.slice(0, displayCount).map((sesion, i) => (
+              {sesionesFiltradas.slice(0, displayCount).map((sesion, i) => (
                 <motion.div
                   key={sesion.id}
                   style={s.sesionCard}
@@ -345,7 +409,7 @@ export default function Progreso() {
                   onClick={() => setModoGrafico(m)}
                   whileTap={{ scale: 0.94 }}
                 >
-                  {{ peso: 'Peso máx.', '1rm': '1RM est.', volumen: 'Vol. serie' }[m]}
+                  {{ peso: 'Peso máx.', '1rm': 'PR personal', volumen: 'Vol. serie' }[m]}
                 </motion.button>
               ))}
             </div>
@@ -360,7 +424,7 @@ export default function Progreso() {
               animate={{ opacity: 1, y: 0 }}
             >
               <p style={s.chartTitulo}>
-                {{ peso: 'Peso máximo por sesión', '1rm': '1RM estimado por sesión', volumen: 'Mejor serie por volumen' }[modoGrafico]}
+                {{ peso: 'Peso máximo por sesión', '1rm': 'Tu mejor marca personal por sesión', volumen: 'Mejor serie por volumen' }[modoGrafico]}
               </p>
               <p style={s.chartSub}>{modoGrafico === 'volumen' ? 'en kg × reps' : 'en kilogramos'}</p>
               <div style={{ width: '100%', height: 240, marginTop: '12px' }}>

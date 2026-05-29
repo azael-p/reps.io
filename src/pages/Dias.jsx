@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'motion/react'
-import { getDias, crearDia, editarDia, eliminarDia, reordenarDias } from '../firebase/dias'
+import { getDias, crearDia, editarDia, marcarDiaParaEliminar, desmarcarDiaParaEliminar, eliminarDiaDefinitivo, reordenarDias } from '../firebase/dias'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
-import { Header, Modal, ListSkeleton, EmptyState, PageWrapper, ConfirmDialog } from '../components/ui'
+import { Header, Modal, ListSkeleton, EmptyState, PageWrapper } from '../components/ui'
+import { useToast } from '../components/Toast'
+import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
 import DnDList from '../components/DnDList'
 import { useDesktop } from '../hooks/useDesktop'
 import { GripVertical, Pencil, Trash2, ChevronRight, CalendarDays } from 'lucide-react'
@@ -13,11 +15,11 @@ export default function Dias() {
   const isDesktop = useDesktop()
   const { programaId } = useParams()
   const navigate = useNavigate()
+  const { show } = useToast()
   const [programa, setPrograma] = useState(null)
   const [dias, setDias] = useState([])
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState(null)
-  const [confirmData, setConfirmData] = useState(null)
   const [nombre, setNombre] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
@@ -38,6 +40,8 @@ export default function Dias() {
   useEffect(() => { setCargando(true); cargar() }, [cargar]) // eslint-disable-line
 
   function abrirCrear() { setNombre(''); setModal('crear') }
+  useKeyboardShortcut('n', abrirCrear, [])
+
   function abrirEditar(d) { setNombre(d.nombre); setModal(d) }
 
   async function guardar() {
@@ -45,22 +49,33 @@ export default function Dias() {
     setErrorMsg('')
     setGuardando(true)
     try {
-      if (modal === 'crear') await crearDia(programaId, nombre.trim(), dias.length)
-      else await editarDia(modal.id, nombre.trim())
+      if (modal === 'crear') {
+        await crearDia(programaId, nombre.trim(), dias.length)
+        show({ message: 'Día creado', variant: 'success' })
+      } else {
+        await editarDia(modal.id, nombre.trim())
+        show({ message: 'Día actualizado', variant: 'success' })
+      }
       setModal(null)
     } catch (e) { console.error(e); setErrorMsg('Error al guardar. Intentá de nuevo.') }
     setGuardando(false)
     cargar()
   }
 
-  function eliminar(d) {
-    setConfirmData({
-      titulo: `¿Eliminar "${d.nombre}"?`,
-      descripcion: 'Se eliminarán también todos sus ejercicios. Esta acción no se puede deshacer.',
-      onConfirm: async () => {
-        await eliminarDia(d.id)
-        cargar()
+  async function eliminar(d) {
+    await marcarDiaParaEliminar(d.id)
+    setDias(prev => prev.filter(dia => dia.id !== d.id))
+    show({
+      message: `"${d.nombre}" eliminado`,
+      action: {
+        label: 'Deshacer',
+        onClick: async () => {
+          await desmarcarDiaParaEliminar(d.id)
+          cargar()
+        },
       },
+      duration: 5000,
+      onTimeout: () => eliminarDiaDefinitivo(d.id),
     })
   }
 
@@ -170,8 +185,6 @@ export default function Dias() {
           </motion.button>
         </div>
       </Modal>
-
-      <ConfirmDialog open={!!confirmData} data={confirmData} onClose={() => setConfirmData(null)} />
     </PageWrapper>
   )
 }

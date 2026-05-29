@@ -5,7 +5,10 @@ const DURACION_DEFAULT = 180
 const CIRCUNFERENCIA = 2 * Math.PI * 54
 
 export default function RestTimer({ onTerminar, onSaltar }) {
-  const endTimeRef = useRef(Date.now() + DURACION_DEFAULT * 1000)
+  const stored = parseInt(localStorage.getItem('descanso_default') || '', 10)
+  const initialSeg = isNaN(stored) || stored < 30 ? DURACION_DEFAULT : stored
+  const segundosTotalRef = useRef(initialSeg)
+  const endTimeRef = useRef(Date.now() + initialSeg * 1000)
   const [, setTick] = useState(0)
   const [skip, setSkip] = useState(false)
   const vibratedRef = useRef(false)
@@ -59,9 +62,23 @@ export default function RestTimer({ onTerminar, onSaltar }) {
   }, [])
 
   useEffect(() => {
-    if (!finalizado || vibratedRef.current) return
+    if (!finalizado) return
+    if (vibratedRef.current) return
     vibratedRef.current = true
     try { navigator.vibrate?.([100, 100, 100, 100, 100]) } catch { /* ignore */ }
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.frequency.value = 880
+      osc.type = 'sine'
+      gain.gain.setValueAtTime(0.4, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5)
+      osc.start(ctx.currentTime)
+      osc.stop(ctx.currentTime + 0.5)
+    } catch { /* ignore */ }
     if (
       'Notification' in window &&
       Notification.permission === 'granted' &&
@@ -82,7 +99,7 @@ export default function RestTimer({ onTerminar, onSaltar }) {
     setTimeout(onSaltar, 200)
   }
 
-  const progress = (DURACION_DEFAULT - segundos) / DURACION_DEFAULT
+  const progress = (segundosTotalRef.current - segundos) / segundosTotalRef.current
   const offset = CIRCUNFERENCIA * (1 - progress)
 
   const mins = Math.floor(segundos / 60)
@@ -194,16 +211,34 @@ export default function RestTimer({ onTerminar, onSaltar }) {
           </AnimatePresence>
 
           {!skip && (
-            <motion.button
-              style={finalizado ? s.nextBtn : s.saltarBtn}
-              onClick={finalizado ? onTerminar : handleSaltar}
-              whileTap={{ scale: 0.96 }}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              {finalizado ? 'Siguiente ejercicio →' : 'Saltar descanso'}
-            </motion.button>
+            <>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <motion.button
+                  style={s.adjustBtn}
+                  onClick={() => { endTimeRef.current = Math.max(Date.now() + 1000, endTimeRef.current - 30000); setTick(t => t + 1) }}
+                  whileTap={{ scale: 0.92 }}
+                >
+                  −30s
+                </motion.button>
+                <motion.button
+                  style={s.adjustBtn}
+                  onClick={() => { endTimeRef.current += 30000; setTick(t => t + 1) }}
+                  whileTap={{ scale: 0.92 }}
+                >
+                  +30s
+                </motion.button>
+              </div>
+              <motion.button
+                style={finalizado ? s.nextBtn : s.saltarBtn}
+                onClick={finalizado ? onTerminar : handleSaltar}
+                whileTap={{ scale: 0.96 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                {finalizado ? 'Siguiente ejercicio →' : 'Saltar descanso'}
+              </motion.button>
+            </>
           )}
         </motion.div>
       </motion.div>
@@ -296,5 +331,15 @@ const s = {
     borderRadius: 'var(--r-md)',
     fontSize: '0.95rem', fontWeight: 600,
     minWidth: '190px',
+  },
+  adjustBtn: {
+    padding: '10px 16px',
+    background: 'var(--bg-card)',
+    color: 'var(--text-mute)',
+    border: '1px solid var(--border)',
+    borderTopColor: 'var(--highlight)',
+    borderRadius: 'var(--r-md)',
+    fontSize: '0.88rem', fontWeight: 600,
+    boxShadow: 'var(--shadow-inner)',
   },
 }

@@ -13,6 +13,12 @@ import { Layers, Zap, TrendingUp, ChevronRight, LogOut } from 'lucide-react'
 
 const ICON_STYLE = { color: 'rgba(255,255,255,0.95)', strokeWidth: 1.8 }
 
+function getGreeting(nombre) {
+  const hour = new Date().getHours()
+  const timeGreeting = hour < 6 ? 'Buenas noches' : hour < 12 ? 'Buenas, ¿qué tal?' : hour < 19 ? 'Hola' : 'Buenas noches'
+  return nombre ? `${timeGreeting}, ${nombre}` : timeGreeting
+}
+
 const SECCIONES = [
   {
     label: 'Mis programas',
@@ -112,7 +118,7 @@ export default function Home() {
         transition={{ duration: 0.35, ease: 'easeOut' }}
       >
         <div>
-          <p style={s.saludo}>Hola, <span style={s.nombreAccent}>{usuario?.nombre}</span></p>
+          <p style={s.saludo}>{getGreeting(usuario?.nombre)}</p>
           <p style={s.sub}>¿Qué hacemos hoy?</p>
         </div>
         <motion.button

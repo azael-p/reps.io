@@ -1,14 +1,17 @@
 import { db } from './config'
 import {
   collection, addDoc, updateDoc, deleteDoc, writeBatch,
-  doc, query, where, getDocs,
+  doc, query, where, getDocs, deleteField,
 } from 'firebase/firestore'
 
 export async function getEjerciciosDia(diaId) {
   const snap = await getDocs(
     query(collection(db, 'ejerciciosDia'), where('diaId', '==', diaId))
   )
-  return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.orden - b.orden)
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(e => !e.eliminadoEn)
+    .sort((a, b) => a.orden - b.orden)
 }
 
 export async function agregarEjercicioDia({ diaId, nombre, grupoMuscular, esCustom, seriesEsperadas, repsEsperadas, orden }) {
@@ -22,7 +25,15 @@ export async function editarEjercicioDia(id, { nombre, seriesEsperadas, repsEspe
   await updateDoc(doc(db, 'ejerciciosDia', id), { nombre, seriesEsperadas, repsEsperadas })
 }
 
-export async function eliminarEjercicioDia(id) {
+export async function marcarEjercicioParaEliminar(id) {
+  await updateDoc(doc(db, 'ejerciciosDia', id), { eliminadoEn: Date.now() })
+}
+
+export async function desmarcarEjercicioParaEliminar(id) {
+  await updateDoc(doc(db, 'ejerciciosDia', id), { eliminadoEn: deleteField() })
+}
+
+export async function eliminarEjercicioDefinitivo(id) {
   await deleteDoc(doc(db, 'ejerciciosDia', id))
 }
 

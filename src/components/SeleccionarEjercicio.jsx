@@ -4,10 +4,12 @@ import { motion, AnimatePresence } from 'motion/react'
 import { getCatalogo } from '../firebase/catalogo'
 import { Search, X, ChevronLeft, Plus } from 'lucide-react'
 import { Badge } from './ui'
+import { useDesktop } from '../hooks/useDesktop'
 
 const GRUPOS = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Bíceps', 'Tríceps', 'Core', 'Pantorrillas', 'Cardio']
 
 export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
+  const isDesktop = useDesktop()
   const [catalogo, setCatalogo] = useState([])
   const [busqueda, setBusqueda] = useState('')
   const [grupoActivo, setGrupoActivo] = useState(null)
@@ -164,6 +166,8 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
           <input
             style={s.search}
             placeholder="Buscar..."
+            inputMode="search"
+            autoFocus={isDesktop}
             value={busqueda}
             onChange={e => { setBusqueda(e.target.value); setGrupoActivo(null) }}
           />

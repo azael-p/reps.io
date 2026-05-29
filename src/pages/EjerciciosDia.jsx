@@ -1,24 +1,25 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { getEjerciciosDia, agregarEjercicioDia, editarEjercicioDia, eliminarEjercicioDia, reordenarEjercicios } from '../firebase/ejerciciosDia'
+import { getEjerciciosDia, agregarEjercicioDia, editarEjercicioDia, marcarEjercicioParaEliminar, desmarcarEjercicioParaEliminar, eliminarEjercicioDefinitivo, reordenarEjercicios } from '../firebase/ejerciciosDia'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import SeleccionarEjercicio from '../components/SeleccionarEjercicio'
-import { Header, Modal, ListSkeleton, EmptyState, PageWrapper, ConfirmDialog, Badge } from '../components/ui'
+import { Header, Modal, ListSkeleton, EmptyState, PageWrapper, Badge } from '../components/ui'
+import { useToast } from '../components/Toast'
 import DnDList from '../components/DnDList'
 import { GripVertical, Pencil, Trash2, Dumbbell } from 'lucide-react'
 
 export default function EjerciciosDia() {
   const { programaId, diaId } = useParams()
   const navigate = useNavigate()
+  const { show } = useToast()
   const [dia, setDia] = useState(null)
   const [programaNombre, setProgramaNombre] = useState('')
   const [ejercicios, setEjercicios] = useState([])
   const [cargando, setCargando] = useState(true)
   const [picker, setPicker] = useState(false)
   const [editando, setEditando] = useState(null)
-  const [confirmData, setConfirmData] = useState(null)
   const [editSeries, setEditSeries] = useState('')
   const [editReps, setEditReps] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
@@ -44,6 +45,7 @@ export default function EjerciciosDia() {
     setPicker(false)
     try {
       await agregarEjercicioDia({ diaId, nombre, grupoMuscular, esCustom, seriesEsperadas, repsEsperadas, orden: ejercicios.length })
+      show({ message: 'Ejercicio agregado', variant: 'success' })
     } catch (e) { console.error(e) }
     cargar()
   }
@@ -59,19 +61,26 @@ export default function EjerciciosDia() {
     setErrorMsg('')
     try {
       await editarEjercicioDia(editando.id, { nombre: editando.nombre, seriesEsperadas: Number(editSeries), repsEsperadas: Number(editReps) })
+      show({ message: 'Ejercicio actualizado', variant: 'success' })
       setEditando(null)
     } catch (e) { console.error(e); setErrorMsg('Error al guardar. Intentá de nuevo.') }
     cargar()
   }
 
-  function eliminar(e) {
-    setConfirmData({
-      titulo: `¿Eliminar "${e.nombre}"?`,
-      descripcion: 'Esta acción no se puede deshacer.',
-      onConfirm: async () => {
-        await eliminarEjercicioDia(e.id)
-        cargar()
+  async function eliminar(e) {
+    await marcarEjercicioParaEliminar(e.id)
+    setEjercicios(prev => prev.filter(ej => ej.id !== e.id))
+    show({
+      message: `"${e.nombre}" eliminado`,
+      action: {
+        label: 'Deshacer',
+        onClick: async () => {
+          await desmarcarEjercicioParaEliminar(e.id)
+          cargar()
+        },
       },
+      duration: 5000,
+      onTimeout: () => eliminarEjercicioDefinitivo(e.id),
     })
   }
 
@@ -163,8 +172,6 @@ export default function EjerciciosDia() {
           <motion.button style={s.saveBtn} onClick={guardarEdicion} whileTap={{ scale: 0.97 }}>Guardar</motion.button>
         </div>
       </Modal>
-
-      <ConfirmDialog open={!!confirmData} data={confirmData} onClose={() => setConfirmData(null)} />
     </PageWrapper>
     </>
   )

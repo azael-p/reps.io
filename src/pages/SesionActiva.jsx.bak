@@ -5,9 +5,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { getEjerciciosDia } from '../firebase/ejerciciosDia'
 import { agregarRegistro, editarRegistro, getUltimaVezEjercicioLocal, getRegistrosSesion } from '../firebase/registros'
-import {
-  getSesionesConResumen, eliminarSesion, getRegistrosPorEjercicioLocal,
-} from '../firebase/sesiones'
+import { getSesionesConResumen, eliminarSesion } from '../firebase/sesiones'
 import { ConfirmDialog, Badge, EmptyState } from '../components/ui'
 import RestTimer from '../components/RestTimer'
 import { useUser } from '../context/UserContext'
@@ -48,8 +46,6 @@ export default function SesionActiva() {
   const [refAnterior, setRefAnterior] = useState(undefined) // undefined=loading, null=sin datos
   const [refCache, setRefCache] = useState({})
   const [refPR, setRefPR] = useState(undefined)
-  const [prCache, setPRCache] = useState({})
-  const [tabRef, setTabRef] = useState('ultima') // 'ultima' | 'pr'
   const [sesionesCache, setSesionesCache] = useState(null) // null = loading
   const [guardando, setGuardando] = useState(false)
   const [mostrarNota, setMostrarNota] = useState(false)
@@ -146,27 +142,12 @@ export default function SesionActiva() {
     if (!ejercicio || !usuario || sesionesCache === null) return
     if (refCache[ejercicio.id] !== undefined) {
       setRefAnterior(refCache[ejercicio.id]) // eslint-disable-line
-    } else {
-      setRefAnterior(undefined)
-      const data = getUltimaVezEjercicioLocal(sesionesCache, ejercicio.id, sesionId)
-      setRefCache(c => ({ ...c, [ejercicio.id]: data }))
-      setRefAnterior(data)
+      return
     }
-    if (prCache[ejercicio.id] !== undefined) {
-      setRefPR(prCache[ejercicio.id])
-    } else {
-      setRefPR(undefined)
-      let maxPeso = 0; let prData = null
-      for (const sesion of sesionesCache) {
-        if (sesion.id === sesionId) continue
-        const ej = sesion.resumen?.ejercicios?.find(e => e.ejercicioId === ejercicio.id)
-        if (!ej?.series?.length) continue
-        const max = Math.max(...ej.series.map(s => s.pesoUsado || 0))
-        if (max > maxPeso) { maxPeso = max; prData = { maxPeso: max, series: ej.series, fecha: sesion.fecha } }
-      }
-      setPRCache(c => ({ ...c, [ejercicio.id]: prData }))
-      setRefPR(prData)
-    }
+    setRefAnterior(undefined)
+    const data = getUltimaVezEjercicioLocal(sesionesCache, ejercicio.id, sesionId)
+    setRefCache(c => ({ ...c, [ejercicio.id]: data }))
+    setRefAnterior(data)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ejIdx, ejercicios, sesionId, usuario, sesionesCache])
 
@@ -439,68 +420,26 @@ export default function SesionActiva() {
                   </motion.button>
                 )}
               </div>
-              <div style={s.refTabsWrap}>
-                <div style={s.refTabs}>
-                  {['ultima', 'pr'].map(tab => (
-                    <button
-                      key={tab}
-                      style={{ ...s.refTab, ...(tabRef === tab ? s.refTabActivo : {}) }}
-                      onClick={() => setTabRef(tab)}
-                    >
-                      {tab === 'ultima' ? 'Última' : 'PR personal'}
-                    </button>
-                  ))}
-                </div>
-                <AnimatePresence mode="wait">
-                  {tabRef === 'ultima' ? (
-                    refAnterior === undefined ? (
-                      <motion.div key="ref-loading" style={s.refCardCompact} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        <span style={s.refLabelCompact}>Última vez</span>
-                        <span style={{ ...s.refValorCompact, color: 'transparent', background: 'var(--bg-elev)', borderRadius: '4px' }}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                      </motion.div>
-                    ) : refAnterior ? (
-                      <motion.div key="ref-data" style={s.refCardCompact} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                        <span style={s.refLabelCompact}>Última vez {tiempoRelativo(refAnterior.fecha)}:</span>
-                        <span style={s.refValorCompact}>
-                          {refAnterior.series.map((serie, i) => (
-                            <span key={serie.numeroSerie}>
-                              {i > 0 && <span style={{ color: 'var(--border-strong)' }}> · </span>}
-                              {serie.pesoUsado > 0 ? `${serie.pesoUsado}kg × ` : ''}{serie.repsHechas}
-                            </span>
-                          ))}
+              <AnimatePresence mode="wait">
+                {refAnterior === undefined ? (
+                  <motion.div key="ref-loading" style={s.refCardCompact} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <span style={s.refLabelCompact}>Última vez</span>
+                    <span style={{ ...s.refValorCompact, color: 'transparent', background: 'var(--bg-elev)', borderRadius: '4px' }}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                  </motion.div>
+                ) : refAnterior ? (
+                  <motion.div key="ref-data" style={s.refCardCompact} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                    <span style={s.refLabelCompact}>Última vez {tiempoRelativo(refAnterior.fecha)}:</span>
+                    <span style={s.refValorCompact}>
+                      {refAnterior.series.map((serie, i) => (
+                        <span key={serie.numeroSerie}>
+                          {i > 0 && <span style={{ color: 'var(--border-strong)' }}> · </span>}
+                          {serie.pesoUsado > 0 ? `${serie.pesoUsado}kg × ` : ''}{serie.repsHechas}
                         </span>
-                      </motion.div>
-                    ) : (
-                      <motion.div key="ref-empty" style={s.refCardCompact} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        <span style={s.refLabelCompact}>Primera vez con este ejercicio 🎉</span>
-                      </motion.div>
-                    )
-                  ) : (
-                    refPR === undefined ? (
-                      <motion.div key="pr-loading" style={s.refCardCompact} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        <span style={s.refLabelCompact}>PR personal</span>
-                        <span style={{ ...s.refValorCompact, color: 'transparent', background: 'var(--bg-elev)', borderRadius: '4px' }}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                      </motion.div>
-                    ) : refPR ? (
-                      <motion.div key="pr-data" style={s.refCardCompact} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                        <span style={{ ...s.refLabelCompact, color: 'var(--blue)' }}>🏆 Tu marca: {refPR.maxPeso}kg</span>
-                        <span style={s.refValorCompact}>
-                          {refPR.series.map((serie, i) => (
-                            <span key={serie.numeroSerie}>
-                              {i > 0 && <span style={{ color: 'var(--border-strong)' }}> · </span>}
-                              {serie.pesoUsado > 0 ? `${serie.pesoUsado}kg × ` : ''}{serie.repsHechas}
-                            </span>
-                          ))}
-                        </span>
-                      </motion.div>
-                    ) : (
-                      <motion.div key="pr-empty" style={s.refCardCompact} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        <span style={s.refLabelCompact}>Sin marca todavía</span>
-                      </motion.div>
-                    )
-                  )}
-                </AnimatePresence>
-              </div>
+                      ))}
+                    </span>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </motion.div>
           </AnimatePresence>
         )
@@ -539,22 +478,18 @@ export default function SesionActiva() {
           </AnimatePresence>
         )
 
-        const serieRef = tabRef === 'pr'
-          ? refPR?.series?.find(s => s.numeroSerie === serieActual)
-          : refAnterior?.series?.find(s => s.numeroSerie === serieActual)
+        const serieRef = refAnterior?.series?.find(s => s.numeroSerie === serieActual)
         const refSerieBlock = serieRef ? (
           <motion.div
-            key={`ref-serie-${ejIdx}-${serieIdx}-${tabRef}`}
-            style={{ ...s.refSerieCard, ...(tabRef === 'pr' ? s.refSerieCardPR : {}) }}
+            key={`ref-serie-${ejIdx}-${serieIdx}`}
+            style={s.refSerieCard}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
           >
-            <span style={s.refSerieIcon}>{tabRef === 'pr' ? '🏆' : '🎯'}</span>
+            <span style={s.refSerieIcon}>🎯</span>
             <div style={{ flex: 1 }}>
-              <span style={{ ...s.refSerieLabel, ...(tabRef === 'pr' ? { color: 'var(--blue)' } : {}) }}>
-                {tabRef === 'pr' ? 'PR personal' : 'Última vez'} — serie {serieActual}
-              </span>
+              <span style={s.refSerieLabel}>Última vez — serie {serieActual}</span>
               <span style={s.refSerieValor}>
                 {serieRef.pesoUsado > 0 ? `${serieRef.pesoUsado} kg` : 'Sin peso'} × {serieRef.repsHechas} reps
               </span>
@@ -741,23 +676,6 @@ const s = {
     fontSize: '0.7rem', fontWeight: 600,
     padding: '3px 8px',
     cursor: 'pointer',
-  },
-  refTabsWrap: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  refTabs: { display: 'flex', gap: '4px' },
-  refTab: {
-    padding: '3px 10px',
-    borderRadius: '20px',
-    fontSize: '0.65rem', fontWeight: 700,
-    textTransform: 'uppercase', letterSpacing: '0.05em',
-    background: 'transparent',
-    border: '1px solid var(--border)',
-    color: 'var(--text-dim)',
-    cursor: 'pointer',
-  },
-  refTabActivo: {
-    background: 'var(--bg-card)',
-    color: 'var(--text)',
-    borderColor: 'var(--border-strong)',
   },
   refCardCompact: {
     display: 'flex', gap: '4px',
@@ -954,10 +872,6 @@ const s = {
     background: 'var(--orange-glow)',
     border: '1px solid rgba(240, 153, 123, 0.25)',
     borderRadius: 'var(--r-lg)',
-  },
-  refSerieCardPR: {
-    background: 'rgba(133, 183, 235, 0.1)',
-    border: '1px solid rgba(133, 183, 235, 0.25)',
   },
   refSerieIcon: { fontSize: '1.1rem', flexShrink: 0 },
   refSerieLabel: {

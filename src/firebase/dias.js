@@ -1,14 +1,17 @@
 import { db } from './config'
 import {
-  collection, addDoc, updateDoc, writeBatch,
-  doc, query, where, getDocs,
+  collection, addDoc, updateDoc, writeBatch, deleteDoc,
+  doc, query, where, getDocs, deleteField,
 } from 'firebase/firestore'
 
 export async function getDias(programaId) {
   const snap = await getDocs(
     query(collection(db, 'dias'), where('programaId', '==', programaId))
   )
-  return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.orden - b.orden)
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(d => !d.eliminadoEn)
+    .sort((a, b) => a.orden - b.orden)
 }
 
 export async function crearDia(programaId, nombre, orden) {
@@ -20,7 +23,15 @@ export async function editarDia(id, nombre) {
   await updateDoc(doc(db, 'dias', id), { nombre })
 }
 
-export async function eliminarDia(diaId) {
+export async function marcarDiaParaEliminar(diaId) {
+  await updateDoc(doc(db, 'dias', diaId), { eliminadoEn: Date.now() })
+}
+
+export async function desmarcarDiaParaEliminar(diaId) {
+  await updateDoc(doc(db, 'dias', diaId), { eliminadoEn: deleteField() })
+}
+
+export async function eliminarDiaDefinitivo(diaId) {
   const ejSnap = await getDocs(query(collection(db, 'ejerciciosDia'), where('diaId', '==', diaId)))
   const batch = writeBatch(db)
   ejSnap.docs.forEach(e => batch.delete(e.ref))

@@ -60,7 +60,7 @@ export default function Entrenar() {
       <p style={s.label}>1. Elegí un programa</p>
       <div style={s.lista}>
         {programas.length === 0 ? (
-          <EmptyState mensaje="No tenés programas creados todavía" icon="📋" sub="Andá a Programas para crear tu primera rutina" action={{ label: 'Ir a Programas', onClick: () => navigate('/programas') }} />
+          <EmptyState mensaje="Necesitás un programa primero" icon="📋" sub="Andá a Programas para crear tu primera rutina y empezar a entrenar" action={{ label: 'Crear programa', onClick: () => navigate('/programas') }} />
         ) : (
           programas.map((p, i) => {
             const activo = programaId === p.id
@@ -93,7 +93,7 @@ export default function Entrenar() {
     </div>
   )
 
-  const diasList = dias.length > 0 && (
+  const diasList = dias.length > 0 ? (
     <div style={s.seccion}>
       <p style={s.label}>2. Elegí el día</p>
       <div style={s.lista}>
@@ -128,7 +128,9 @@ export default function Entrenar() {
         })}
       </div>
     </div>
-  )
+  ) : programaId ? (
+    <EmptyState mensaje="Este programa no tiene días" icon="📅" sub="Agregá días al programa antes de entrenar" action={{ label: 'Agregar día', onClick: () => navigate(`/programas/${programaId}`) }} />
+  ) : null
 
   const empezarBtn = (
     <motion.button
@@ -237,13 +239,15 @@ const s = {
     padding: '14px 16px',
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
+    borderTopColor: 'var(--highlight)',
     borderRadius: 'var(--r-md)',
     color: 'var(--text)',
     fontSize: '0.98rem',
     textAlign: 'left',
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     gap: '12px',
-    boxShadow: 'var(--shadow-sm)',
+    boxShadow: 'var(--shadow-inner)',
+    transition: 'border-color var(--transition-base)',
   },
   opcionActiva: {
     background: 'var(--orange-grad)',
