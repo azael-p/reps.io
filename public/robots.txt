@@ -1,4 +1,2 @@
 User-agent: *
 Allow: /
-
-Sitemap: https://reps-io.web.app/sitemap.xml
