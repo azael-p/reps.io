@@ -14,7 +14,6 @@ import { useUser } from '../context/UserContext'
 import { logEvento } from '../firebase/analytics'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
-import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
 import { CornerUpLeft } from 'lucide-react'
 
 function tiempoRelativo(timestamp) {
@@ -58,12 +57,9 @@ export default function SesionActiva() {
   const [confirmData, setConfirmData] = useState(null)
   const [showRestTimer, setShowRestTimer] = useState(false)
   const [restPending, setRestPending] = useState(null)
-  const [serieExtra, setSerieExtra] = useState(false)
   const ultimoPesoRef = useRef(ultimoPeso)
 
   useEffect(() => { ultimoPesoRef.current = ultimoPeso }, [ultimoPeso])
-
-  useKeyboardShortcut('n', () => { if (!serieExtra && !esUltimaSerie) setSerieExtra(true) }, [serieExtra])
 
   // Preload all sessions once — replaces per-exercise Firestore queries
   useEffect(() => {
@@ -171,16 +167,13 @@ export default function SesionActiva() {
   }, [ejIdx, ejercicios, sesionId, usuario, sesionesCache])
 
   const ejercicio = ejercicios[ejIdx]
-  const baseSeries = ejercicio?.seriesEsperadas ?? 0
-  const totalSeries = serieExtra ? baseSeries + 1 : baseSeries
+  const totalSeries = ejercicio?.seriesEsperadas ?? 0
   const serieActual = serieIdx + 1
   const esUltimaSerie = serieActual >= totalSeries
   const esUltimoEjercicio = ejIdx >= ejercicios.length - 1
 
   // Progreso total = (ejercicios completos + porcentaje del actual)
-  const seriesTotales = serieExtra
-    ? ejercicios.reduce((acc, e) => acc + e.seriesEsperadas, 0) + 1
-    : ejercicios.reduce((acc, e) => acc + e.seriesEsperadas, 0)
+  const seriesTotales = ejercicios.reduce((acc, e) => acc + e.seriesEsperadas, 0)
   const seriesCompletadas = ejercicios.slice(0, ejIdx).reduce((acc, e) => acc + e.seriesEsperadas, 0) + serieIdx
   const progresoPct = seriesTotales > 0 ? (seriesCompletadas / seriesTotales) * 100 : 0
 
@@ -258,7 +251,6 @@ export default function SesionActiva() {
       setRestPending({ fn: avanzar })
       setShowRestTimer(true)
     }
-    setSerieExtra(false)
   }
 
   function retroceder() {
@@ -408,7 +400,7 @@ export default function SesionActiva() {
                   Serie <strong style={s.serieStrong}>{serieActual}</strong> de {totalSeries}
                 </p>
                 <div style={s.serieDots}>
-                  {Array.from({ length: baseSeries }).map((_, i) => (
+                  {Array.from({ length: totalSeries }).map((_, i) => (
                     <span
                       key={i}
                       style={{
@@ -418,26 +410,7 @@ export default function SesionActiva() {
                       }}
                     />
                   ))}
-                  {serieExtra && (
-                    <motion.span
-                      key="extra-dot"
-                      style={s.serieDotExtra}
-                      initial={{ scale: 0 }} animate={{ scale: 1 }}
-                      title="Serie extra"
-                    >+</motion.span>
-                  )}
                 </div>
-                {!serieExtra && !esUltimaSerie && (
-                  <motion.button
-                    style={s.serieExtraBtn}
-                    onClick={() => { setSerieExtra(true); setSerieIdx(baseSeries); setRepsHechas(String(ejercicio.repsEsperadas)); setPesoUsado(ultimoPeso[ejercicio.id] ?? '') }}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    whileTap={{ scale: 0.92 }}
-                  >
-                    + Serie extra
-                  </motion.button>
-                )}
               </div>
               <div style={s.refTabsWrap}>
                 <div style={s.refTabs}>
@@ -723,24 +696,6 @@ const s = {
     background: 'var(--orange)',
     transform: 'scale(1.3)',
     boxShadow: '0 0 10px rgba(240, 153, 123, 0.8)',
-  },
-  serieDotExtra: {
-    width: '20px', height: '8px',
-    borderRadius: '4px',
-    background: 'var(--yellow)',
-    color: 'var(--bg)',
-    fontSize: '0.6rem', fontWeight: 800,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 0 6px rgba(240, 200, 83, 0.5)',
-  },
-  serieExtraBtn: {
-    background: 'var(--bg-elev)',
-    border: '1px dashed var(--border-strong)',
-    borderRadius: '8px',
-    color: 'var(--text-mute)',
-    fontSize: '0.7rem', fontWeight: 600,
-    padding: '3px 8px',
-    cursor: 'pointer',
   },
   refTabsWrap: { display: 'flex', flexDirection: 'column', gap: '6px' },
   refTabs: { display: 'flex', gap: '4px' },
