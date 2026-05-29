@@ -1,5 +1,5 @@
 import { db } from './config'
-import { collection, addDoc, updateDoc, doc, getDoc, query, where, getDocs, writeBatch } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, doc, query, where, getDocs, writeBatch } from 'firebase/firestore'
 
 export async function enrichSesionesConPrograma(usuarioId, sesiones) {
   if (sesiones.length === 0) return sesiones
@@ -58,21 +58,6 @@ export async function backfillResumen(sesionId, resumen) {
 
 export async function actualizarNotaSesion(sesionId, nota) {
   await updateDoc(doc(db, 'sesiones', sesionId), { nota })
-}
-
-export async function getSesiones(usuarioId) {
-  const snap = await getDocs(query(collection(db, 'sesiones'), where('usuarioId', '==', usuarioId), where('completada', '==', true)))
-  const sesiones = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.fecha?.toMillis?.() - a.fecha?.toMillis?.())
-
-  const diasCache = {}
-  for (const s of sesiones) {
-    if (!diasCache[s.diaId]) {
-      const diaSnap = await getDoc(doc(db, 'dias', s.diaId))
-      diasCache[s.diaId] = diaSnap.data()?.nombre ?? 'Día eliminado'
-    }
-    s.diaNombre = diasCache[s.diaId]
-  }
-  return sesiones
 }
 
 // Single query — replaces all N+1 functions. Sorted desc by fecha.
@@ -173,47 +158,4 @@ export async function eliminarSesion(sesionId) {
   rSnap.docs.forEach(r => batch.delete(r.ref))
   batch.delete(doc(db, 'sesiones', sesionId))
   await batch.commit()
-}
-
-export async function getStreaks(usuarioId) {
-  const snap = await getDocs(query(collection(db, 'sesiones'), where('usuarioId', '==', usuarioId), where('completada', '==', true)))
-  const fechas = snap.docs
-    .map(d => d.data().fecha?.toDate ? d.data().fecha.toDate() : null)
-    .filter(Boolean)
-    .map(d => new Date(d.getFullYear(), d.getMonth(), d.getDate()))
-    .sort((a, b) => b - a)
-
-  if (fechas.length === 0) return { actual: 0, maxima: 0 }
-
-  const unicas = [...new Set(fechas.map(d => d.getTime()))]
-    .map(t => new Date(t))
-    .sort((a, b) => b - a)
-
-  let actual = 1
-  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
-
-  const diffHoy = Math.round((hoy - unicas[0]) / 86400000)
-  if (diffHoy > 1) {
-    actual = 0
-  } else {
-    for (let i = 1; i < unicas.length; i++) {
-      const diff = Math.round((unicas[i - 1] - unicas[i]) / 86400000)
-      if (diff === 1) actual++
-      else break
-    }
-  }
-
-  let maxima = 1
-  let temp = 1
-  for (let i = 1; i < unicas.length; i++) {
-    const diff = Math.round((unicas[i - 1] - unicas[i]) / 86400000)
-    if (diff === 1) {
-      temp++
-      if (temp > maxima) maxima = temp
-    } else {
-      temp = 1
-    }
-  }
-
-  return { actual, maxima }
 }

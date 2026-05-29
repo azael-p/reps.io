@@ -177,7 +177,12 @@ export default function Progreso() {
   }
 
   const frec = useMemo(() => frecuenciaSemanal(), [sesiones])
-  const maxFrec = Math.max(7, ...frec.map(f => f.dias))
+  const maxFrec = useMemo(() => Math.max(7, ...frec.map(f => f.dias)), [frec])
+
+  const grupos = useMemo(
+    () => [...new Set(ejercicios.map(e => e.grupoMuscular))].sort(),
+    [ejercicios]
+  )
 
   const uniqueProgramas = useMemo(() => {
     const names = new Set(sesiones.map(s => s.programaNombre).filter(n => n && n !== 'Sin programa'))
@@ -364,33 +369,28 @@ export default function Progreso() {
         <EmptyState mensaje="Todavía no hay datos de ejercicios." icon="📈" />
       ) : (
         <>
-          {(() => {
-            const grupos = [...new Set(ejercicios.map(e => e.grupoMuscular))].sort()
-            return (
-              <div style={s.selector}>
-                <p style={s.secLabel}>Grupo muscular</p>
-                <div style={s.chips}>
-                  {grupos.map(g => {
-                    const activo = grupoSel === g
-                    return (
-                      <motion.button
-                        key={g}
-                        style={{ ...s.chip, ...(activo ? s.chipActivo : {}) }}
-                        onClick={() => {
-                          setGrupoSel(g)
-                          const primero = ejercicios.find(e => e.grupoMuscular === g)
-                          if (primero) setEjercicioSel(primero.nombre)
-                        }}
-                        whileTap={{ scale: 0.94 }}
-                      >
-                        {g}
-                      </motion.button>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })()}
+          <div style={s.selector}>
+            <p style={s.secLabel}>Grupo muscular</p>
+            <div style={s.chips}>
+              {grupos.map(g => {
+                const activo = grupoSel === g
+                return (
+                  <motion.button
+                    key={g}
+                    style={{ ...s.chip, ...(activo ? s.chipActivo : {}) }}
+                    onClick={() => {
+                      setGrupoSel(g)
+                      const primero = ejercicios.find(e => e.grupoMuscular === g)
+                      if (primero) setEjercicioSel(primero.nombre)
+                    }}
+                    whileTap={{ scale: 0.94 }}
+                  >
+                    {g}
+                  </motion.button>
+                )
+              })}
+            </div>
+          </div>
 
           <div style={s.selector}>
             <p style={s.secLabel}>Ejercicio</p>
@@ -579,11 +579,14 @@ export default function Progreso() {
     </div>
   )
 
-  const pesoChartData = historialPeso.map((e, i) => ({
-    xKey: `${e.fecha.getDate()}/${e.fecha.getMonth() + 1}#${i}`,
-    fecha: `${e.fecha.getDate()}/${e.fecha.getMonth() + 1}`,
-    peso: e.peso,
-  }))
+  const pesoChartData = useMemo(
+    () => historialPeso.map((e, i) => ({
+      xKey: `${e.fecha.getDate()}/${e.fecha.getMonth() + 1}#${i}`,
+      fecha: `${e.fecha.getDate()}/${e.fecha.getMonth() + 1}`,
+      peso: e.peso,
+    })),
+    [historialPeso]
+  )
 
   const pesoContent = (
     <div style={s.graficoWrap}>

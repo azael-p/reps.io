@@ -8,6 +8,19 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.js',
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('/react-router') || id.includes('/react-dom/') || /\/react\//.test(id)) return 'react-vendor'
+          if (id.includes('/@firebase/') || id.includes('/firebase/')) return 'firebase-vendor'
+          if (id.includes('/motion/') || id.includes('/framer-motion/')) return 'motion-vendor'
+          if (id.includes('/recharts/') || id.includes('/d3-')) return 'recharts-vendor'
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({

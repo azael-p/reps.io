@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { doc, getDoc } from 'firebase/firestore'
@@ -15,6 +15,11 @@ import { logEvento } from '../firebase/analytics'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
 import { CornerUpLeft } from 'lucide-react'
+
+const INPUT_FOCUS = { borderColor: 'var(--orange)', boxShadow: '0 0 0 4px var(--orange-glow)' }
+const BTN_TAP_SMALL = { scale: 0.92 }
+const BTN_TAP = { scale: 0.96 }
+const BTN_TAP_FIRM = { scale: 0.94 }
 
 function tiempoRelativo(timestamp) {
   if (!timestamp) return ''
@@ -173,9 +178,15 @@ export default function SesionActiva() {
   const esUltimoEjercicio = ejIdx >= ejercicios.length - 1
 
   // Progreso total = (ejercicios completos + porcentaje del actual)
-  const seriesTotales = ejercicios.reduce((acc, e) => acc + e.seriesEsperadas, 0)
-  const seriesCompletadas = ejercicios.slice(0, ejIdx).reduce((acc, e) => acc + e.seriesEsperadas, 0) + serieIdx
-  const progresoPct = seriesTotales > 0 ? (seriesCompletadas / seriesTotales) * 100 : 0
+  const { seriesTotales, seriesCompletadas, progresoPct } = useMemo(() => {
+    const total = ejercicios.reduce((acc, e) => acc + e.seriesEsperadas, 0)
+    const completadas = ejercicios.slice(0, ejIdx).reduce((acc, e) => acc + e.seriesEsperadas, 0) + serieIdx
+    return {
+      seriesTotales: total,
+      seriesCompletadas: completadas,
+      progresoPct: total > 0 ? (completadas / total) * 100 : 0,
+    }
+  }, [ejercicios, ejIdx, serieIdx])
 
   function avanzar() {
     const ultimoPesoActual = ultimoPesoRef.current
@@ -370,11 +381,11 @@ export default function SesionActiva() {
               <span className="num" style={{ color: 'var(--orange)', fontWeight: 700 }}>{seriesCompletadas}</span>
               <span style={{ color: 'var(--text-mute)', fontWeight: 400 }}>/{seriesTotales} series</span>
             </span>
-            <motion.button style={s.cancelarBtn} onClick={cancelarSesion} whileTap={{ scale: 0.96 }}>
+            <motion.button style={s.cancelarBtn} onClick={cancelarSesion} whileTap={BTN_TAP}>
               Cancelar sesión
             </motion.button>
           </div>
-          <motion.button style={s.terminarBtn} onClick={terminarAntes} whileTap={{ scale: 0.94 }}>
+          <motion.button style={s.terminarBtn} onClick={terminarAntes} whileTap={BTN_TAP_FIRM}>
             Terminar
           </motion.button>
         </div>
@@ -483,9 +494,9 @@ export default function SesionActiva() {
             <div style={s.inputGroup}>
               <label style={s.inputLabel}>Peso (kg)</label>
               <div style={s.stepper}>
-                <motion.button style={s.stepperBtn} onClick={() => setPesoUsado(p => String(Math.round(Math.max(0, (Number(p) || 0) - 2.5) * 10) / 10))} whileTap={{ scale: 0.92 }}>−</motion.button>
-                <motion.input style={s.inputBig} type="number" inputMode="decimal" placeholder={ultimoPeso[ejercicio.id] ? String(ultimoPeso[ejercicio.id]) : ''} value={pesoUsado} onChange={e => setPesoUsado(e.target.value)} aria-label="Peso (kg)" whileFocus={{ borderColor: 'var(--orange)', boxShadow: '0 0 0 4px var(--orange-glow)' }} />
-                <motion.button style={s.stepperBtn} onClick={() => setPesoUsado(p => String(Math.round(((Number(p) || 0) + 2.5) * 10) / 10))} whileTap={{ scale: 0.92 }}>+</motion.button>
+                <motion.button style={s.stepperBtn} onClick={() => setPesoUsado(p => String(Math.round(Math.max(0, (Number(p) || 0) - 2.5) * 10) / 10))} whileTap={BTN_TAP_SMALL}>−</motion.button>
+                <motion.input style={s.inputBig} type="number" inputMode="decimal" placeholder={ultimoPeso[ejercicio.id] ? String(ultimoPeso[ejercicio.id]) : ''} value={pesoUsado} onChange={e => setPesoUsado(e.target.value)} aria-label="Peso (kg)" whileFocus={INPUT_FOCUS} />
+                <motion.button style={s.stepperBtn} onClick={() => setPesoUsado(p => String(Math.round(((Number(p) || 0) + 2.5) * 10) / 10))} whileTap={BTN_TAP_SMALL}>+</motion.button>
               </div>
               {ultimoPeso[ejercicio.id] && !pesoUsado && (
                 <p style={s.hintTocable} onClick={() => setPesoUsado(String(ultimoPeso[ejercicio.id]))}>↳ Última vez: {ultimoPeso[ejercicio.id]}kg</p>
@@ -494,9 +505,9 @@ export default function SesionActiva() {
             <div style={s.inputGroup}>
               <label style={s.inputLabel}>Reps</label>
               <div style={s.stepper}>
-                <motion.button style={s.stepperBtn} onClick={() => setRepsHechas(r => String(Math.max(1, (Number(r) || ejercicio.repsEsperadas) - 1)))} whileTap={{ scale: 0.92 }}>−</motion.button>
-                <motion.input style={s.inputBig} type="number" inputMode="numeric" placeholder={String(ejercicio.repsEsperadas)} value={repsHechas} onChange={e => setRepsHechas(e.target.value)} aria-label="Repeticiones" whileFocus={{ borderColor: 'var(--orange)', boxShadow: '0 0 0 4px var(--orange-glow)' }} />
-                <motion.button style={s.stepperBtn} onClick={() => setRepsHechas(r => String((Number(r) || ejercicio.repsEsperadas) + 1))} whileTap={{ scale: 0.92 }}>+</motion.button>
+                <motion.button style={s.stepperBtn} onClick={() => setRepsHechas(r => String(Math.max(1, (Number(r) || ejercicio.repsEsperadas) - 1)))} whileTap={BTN_TAP_SMALL}>−</motion.button>
+                <motion.input style={s.inputBig} type="number" inputMode="numeric" placeholder={String(ejercicio.repsEsperadas)} value={repsHechas} onChange={e => setRepsHechas(e.target.value)} aria-label="Repeticiones" whileFocus={INPUT_FOCUS} />
+                <motion.button style={s.stepperBtn} onClick={() => setRepsHechas(r => String((Number(r) || ejercicio.repsEsperadas) + 1))} whileTap={BTN_TAP_SMALL}>+</motion.button>
               </div>
             </div>
           </div>
