@@ -1,4 +1,4 @@
-import { db } from './config'
+import { db, auth } from './config'
 import { collection, addDoc, updateDoc, doc, query, where, getDocs, writeBatch } from 'firebase/firestore'
 
 export async function enrichSesionesConPrograma(usuarioId, sesiones) {
@@ -21,7 +21,11 @@ export async function enrichSesionesConPrograma(usuarioId, sesiones) {
   const chunks = []
   for (let i = 0; i < programaIds.length; i += 30) chunks.push(programaIds.slice(i, i + 30))
   await Promise.all(chunks.map(async chunk => {
-    const diasSnap = await getDocs(query(collection(db, 'dias'), where('programaId', 'in', chunk)))
+    const diasSnap = await getDocs(query(
+      collection(db, 'dias'),
+      where('usuarioId', '==', usuarioId),
+      where('programaId', 'in', chunk),
+    ))
     diasSnap.docs.forEach(d => {
       const data = d.data()
       diaToPrograma[d.id] = { diaNombre: data.nombre, programaNombre: programasMap[data.programaId] ?? '–' }
@@ -153,7 +157,11 @@ export async function getFechasSesiones(usuarioId) {
 }
 
 export async function eliminarSesion(sesionId) {
-  const rSnap = await getDocs(query(collection(db, 'registros'), where('sesionId', '==', sesionId)))
+  const rSnap = await getDocs(query(
+    collection(db, 'registros'),
+    where('usuarioId', '==', auth.currentUser.uid),
+    where('sesionId', '==', sesionId),
+  ))
   const batch = writeBatch(db)
   rSnap.docs.forEach(r => batch.delete(r.ref))
   batch.delete(doc(db, 'sesiones', sesionId))

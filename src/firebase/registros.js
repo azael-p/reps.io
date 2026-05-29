@@ -31,6 +31,10 @@ export async function editarRegistro(id, campos) {
 }
 
 export async function getRegistrosSesion(sesionId) {
-  const snap = await getDocs(query(collection(db, 'registros'), where('sesionId', '==', sesionId)))
+  const snap = await getDocs(query(
+    collection(db, 'registros'),
+    where('usuarioId', '==', auth.currentUser.uid),
+    where('sesionId', '==', sesionId),
+  ))
   return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.numeroSerie - b.numeroSerie)
 }

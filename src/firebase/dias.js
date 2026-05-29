@@ -6,7 +6,11 @@ import {
 
 export async function getDias(programaId) {
   const snap = await getDocs(
-    query(collection(db, 'dias'), where('programaId', '==', programaId))
+    query(
+      collection(db, 'dias'),
+      where('usuarioId', '==', auth.currentUser.uid),
+      where('programaId', '==', programaId),
+    )
   )
   return snap.docs
     .map(d => ({ id: d.id, ...d.data() }))
@@ -35,7 +39,11 @@ export async function desmarcarDiaParaEliminar(diaId) {
 }
 
 export async function eliminarDiaDefinitivo(diaId) {
-  const ejSnap = await getDocs(query(collection(db, 'ejerciciosDia'), where('diaId', '==', diaId)))
+  const ejSnap = await getDocs(query(
+    collection(db, 'ejerciciosDia'),
+    where('usuarioId', '==', auth.currentUser.uid),
+    where('diaId', '==', diaId),
+  ))
   const batch = writeBatch(db)
   ejSnap.docs.forEach(e => batch.delete(e.ref))
   batch.delete(doc(db, 'dias', diaId))

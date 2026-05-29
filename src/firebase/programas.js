@@ -1,4 +1,4 @@
-import { db } from './config'
+import { db, auth } from './config'
 import {
   collection, addDoc, updateDoc, writeBatch, deleteDoc,
   doc, query, where, getDocs, deleteField,
@@ -30,11 +30,20 @@ export async function desmarcarParaEliminar(programaId) {
 }
 
 export async function eliminarProgramaDefinitivo(programaId) {
-  const diasSnap = await getDocs(query(collection(db, 'dias'), where('programaId', '==', programaId)))
+  const uid = auth.currentUser.uid
+  const diasSnap = await getDocs(query(
+    collection(db, 'dias'),
+    where('usuarioId', '==', uid),
+    where('programaId', '==', programaId),
+  ))
   const diasIds = diasSnap.docs.map(d => d.id)
   const ejSnaps = await Promise.all(
     diasIds.map(diaId =>
-      getDocs(query(collection(db, 'ejerciciosDia'), where('diaId', '==', diaId)))
+      getDocs(query(
+        collection(db, 'ejerciciosDia'),
+        where('usuarioId', '==', uid),
+        where('diaId', '==', diaId),
+      ))
     )
   )
   const batch = writeBatch(db)

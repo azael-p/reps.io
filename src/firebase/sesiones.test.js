@@ -1,4 +1,4 @@
-vi.mock('./config', () => ({ db: {} }))
+vi.mock('./config', () => ({ db: {}, auth: { currentUser: { uid: 'test-uid' } } }))
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
   addDoc: vi.fn(),

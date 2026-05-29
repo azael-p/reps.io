@@ -6,7 +6,11 @@ import {
 
 export async function getEjerciciosDia(diaId) {
   const snap = await getDocs(
-    query(collection(db, 'ejerciciosDia'), where('diaId', '==', diaId))
+    query(
+      collection(db, 'ejerciciosDia'),
+      where('usuarioId', '==', auth.currentUser.uid),
+      where('diaId', '==', diaId),
+    )
   )
   return snap.docs
     .map(d => ({ id: d.id, ...d.data() }))
