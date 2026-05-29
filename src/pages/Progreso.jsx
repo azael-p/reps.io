@@ -150,6 +150,10 @@ export default function Progreso() {
 
   function frecuenciaSemanal() {
     const semanas = {}
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+    const lunesHoy = new Date(hoy)
+    lunesHoy.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7))
+
     for (const s of sesiones) {
       if (!s.fecha) continue
       const d = s.fecha.toDate ? s.fecha.toDate() : new Date(s.fecha)
@@ -162,10 +166,13 @@ export default function Progreso() {
     }
     return Object.values(semanas)
       .sort((a, b) => a.fecha - b.fecha)
-      .map(({ fecha, dias }) => ({
-        semana: fecha.toLocaleDateString('es-UY', { day: 'numeric', month: 'short' }).replace('.', ''),
-        dias,
-      }))
+      .map(({ fecha, dias }) => {
+        const esActual = fecha.getTime() === lunesHoy.getTime()
+        const domingo = new Date(fecha); domingo.setDate(fecha.getDate() + 6)
+        const fmtDia = d => d.toLocaleDateString('es-UY', { day: 'numeric', month: 'short' }).replace('.', '')
+        const semana = esActual ? 'Esta sem.' : `${fmtDia(fecha)}–${fmtDia(domingo)}`
+        return { semana, dias }
+      })
       .slice(-8)
   }
 
