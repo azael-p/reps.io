@@ -19,7 +19,7 @@ vi.mock('firebase/firestore', () => ({
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { getDocs, writeBatch } from 'firebase/firestore'
-import { eliminarDia } from './dias'
+import { eliminarDiaDefinitivo as eliminarDia } from './dias'
 
 beforeEach(() => {
   vi.clearAllMocks()

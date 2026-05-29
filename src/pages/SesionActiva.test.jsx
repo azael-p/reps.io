@@ -30,6 +30,14 @@ vi.mock('../components/ui', () => ({
   Badge: ({ children }) => <span>{children}</span>,
 }))
 vi.mock('../components/RestTimer', () => ({ default: () => null }))
+vi.mock('../components/Toast', () => ({
+  useToast: () => ({ show: vi.fn(), dismiss: vi.fn() }),
+  ToastProvider: ({ children }) => children,
+}))
+vi.mock('../hooks/useKeyboardShortcut', () => ({
+  useKeyboardShortcut: vi.fn(),
+  useEnterShortcut: vi.fn(),
+}))
 
 import { getDoc } from 'firebase/firestore'
 import { getEjerciciosDia } from '../firebase/ejerciciosDia'

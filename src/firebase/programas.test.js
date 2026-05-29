@@ -19,7 +19,7 @@ vi.mock('firebase/firestore', () => ({
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { addDoc, getDocs, writeBatch } from 'firebase/firestore'
-import { crearPrograma, eliminarPrograma, reordenarProgramas } from './programas'
+import { crearPrograma, eliminarProgramaDefinitivo as eliminarPrograma, reordenarProgramas } from './programas'
 
 beforeEach(() => {
   vi.clearAllMocks()
