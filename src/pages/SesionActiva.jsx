@@ -63,7 +63,7 @@ export default function SesionActiva() {
 
   useEffect(() => { ultimoPesoRef.current = ultimoPeso }, [ultimoPeso])
 
-  useKeyboardShortcut('n', () => { if (!serieExtra && !esUltimaSerie) setSerieExtra(true) }, [serieExtra, esUltimaSerie, ejercicios, ejIdx])
+  useKeyboardShortcut('n', () => { if (!serieExtra && !esUltimaSerie) setSerieExtra(true) }, [serieExtra])
 
   // Preload all sessions once — replaces per-exercise Firestore queries
   useEffect(() => {
