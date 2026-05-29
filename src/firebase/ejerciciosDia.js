@@ -1,4 +1,4 @@
-import { db } from './config'
+import { db, auth } from './config'
 import {
   collection, addDoc, updateDoc, deleteDoc, writeBatch,
   doc, query, where, getDocs, deleteField,
@@ -17,6 +17,7 @@ export async function getEjerciciosDia(diaId) {
 export async function agregarEjercicioDia({ diaId, nombre, grupoMuscular, esCustom, seriesEsperadas, repsEsperadas, orden }) {
   const ref = await addDoc(collection(db, 'ejerciciosDia'), {
     diaId, nombre, grupoMuscular, esCustom, seriesEsperadas, repsEsperadas, orden,
+    usuarioId: auth.currentUser.uid,
   })
   return ref.id
 }

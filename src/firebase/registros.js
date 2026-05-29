@@ -1,4 +1,4 @@
-import { db } from './config'
+import { db, auth } from './config'
 import { collection, addDoc, updateDoc, doc, query, where, getDocs } from 'firebase/firestore'
 
 // Local lookup — no Firestore queries. sesiones must be sorted desc by fecha.
@@ -17,6 +17,7 @@ export async function agregarRegistro({ sesionId, ejercicioId, nombreEjercicio, 
   const ref = await addDoc(collection(db, 'registros'), {
     sesionId, ejercicioId, nombreEjercicio, grupoMuscular,
     numeroSerie, repsEsperadas, repsHechas, pesoUsado, nota,
+    usuarioId: auth.currentUser.uid,
   })
   return ref.id
 }

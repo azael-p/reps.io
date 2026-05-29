@@ -2,13 +2,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function esDuenoDeDia(diaId) {
-      let dia = get(/databases/$(database)/documents/dias/$(diaId)).data;
-      return get(/databases/$(database)/documents/programas/$(dia.programaId)).data.usuarioId == request.auth.uid;
+    function esElDueno() {
+      return request.auth != null && resource.data.usuarioId == request.auth.uid;
     }
 
-    function esDuenoDeSesion(sesionId) {
-      return get(/databases/$(database)/documents/sesiones/$(sesionId)).data.usuarioId == request.auth.uid;
+    function creandoComoDueno() {
+      return request.auth != null && request.resource.data.usuarioId == request.auth.uid;
+    }
+
+    function noCambiaDueno() {
+      return request.resource.data.usuarioId == resource.data.usuarioId;
     }
 
     match /usuarios/{userId} {
@@ -20,32 +23,38 @@ service cloud.firestore {
     }
 
     match /programas/{id} {
-      allow read, write: if request.auth != null && resource.data.usuarioId == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.usuarioId == request.auth.uid;
-    }
-
-    match /sesiones/{id} {
-      allow read, write: if request.auth != null && resource.data.usuarioId == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.usuarioId == request.auth.uid;
+      allow read, delete: if esElDueno();
+      allow update: if esElDueno() && noCambiaDueno();
+      allow create: if creandoComoDueno()
+        && request.resource.data.keys().hasOnly(['usuarioId', 'nombre']);
     }
 
     match /dias/{id} {
-      allow read: if request.auth != null
-        && get(/databases/$(database)/documents/programas/$(resource.data.programaId)).data.usuarioId == request.auth.uid;
-      allow create: if request.auth != null
-        && get(/databases/$(database)/documents/programas/$(request.resource.data.programaId)).data.usuarioId == request.auth.uid;
-      allow update, delete: if request.auth != null
-        && get(/databases/$(database)/documents/programas/$(resource.data.programaId)).data.usuarioId == request.auth.uid;
+      allow read, delete: if esElDueno();
+      allow update: if esElDueno() && noCambiaDueno();
+      allow create: if creandoComoDueno()
+        && request.resource.data.keys().hasOnly(['usuarioId', 'programaId', 'nombre', 'orden']);
     }
 
     match /ejerciciosDia/{id} {
-      allow read, update, delete: if request.auth != null && esDuenoDeDia(resource.data.diaId);
-      allow create: if request.auth != null && esDuenoDeDia(request.resource.data.diaId);
+      allow read, delete: if esElDueno();
+      allow update: if esElDueno() && noCambiaDueno();
+      allow create: if creandoComoDueno()
+        && request.resource.data.keys().hasOnly(['usuarioId', 'diaId', 'nombre', 'grupoMuscular', 'esCustom', 'seriesEsperadas', 'repsEsperadas', 'orden']);
+    }
+
+    match /sesiones/{id} {
+      allow read, delete: if esElDueno();
+      allow update: if esElDueno() && noCambiaDueno();
+      allow create: if creandoComoDueno()
+        && request.resource.data.keys().hasOnly(['usuarioId', 'diaId', 'fecha', 'nota', 'completada']);
     }
 
     match /registros/{id} {
-      allow read, update, delete: if request.auth != null && esDuenoDeSesion(resource.data.sesionId);
-      allow create: if request.auth != null && esDuenoDeSesion(request.resource.data.sesionId);
+      allow read, delete: if esElDueno();
+      allow update: if esElDueno() && noCambiaDueno();
+      allow create: if creandoComoDueno()
+        && request.resource.data.keys().hasOnly(['usuarioId', 'sesionId', 'ejercicioId', 'nombreEjercicio', 'grupoMuscular', 'numeroSerie', 'repsEsperadas', 'repsHechas', 'pesoUsado', 'nota']);
     }
 
     match /ejerciciosCatalogo/{id} {

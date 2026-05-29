@@ -1,4 +1,4 @@
-import { db } from './config'
+import { db, auth } from './config'
 import {
   collection, addDoc, updateDoc, writeBatch, deleteDoc,
   doc, query, where, getDocs, deleteField,
@@ -15,7 +15,10 @@ export async function getDias(programaId) {
 }
 
 export async function crearDia(programaId, nombre, orden) {
-  const ref = await addDoc(collection(db, 'dias'), { programaId, nombre, orden })
+  const ref = await addDoc(collection(db, 'dias'), {
+    programaId, nombre, orden,
+    usuarioId: auth.currentUser.uid,
+  })
   return ref.id
 }
 
