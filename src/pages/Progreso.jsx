@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { useUser } from '../context/UserContext'
-import { getSesionesConResumen, getEjerciciosUsadosConGrupoLocal, getVolumenPorSesionLocal, getRegistrosPorEjercicioLocal, getStreaksLocal, eliminarSesion } from '../firebase/sesiones'
+import { getSesionesConResumen, enrichSesionesConPrograma, getEjerciciosUsadosConGrupoLocal, getVolumenPorSesionLocal, getRegistrosPorEjercicioLocal, getStreaksLocal, eliminarSesion } from '../firebase/sesiones'
 import { getHistorialPeso, agregarPeso } from '../firebase/peso'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { PageWrapper, EmptyState, ConfirmDialog, Modal } from '../components/ui'
@@ -53,8 +53,14 @@ export default function Progreso() {
     try {
       const sesResumen = await getSesionesConResumen(usuario.id)
       setSesionesConResumen(sesResumen)
-      // Derive diaNombre from resumen for historial display
-      setSesiones(sesResumen.map(s => ({ ...s, diaNombre: s.resumen?.diaNombre ?? '–' })))
+      let enriched
+      try {
+        enriched = await enrichSesionesConPrograma(usuario.id, sesResumen)
+      } catch (e) {
+        console.error('enrichSesionesConPrograma failed:', e)
+        enriched = sesResumen.map(s => ({ ...s, diaNombre: s.resumen?.diaNombre ?? '–', programaNombre: '–' }))
+      }
+      setSesiones(enriched)
       const ejs = getEjerciciosUsadosConGrupoLocal(sesResumen)
       setEjercicios(ejs)
       if (ejs.length > 0) {
@@ -167,7 +173,7 @@ export default function Progreso() {
   const maxFrec = Math.max(7, ...frec.map(f => f.dias))
 
   const uniqueProgramas = useMemo(() => {
-    const names = new Set(sesiones.map(s => s.diaNombre).filter(Boolean))
+    const names = new Set(sesiones.map(s => s.programaNombre).filter(n => n && n !== 'Sin programa'))
     return ['todos', ...Array.from(names)]
   }, [sesiones])
 
@@ -183,7 +189,7 @@ export default function Progreso() {
 
   const sesionesFiltradas = useMemo(() => {
     return sesiones.filter(s => {
-      if (filtroPrograma !== 'todos' && s.diaNombre !== filtroPrograma) return false
+      if (filtroPrograma !== 'todos' && s.programaNombre !== filtroPrograma) return false
       if (filtroMes !== 'todos') {
         const d = s.fecha?.toDate ? s.fecha.toDate() : new Date(s.fecha)
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`

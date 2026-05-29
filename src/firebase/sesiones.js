@@ -1,6 +1,40 @@
 import { db } from './config'
 import { collection, addDoc, updateDoc, doc, getDoc, query, where, getDocs, writeBatch } from 'firebase/firestore'
 
+export async function enrichSesionesConPrograma(usuarioId, sesiones) {
+  if (sesiones.length === 0) return sesiones
+
+  // 1. Load user's programs (user owns them — no permission issues)
+  const programasSnap = await getDocs(
+    query(collection(db, 'programas'), where('usuarioId', '==', usuarioId))
+  )
+  const programasMap = {}
+  const programaIds = []
+  programasSnap.docs.forEach(d => { programasMap[d.id] = d.data().nombre; programaIds.push(d.id) })
+
+  if (programaIds.length === 0) {
+    return sesiones.map(s => ({ ...s, diaNombre: s.resumen?.diaNombre ?? '–', programaNombre: '–' }))
+  }
+
+  // 2. Load dias by programaId in chunks of 30 (Firestore 'in' limit)
+  const diaToPrograma = {}
+  const chunks = []
+  for (let i = 0; i < programaIds.length; i += 30) chunks.push(programaIds.slice(i, i + 30))
+  await Promise.all(chunks.map(async chunk => {
+    const diasSnap = await getDocs(query(collection(db, 'dias'), where('programaId', 'in', chunk)))
+    diasSnap.docs.forEach(d => {
+      const data = d.data()
+      diaToPrograma[d.id] = { diaNombre: data.nombre, programaNombre: programasMap[data.programaId] ?? '–' }
+    })
+  }))
+
+  return sesiones.map(s => ({
+    ...s,
+    diaNombre: diaToPrograma[s.diaId]?.diaNombre ?? s.resumen?.diaNombre ?? '–',
+    programaNombre: diaToPrograma[s.diaId]?.programaNombre ?? '–',
+  }))
+}
+
 export async function crearSesion(usuarioId, diaId) {
   const ref = await addDoc(collection(db, 'sesiones'), {
     usuarioId,
