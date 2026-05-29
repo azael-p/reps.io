@@ -103,3 +103,68 @@ describe('SeleccionarEjercicio', () => {
     expect(screen.getAllByText('Piernas').length).toBeGreaterThanOrEqual(1)
   })
 })
+
+// ---------------------------------------------------------------------------
+
+describe('SeleccionarEjercicio — flujo de confirmación', () => {
+  it('al tocar un ejercicio muestra la pantalla de configuración', async () => {
+    const user = userEvent.setup()
+    render(<SeleccionarEjercicio {...defaultProps} />)
+    await waitFor(() => screen.getByText('Press Banca'))
+    await user.click(screen.getByRole('button', { name: /press banca/i }))
+    expect(screen.getByText('Configurar')).toBeInTheDocument()
+    // Inputs de tipo number (spinbutton): series y reps
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(2)
+  })
+
+  it('llama a onSeleccionar con los datos correctos al confirmar', async () => {
+    const onSeleccionar = vi.fn()
+    const user = userEvent.setup()
+    render(<SeleccionarEjercicio onSeleccionar={onSeleccionar} onCerrar={vi.fn()} />)
+    await waitFor(() => screen.getByText('Sentadilla'))
+    await user.click(screen.getByRole('button', { name: /sentadilla/i }))
+
+    // Primer spinbutton = series
+    const [seriesInput] = screen.getAllByRole('spinbutton')
+    await user.clear(seriesInput)
+    await user.type(seriesInput, '4')
+
+    await user.click(screen.getByRole('button', { name: /agregar ejercicio/i }))
+
+    expect(onSeleccionar).toHaveBeenCalledOnce()
+    expect(onSeleccionar).toHaveBeenCalledWith(expect.objectContaining({
+      nombre: 'Sentadilla',
+      grupoMuscular: 'Piernas',
+      esCustom: false,
+      seriesEsperadas: 4,
+    }))
+  })
+
+  it('modo personalizado: llama a onSeleccionar con esCustom true', async () => {
+    const onSeleccionar = vi.fn()
+    const user = userEvent.setup()
+    render(<SeleccionarEjercicio onSeleccionar={onSeleccionar} onCerrar={vi.fn()} />)
+    await waitFor(() => screen.getByText('Ejercicio personalizado'))
+    await user.click(screen.getByText('Ejercicio personalizado'))
+
+    const nombreInput = screen.getByPlaceholderText(/curl araña/i)
+    await user.type(nombreInput, 'Face Pull')
+
+    await user.click(screen.getByRole('button', { name: /agregar ejercicio/i }))
+
+    expect(onSeleccionar).toHaveBeenCalledWith(expect.objectContaining({
+      nombre: 'Face Pull',
+      esCustom: true,
+    }))
+  })
+
+  it('modo personalizado: no llama a onSeleccionar si el nombre está vacío', async () => {
+    const onSeleccionar = vi.fn()
+    const user = userEvent.setup()
+    render(<SeleccionarEjercicio onSeleccionar={onSeleccionar} onCerrar={vi.fn()} />)
+    await waitFor(() => screen.getByText('Ejercicio personalizado'))
+    await user.click(screen.getByText('Ejercicio personalizado'))
+    await user.click(screen.getByRole('button', { name: /agregar ejercicio/i }))
+    expect(onSeleccionar).not.toHaveBeenCalled()
+  })
+})

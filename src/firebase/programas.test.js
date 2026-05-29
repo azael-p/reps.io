@@ -9,7 +9,8 @@ const mockBatch = {
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
   addDoc: vi.fn(),
-  updateDoc: vi.fn(),
+  updateDoc: vi.fn().mockResolvedValue(undefined),
+  deleteField: vi.fn(() => '__DELETE__'),
   doc: vi.fn((_, col, id) => ({ _col: col, _id: id })),
   query: vi.fn((...args) => args),
   where: vi.fn(),
@@ -18,8 +19,8 @@ vi.mock('firebase/firestore', () => ({
 }))
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { addDoc, getDocs, writeBatch } from 'firebase/firestore'
-import { crearPrograma, eliminarProgramaDefinitivo as eliminarPrograma, reordenarProgramas } from './programas'
+import { addDoc, getDocs, updateDoc, writeBatch } from 'firebase/firestore'
+import { getProgramas, crearPrograma, marcarParaEliminar, desmarcarParaEliminar, eliminarProgramaDefinitivo as eliminarPrograma, reordenarProgramas } from './programas'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -104,5 +105,62 @@ describe('reordenarProgramas', () => {
     await reordenarProgramas([])
     expect(mockBatch.update).not.toHaveBeenCalled()
     expect(mockBatch.commit).toHaveBeenCalledOnce()
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('getProgramas — soft-delete filter', () => {
+  const mkDoc = (id, data) => ({ id, data: () => data })
+
+  it('excluye programas con eliminadoEn', async () => {
+    getDocs.mockResolvedValueOnce({
+      docs: [
+        mkDoc('p1', { nombre: 'PPL', orden: 1 }),
+        mkDoc('p2', { nombre: 'Borrado', orden: 2, eliminadoEn: Date.now() }),
+      ],
+    })
+    const result = await getProgramas('user1')
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('p1')
+  })
+
+  it('retorna todos cuando ninguno está eliminado', async () => {
+    getDocs.mockResolvedValueOnce({
+      docs: [
+        mkDoc('p1', { nombre: 'A', orden: 1 }),
+        mkDoc('p2', { nombre: 'B', orden: 2 }),
+      ],
+    })
+    expect(await getProgramas('user1')).toHaveLength(2)
+  })
+
+  it('ordena por campo orden ascendente', async () => {
+    getDocs.mockResolvedValueOnce({
+      docs: [
+        mkDoc('p2', { nombre: 'B', orden: 2 }),
+        mkDoc('p1', { nombre: 'A', orden: 1 }),
+      ],
+    })
+    const result = await getProgramas('user1')
+    expect(result[0].id).toBe('p1')
+    expect(result[1].id).toBe('p2')
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('marcarParaEliminar / desmarcarParaEliminar', () => {
+  it('marcar setea eliminadoEn con un timestamp', async () => {
+    const before = Date.now()
+    await marcarParaEliminar('prog1')
+    const [, update] = updateDoc.mock.calls[0]
+    expect(update.eliminadoEn).toBeGreaterThanOrEqual(before)
+  })
+
+  it('desmarcar envía deleteField', async () => {
+    await desmarcarParaEliminar('prog1')
+    const [, update] = updateDoc.mock.calls[0]
+    expect(update.eliminadoEn).toBe('__DELETE__')
   })
 })
