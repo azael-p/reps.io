@@ -217,7 +217,7 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
           <AnimatePresence>
             {sesionPendiente && (
               <motion.button
