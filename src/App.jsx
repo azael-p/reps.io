@@ -17,6 +17,7 @@ const Entrenar      = lazy(() => import('./pages/Entrenar'))
 const SesionActiva  = lazy(() => import('./pages/SesionActiva'))
 const ResumenSesion = lazy(() => import('./pages/ResumenSesion'))
 const Progreso      = lazy(() => import('./pages/Progreso'))
+const Timer         = lazy(() => import('./pages/Timer'))
 
 function PrivateRoute({ children }) {
   const { usuario, loading } = useUser()
@@ -57,6 +58,7 @@ function AppRoutes() {
             <Route path="/sesion/:sesionId" element={<PrivateRoute><Suspense fallback={null}><SesionActiva /></Suspense></PrivateRoute>} />
             <Route path="/sesion/:sesionId/resumen" element={<PrivateRoute><Suspense fallback={null}><ResumenSesion /></Suspense></PrivateRoute>} />
             <Route path="/progreso" element={<PrivateRoute><Suspense fallback={null}><Progreso /></Suspense></PrivateRoute>} />
+            <Route path="/timer" element={<PrivateRoute><Suspense fallback={null}><Timer /></Suspense></PrivateRoute>} />
           </Routes>
         </motion.div>
       </AnimatePresence>

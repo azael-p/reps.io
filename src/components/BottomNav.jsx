@@ -1,15 +1,16 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'motion/react'
-import { Home, Zap, Layers, TrendingUp } from 'lucide-react'
+import { Home, Zap, Layers, TrendingUp, Timer } from 'lucide-react'
 
 const TABS = [
   { label: 'Inicio',    Icon: Home,        ruta: '/home' },
   { label: 'Entrenar',  Icon: Zap,         ruta: '/entrenar' },
   { label: 'Programas', Icon: Layers,      ruta: '/programas' },
   { label: 'Progreso',  Icon: TrendingUp,  ruta: '/progreso' },
+  { label: 'Timer',     Icon: Timer,       ruta: '/timer' },
 ]
 
-const RUTAS_NAV = ['/home', '/entrenar', '/programas', '/progreso']
+const RUTAS_NAV = ['/home', '/entrenar', '/programas', '/progreso', '/timer']
 
 export default function BottomNav() {
   const navigate = useNavigate()

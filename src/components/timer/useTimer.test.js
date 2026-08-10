@@ -1,0 +1,155 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+import { useTimer } from './useTimer'
+
+const CONFIG = { calentamiento: 10, trabajo: 5, descanso: 3, sets: 3, enfriamiento: 8 }
+const CONFIG_1_SET = { calentamiento: 5, trabajo: 5, descanso: 3, sets: 1, enfriamiento: 5 }
+
+beforeEach(() => vi.useFakeTimers())
+afterEach(() => vi.useRealTimers())
+
+describe('useTimer', () => {
+  it('estado inicial correcto antes de iniciar', () => {
+    const { result } = renderHook(() => useTimer())
+    expect(result.current.iniciado).toBe(false)
+    expect(result.current.fase).toBeNull()
+  })
+
+  it('fase inicial es calentamiento al llamar iniciar()', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG) })
+    expect(result.current.fase).toBe('calentamiento')
+    expect(result.current.iniciado).toBe(true)
+  })
+
+  it('setActual empieza en 1', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG) })
+    expect(result.current.setActual).toBe(1)
+  })
+
+  it('después del calentamiento pasa a trabajo', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG) })
+    act(() => { vi.advanceTimersByTime(CONFIG.calentamiento * 1000 + 500) })
+    expect(result.current.fase).toBe('trabajo')
+  })
+
+  it('después de trabajo (set intermedio) pasa a descanso', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG) })
+    act(() => { vi.advanceTimersByTime((CONFIG.calentamiento + CONFIG.trabajo) * 1000 + 500) })
+    expect(result.current.fase).toBe('descanso')
+    expect(result.current.setActual).toBe(1)
+  })
+
+  it('después del último trabajo pasa directo a enfriamiento', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG) })
+    // calentamiento + (trabajo + descanso) * (sets-1) + trabajo = último set
+    const tiempoHastaUltimoTrabajo = CONFIG.calentamiento + (CONFIG.trabajo + CONFIG.descanso) * (CONFIG.sets - 1)
+    act(() => { vi.advanceTimersByTime((tiempoHastaUltimoTrabajo + CONFIG.trabajo) * 1000 + 500) })
+    expect(result.current.fase).toBe('enfriamiento')
+  })
+
+  it('después del enfriamiento la fase es fin', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG) })
+    const total = CONFIG.calentamiento
+      + (CONFIG.trabajo + CONFIG.descanso) * (CONFIG.sets - 1)
+      + CONFIG.trabajo
+      + CONFIG.enfriamiento
+    act(() => { vi.advanceTimersByTime(total * 1000 + 500) })
+    expect(result.current.fase).toBe('fin')
+  })
+
+  it('setActual incrementa correctamente entre sets', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG) })
+    // After calentamiento + trabajo + descanso => set 2
+    act(() => { vi.advanceTimersByTime((CONFIG.calentamiento + CONFIG.trabajo + CONFIG.descanso) * 1000 + 500) })
+    expect(result.current.setActual).toBe(2)
+    expect(result.current.fase).toBe('trabajo')
+  })
+
+  it('pausar() detiene la cuenta', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG) })
+    act(() => { vi.advanceTimersByTime(2000) })
+    const segsBefore = result.current.segundosRestantes
+    act(() => { result.current.pausar() })
+    act(() => { vi.advanceTimersByTime(5000) })
+    expect(result.current.segundosRestantes).toBe(segsBefore)
+    expect(result.current.pausado).toBe(true)
+  })
+
+  it('reanudar() retoma la cuenta desde donde se pausó', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG) })
+    act(() => { result.current.pausar() })
+    const segsPausado = result.current.segundosRestantes
+    act(() => { result.current.reanudar() })
+    act(() => { vi.advanceTimersByTime(2000) })
+    expect(result.current.segundosRestantes).toBeLessThan(segsPausado)
+    expect(result.current.pausado).toBe(false)
+  })
+
+  it('saltarIntervalo() en fase intermedia avanza a la siguiente fase', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG) })
+    expect(result.current.fase).toBe('calentamiento')
+    act(() => { result.current.saltarIntervalo() })
+    expect(result.current.fase).toBe('trabajo')
+  })
+
+  it('saltarIntervalo() en trabajo del último set va a enfriamiento (no a descanso)', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG) })
+    // Advance to last set trabajo
+    const tiempoHastaUltimoTrabajo = CONFIG.calentamiento + (CONFIG.trabajo + CONFIG.descanso) * (CONFIG.sets - 1)
+    act(() => { vi.advanceTimersByTime(tiempoHastaUltimoTrabajo * 1000 + 100) })
+    expect(result.current.fase).toBe('trabajo')
+    expect(result.current.setActual).toBe(CONFIG.sets)
+    act(() => { result.current.saltarIntervalo() })
+    expect(result.current.fase).toBe('enfriamiento')
+  })
+
+  it('terminar() resetea el estado', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG) })
+    act(() => { result.current.terminar() })
+    expect(result.current.iniciado).toBe(false)
+    expect(result.current.fase).toBeNull()
+  })
+
+  it('con sets = 1, el flujo es calentamiento → trabajo → enfriamiento → fin (sin descanso)', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG_1_SET) })
+    expect(result.current.fase).toBe('calentamiento')
+    act(() => { result.current.saltarIntervalo() })
+    expect(result.current.fase).toBe('trabajo')
+    expect(result.current.setActual).toBe(1)
+    act(() => { result.current.saltarIntervalo() })
+    expect(result.current.fase).toBe('enfriamiento')
+    act(() => { result.current.saltarIntervalo() })
+    expect(result.current.fase).toBe('fin')
+  })
+
+  it('con sets = 3, descanso solo entre sets, no al final', () => {
+    const { result } = renderHook(() => useTimer())
+    act(() => { result.current.iniciar(CONFIG) })
+    act(() => { result.current.saltarIntervalo() }) // cal → trabajo(1)
+    act(() => { result.current.saltarIntervalo() }) // trabajo(1) → descanso(1)
+    expect(result.current.fase).toBe('descanso')
+    act(() => { result.current.saltarIntervalo() }) // descanso(1) → trabajo(2)
+    expect(result.current.fase).toBe('trabajo')
+    expect(result.current.setActual).toBe(2)
+    act(() => { result.current.saltarIntervalo() }) // trabajo(2) → descanso(2)
+    expect(result.current.fase).toBe('descanso')
+    act(() => { result.current.saltarIntervalo() }) // descanso(2) → trabajo(3)
+    expect(result.current.fase).toBe('trabajo')
+    expect(result.current.setActual).toBe(3)
+    act(() => { result.current.saltarIntervalo() }) // trabajo(3) → enfriamiento (NO descanso)
+    expect(result.current.fase).toBe('enfriamiento')
+  })
+})

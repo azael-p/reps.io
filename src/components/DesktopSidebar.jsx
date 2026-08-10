@@ -1,12 +1,13 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
-import { Home, Zap, Layers, TrendingUp, LogOut } from 'lucide-react'
+import { Home, Zap, Layers, TrendingUp, Timer, LogOut } from 'lucide-react'
 
 const TABS = [
   { label: 'Inicio',    Icon: Home,       ruta: '/home' },
   { label: 'Entrenar',  Icon: Zap,        ruta: '/entrenar' },
   { label: 'Programas', Icon: Layers,     ruta: '/programas' },
   { label: 'Progreso',  Icon: TrendingUp, ruta: '/progreso' },
+  { label: 'Timer',     Icon: Timer,      ruta: '/timer' },
 ]
 
 export default function DesktopSidebar() {
