@@ -127,6 +127,7 @@ export default function TimerActivo({ fase, segundosRestantes, setActual, config
               onPointerUp={cancelarLongPress}
               onPointerLeave={cancelarLongPress}
               onPointerCancel={cancelarLongPress}
+              onContextMenu={(e) => e.preventDefault()}
               whileTap={{ scale: 0.97 }}
             >
               {presionando ? 'Soltar...' : 'TERMINAR'}
@@ -226,6 +227,10 @@ const s = {
   },
   btnTerminar: {
     color: 'rgba(255,107,107,0.85)',
+    WebkitTouchCallout: 'none',
+    WebkitUserSelect: 'none',
+    userSelect: 'none',
+    touchAction: 'none',
   },
   terminarWrap: {
     flex: 1,
