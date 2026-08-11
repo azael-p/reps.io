@@ -22,7 +22,10 @@ PWA para seguimiento de entrenamientos de gimnasio. Permite crear programas de e
 ## Características
 
 - **Programas**: crear y organizar días de entrenamiento con ejercicios configurables (series, reps, notas)
+- **Catálogo de ejercicios**: picker con búsqueda fuzzy sobre el catálogo global, normalización de nombres y soporte para ejercicios personalizados
 - **Sesión activa**: registrar series en tiempo real con referencia al último peso/reps usado
+- **Historial cruzado**: última vez, PR y progreso de un ejercicio se calculan por `catalogoId`, cruzando días distintos que comparten el mismo ejercicio
+- **Timer**: cronómetro configurable con presets guardados por usuario (máx. 5) y wake lock para mantener la pantalla activa
 - **Resumen de sesión**: editar series completadas; los cambios se propagan al historial
 - **Progreso**: gráficos de progresión por ejercicio, volumen por sesión y peso corporal
 - **Calendario**: visualización de días entrenados por mes con contador de sesiones
@@ -63,12 +66,13 @@ programas/{id}
   usuarioId, nombre, descripcion, activo
 
 dias/{id}
-  programaId, nombre, orden
+  programaId, usuarioId, nombre, orden
 
 ejerciciosDia/{id}
-  diaId, ejercicioId, series, reps, nota, orden
+  diaId, usuarioId, nombre, grupoMuscular, esCustom, catalogoId
+  seriesEsperadas, repsEsperadas, orden
 
-ejercicios/{id}              ← catálogo global
+ejerciciosCatalogo/{id}      ← catálogo global (búsqueda fuzzy en el picker)
   nombre, grupoMuscular
 
 sesiones/{id}
@@ -76,15 +80,18 @@ sesiones/{id}
   creadaEn, completada
   resumen: {                 ← denormalizado al completar
     volumenTotal: number,
-    ejercicios: [{ ejercicioId, nombre, grupoMuscular, series: [...] }]
+    ejercicios: [{ ejercicioId, catalogoId, nombre, grupoMuscular, series: [...] }]
   }
 
 registros/{id}
-  sesionId, ejercicioId, numeroSerie
-  pesoUsado, repsHechas, nota
+  sesionId, ejercicioId, catalogoId, numeroSerie
+  usuarioId, pesoUsado, repsHechas, nota
 
 peso/{id}
   usuarioId, fecha, valor
+
+usuarios/{uid}/timerPresets/{id}
+  nombre, duracion, creadoEn
 ```
 
 ## Optimización de lecturas (Firestore Spark)
@@ -107,7 +114,7 @@ Las sesiones antiguas (sin `resumen`) se ignoran en los gráficos. El fallback a
 
 ## Testing
 
-**49 tests** — unitarios y de componentes.
+**149 tests** — unitarios y de componentes, en 16 archivos.
 
 ```bash
 npm run test        # modo watch (re-corre al guardar)
@@ -118,14 +125,22 @@ npm run test:run    # una sola pasada (para antes de hacer push)
 
 | Área | Tests |
 |---|---|
-| `getEjerciciosUsadosConGrupoLocal` | 4 |
-| `getVolumenPorSesionLocal` | 4 |
-| `getRegistrosPorEjercicioLocal` | 3 |
-| `getStreaksLocal` | 7 |
-| `getUltimaVezEjercicioLocal` | 6 |
+| `sesiones.js` (CRUD, `getSesionesConResumen`, `esMismoEjercicio`) | 25 |
+| `SeleccionarEjercicio` (componente) | 15 |
+| `useTimer` (hook) | 15 |
+| `TimerActivo` (componente) | 11 |
+| `programas.js` (CRUD) | 11 |
+| `registros.js` (CRUD, `getUltimaVezEjercicioLocal`) | 10 |
 | `Calendario` (componente) | 9 |
+| `ejerciciosDia.js` (CRUD) | 8 |
 | `BottomNav` (componente) | 8 |
-| `SeleccionarEjercicio` (componente) | 8 |
+| `dias.js` (CRUD) | 7 |
+| `TimerConfig` (componente) | 7 |
+| `Toast` / `ToastProvider` | 6 |
+| `SesionActiva` (página) | 6 |
+| `timerPresets.js` (CRUD, límite de 5) | 5 |
+| `TimerFin` (componente) | 4 |
+| `ResumenSesion` (página) | 2 |
 
 ### GitHub Actions
 
@@ -138,10 +153,12 @@ Los tests corren automáticamente en cada push y pull request a `main`. Ver resu
 ```
 src/
   firebase/
-    sesiones.js      — CRUD sesiones, getSesionesConResumen, backfillResumen
-    registros.js     — CRUD registros, getUltimaVezEjercicioLocal
+    sesiones.js      — CRUD sesiones, getSesionesConResumen, esMismoEjercicio, backfillResumen
+    registros.js     — CRUD registros, getUltimaVezEjercicioLocal (cruce por catalogoId)
     programas.js     — CRUD programas y días
-    catalogo.js      — catálogo global de ejercicios
+    ejerciciosDia.js — CRUD de ejercicios dentro de un día (catalogoId, esCustom)
+    catalogo.js      — catálogo global de ejercicios (ejerciciosCatalogo)
+    timerPresets.js  — CRUD de presets de timer por usuario (máx. 5)
     peso.js          — registro de peso corporal
   pages/
     Home.jsx         — dashboard con calendario y accesos rápidos
@@ -149,10 +166,17 @@ src/
     ResumenSesion.jsx — resumen y edición post-sesión
     Progreso.jsx     — gráficos de progresión, volumen y peso
     Programas.jsx    — gestión de programas y días
+    Timer.jsx        — pantalla de timer
   components/
     Calendario.jsx   — calendario mensual con días entrenados
+    SeleccionarEjercicio.jsx — picker de ejercicios con búsqueda fuzzy
     Onboarding.jsx   — flujo de primera vez
     PullToRefresh.jsx — pull-to-refresh para mobile
+    timer/
+      useTimer.js      — hook de cronómetro (cuenta regresiva, wake lock)
+      TimerConfig.jsx  — configuración de duración y presets
+      TimerActivo.jsx  — cronómetro corriendo
+      TimerFin.jsx     — pantalla de fin de timer
   hooks/
     useDesktop.js    — detección de viewport desktop
 ```

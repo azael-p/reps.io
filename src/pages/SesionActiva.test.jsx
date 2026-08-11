@@ -3,6 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
+vi.mock('motion/react', async (importOriginal) => {
+  const actual = await importOriginal()
+  return { ...actual, AnimatePresence: ({ children }) => children }
+})
+
 vi.mock('../firebase/config', () => ({ db: {} }))
 vi.mock('../firebase/analytics', () => ({ logEvento: vi.fn() }))
 vi.mock('../hooks/useDesktop', () => ({ useDesktop: () => false }))
