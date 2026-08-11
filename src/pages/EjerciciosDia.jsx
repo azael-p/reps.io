@@ -41,10 +41,10 @@ export default function EjerciciosDia() {
 
   useEffect(() => { setCargando(true); cargar() }, [cargar]) // eslint-disable-line
 
-  async function onSeleccionar({ nombre, grupoMuscular, esCustom, seriesEsperadas, repsEsperadas }) {
+  async function onSeleccionar({ nombre, grupoMuscular, esCustom, catalogoId, seriesEsperadas, repsEsperadas }) {
     setPicker(false)
     try {
-      await agregarEjercicioDia({ diaId, nombre, grupoMuscular, esCustom, seriesEsperadas, repsEsperadas, orden: ejercicios.length })
+      await agregarEjercicioDia({ diaId, nombre, grupoMuscular, esCustom, catalogoId, seriesEsperadas, repsEsperadas, orden: ejercicios.length })
       show({ message: 'Ejercicio agregado', variant: 'success' })
     } catch (e) { console.error(e) }
     cargar()

@@ -18,9 +18,11 @@ export async function getEjerciciosDia(diaId) {
     .sort((a, b) => a.orden - b.orden)
 }
 
-export async function agregarEjercicioDia({ diaId, nombre, grupoMuscular, esCustom, seriesEsperadas, repsEsperadas, orden }) {
+export async function agregarEjercicioDia({ diaId, nombre, grupoMuscular, esCustom, catalogoId = null, seriesEsperadas, repsEsperadas, orden }) {
   const ref = await addDoc(collection(db, 'ejerciciosDia'), {
     diaId, nombre, grupoMuscular, esCustom, seriesEsperadas, repsEsperadas, orden,
+    // Referencia al doc de ejerciciosCatalogo. null en ejercicios personalizados.
+    catalogoId: catalogoId ?? null,
     usuarioId: auth.currentUser.uid,
   })
   return ref.id

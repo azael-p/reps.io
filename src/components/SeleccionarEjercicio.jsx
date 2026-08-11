@@ -1,12 +1,36 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'motion/react'
+import Fuse from 'fuse.js'
 import { getCatalogo } from '../firebase/catalogo'
 import { Search, X, ChevronLeft, Plus } from 'lucide-react'
 import { Badge } from './ui'
 import { useDesktop } from '../hooks/useDesktop'
 
-const GRUPOS = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Bíceps', 'Tríceps', 'Core', 'Pantorrillas', 'Cardio']
+const GRUPOS = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Bíceps', 'Tríceps', 'Antebrazo', 'Cuello', 'Core', 'Pantorrillas', 'Cardio']
+
+const MAX_SUGERENCIAS = 8
+
+// Búsqueda insensible a acentos: "jalon" encuentra "Jalón", "biceps" encuentra "Bíceps".
+const normalizar = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+
+// Fuse trata la query entera como un solo patrón, así que "press banca" puntúa peor
+// contra "Press de banca plano" (por el "de" del medio) que contra "Press francés".
+// Con varias palabras buscamos cada una por separado y nos quedamos con los ejercicios
+// que matchean todas, ordenados por la suma de sus scores (menor = mejor).
+function buscarPorTokens(fuse, tokens) {
+  let acum = null
+  for (const token of tokens) {
+    const encontrados = new Map(fuse.search(token).map(r => [r.item.id, { item: r.item, score: r.score }]))
+    if (acum === null) { acum = encontrados; continue }
+    for (const [id, previo] of acum) {
+      const match = encontrados.get(id)
+      if (!match) acum.delete(id)
+      else acum.set(id, { item: previo.item, score: previo.score + match.score })
+    }
+  }
+  return [...acum.values()].sort((a, b) => a.score - b.score).map(r => r.item)
+}
 
 export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
   const isDesktop = useDesktop()
@@ -50,18 +74,44 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
     }
   }, [ejercicioElegido, customMode]) // eslint-disable-line
 
-  const filtrados = catalogo.filter(e => {
-    const matchBusqueda = e.nombre.toLowerCase().includes(busqueda.toLowerCase())
-    const matchGrupo = grupoActivo ? e.grupoMuscular === grupoActivo : true
-    return matchBusqueda && matchGrupo
-  })
+  const fuse = useMemo(() => new Fuse(
+    catalogo.map(e => ({ ...e, nombreNorm: normalizar(e.nombre), grupoNorm: normalizar(e.grupoMuscular) })),
+    {
+      keys: [{ name: 'nombreNorm', weight: 2 }, { name: 'grupoNorm', weight: 1 }],
+      threshold: 0.4,
+      minMatchCharLength: 2,
+      ignoreLocation: true,
+      includeScore: true,
+    },
+  ), [catalogo])
+
+  // Buscando → sugerencias fuzzy sobre todo el catálogo. Sin búsqueda → listado por grupo.
+  const filtrados = useMemo(() => {
+    const q = normalizar(busqueda.trim())
+    if (!q) return grupoActivo ? catalogo.filter(e => e.grupoMuscular === grupoActivo) : catalogo
+
+    // Fuse descarta los matches más cortos que minMatchCharLength, así que con menos
+    // de 2 letras caemos a un contains simple para que la lista no quede vacía.
+    const tokens = q.split(/\s+/).filter(t => t.length >= 2)
+    if (tokens.length === 0) {
+      return catalogo.filter(e => normalizar(e.nombre).includes(q)).slice(0, MAX_SUGERENCIAS)
+    }
+    if (tokens.length === 1) {
+      return fuse.search(tokens[0], { limit: MAX_SUGERENCIAS }).map(r => r.item)
+    }
+    const porTokens = buscarPorTokens(fuse, tokens)
+    // Si ninguna coincide con todas las palabras, mejor algo aproximado que nada.
+    const resultado = porTokens.length > 0 ? porTokens : fuse.search(q).map(r => r.item)
+    return resultado.slice(0, MAX_SUGERENCIAS)
+  }, [busqueda, grupoActivo, catalogo, fuse])
 
   function confirmar() {
     if (customMode) {
       if (!customNombre.trim()) return
-      onSeleccionar({ nombre: customNombre.trim(), grupoMuscular: customGrupo, esCustom: true, seriesEsperadas: Number(series), repsEsperadas: Number(reps) })
+      // Sin catalogoId: el ejercicio no existe en el catálogo.
+      onSeleccionar({ nombre: customNombre.trim(), grupoMuscular: customGrupo, esCustom: true, catalogoId: null, seriesEsperadas: Number(series), repsEsperadas: Number(reps) })
     } else {
-      onSeleccionar({ nombre: ejercicioElegido.nombre, grupoMuscular: ejercicioElegido.grupoMuscular, esCustom: false, seriesEsperadas: Number(series), repsEsperadas: Number(reps) })
+      onSeleccionar({ nombre: ejercicioElegido.nombre, grupoMuscular: ejercicioElegido.grupoMuscular, esCustom: false, catalogoId: ejercicioElegido.id, seriesEsperadas: Number(series), repsEsperadas: Number(reps) })
     }
   }
 
