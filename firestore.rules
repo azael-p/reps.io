@@ -44,7 +44,7 @@ service cloud.firestore {
       allow read, delete: if esElDueno();
       allow update: if esElDueno() && noCambiaDueno();
       allow create: if creandoComoDueno()
-        && request.resource.data.keys().hasOnly(['usuarioId', 'diaId', 'nombre', 'grupoMuscular', 'esCustom', 'seriesEsperadas', 'repsEsperadas', 'orden']);
+        && request.resource.data.keys().hasOnly(['usuarioId', 'diaId', 'nombre', 'grupoMuscular', 'esCustom', 'catalogoId', 'seriesEsperadas', 'repsEsperadas', 'orden']);
     }
 
     match /sesiones/{id} {

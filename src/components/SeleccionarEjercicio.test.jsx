@@ -40,13 +40,6 @@ describe('SeleccionarEjercicio', () => {
     })
   })
 
-  it('renders the custom exercise button', async () => {
-    render(<SeleccionarEjercicio {...defaultProps} />)
-    await waitFor(() =>
-      expect(screen.getByText('Ejercicio personalizado')).toBeInTheDocument()
-    )
-  })
-
   it('filters exercises by muscle group chip', async () => {
     const user = userEvent.setup()
     render(<SeleccionarEjercicio {...defaultProps} />)
@@ -141,32 +134,18 @@ describe('SeleccionarEjercicio — flujo de confirmación', () => {
     }))
   })
 
-  it('modo personalizado: llama a onSeleccionar con esCustom true', async () => {
+  it('llama a onSeleccionar con el catalogoId del ejercicio elegido', async () => {
     const onSeleccionar = vi.fn()
     const user = userEvent.setup()
     render(<SeleccionarEjercicio onSeleccionar={onSeleccionar} onCerrar={vi.fn()} />)
-    await waitFor(() => screen.getByText('Ejercicio personalizado'))
-    await user.click(screen.getByText('Ejercicio personalizado'))
-
-    const nombreInput = screen.getByPlaceholderText(/curl araña/i)
-    await user.type(nombreInput, 'Face Pull')
-
+    await waitFor(() => screen.getByText('Sentadilla'))
+    await user.click(screen.getByRole('button', { name: /sentadilla/i }))
     await user.click(screen.getByRole('button', { name: /agregar ejercicio/i }))
 
     expect(onSeleccionar).toHaveBeenCalledWith(expect.objectContaining({
-      nombre: 'Face Pull',
-      esCustom: true,
+      catalogoId: '2',
+      esCustom: false,
     }))
-  })
-
-  it('modo personalizado: no llama a onSeleccionar si el nombre está vacío', async () => {
-    const onSeleccionar = vi.fn()
-    const user = userEvent.setup()
-    render(<SeleccionarEjercicio onSeleccionar={onSeleccionar} onCerrar={vi.fn()} />)
-    await waitFor(() => screen.getByText('Ejercicio personalizado'))
-    await user.click(screen.getByText('Ejercicio personalizado'))
-    await user.click(screen.getByRole('button', { name: /agregar ejercicio/i }))
-    expect(onSeleccionar).not.toHaveBeenCalled()
   })
 })
 

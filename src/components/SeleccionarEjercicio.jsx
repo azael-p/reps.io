@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import Fuse from 'fuse.js'
 import { getCatalogo } from '../firebase/catalogo'
-import { Search, X, ChevronLeft, Plus } from 'lucide-react'
+import { Search, X, ChevronLeft } from 'lucide-react'
 import { Badge } from './ui'
 import { useDesktop } from '../hooks/useDesktop'
 
@@ -40,9 +40,6 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
   const [ejercicioElegido, setEjercicioElegido] = useState(null)
   const [series, setSeries] = useState('3')
   const [reps, setReps] = useState('10')
-  const [customMode, setCustomMode] = useState(false)
-  const [customNombre, setCustomNombre] = useState('')
-  const [customGrupo, setCustomGrupo] = useState('Pecho')
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
@@ -66,13 +63,13 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
   }, [])
 
   useEffect(() => {
-    if (ejercicioElegido || customMode) {
+    if (ejercicioElegido) {
       window.history.pushState({ pickerLevel: 1 }, '')
-      handlerRef.current = () => { setEjercicioElegido(null); setCustomMode(false) }
+      handlerRef.current = () => setEjercicioElegido(null)
     } else {
       handlerRef.current = () => onCerrarRef.current?.()
     }
-  }, [ejercicioElegido, customMode]) // eslint-disable-line
+  }, [ejercicioElegido]) // eslint-disable-line
 
   const fuse = useMemo(() => new Fuse(
     catalogo.map(e => ({ ...e, nombreNorm: normalizar(e.nombre), grupoNorm: normalizar(e.grupoMuscular) })),
@@ -106,16 +103,10 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
   }, [busqueda, grupoActivo, catalogo, fuse])
 
   function confirmar() {
-    if (customMode) {
-      if (!customNombre.trim()) return
-      // Sin catalogoId: el ejercicio no existe en el catálogo.
-      onSeleccionar({ nombre: customNombre.trim(), grupoMuscular: customGrupo, esCustom: true, catalogoId: null, seriesEsperadas: Number(series), repsEsperadas: Number(reps) })
-    } else {
-      onSeleccionar({ nombre: ejercicioElegido.nombre, grupoMuscular: ejercicioElegido.grupoMuscular, esCustom: false, catalogoId: ejercicioElegido.id, seriesEsperadas: Number(series), repsEsperadas: Number(reps) })
-    }
+    onSeleccionar({ nombre: ejercicioElegido.nombre, grupoMuscular: ejercicioElegido.grupoMuscular, esCustom: false, catalogoId: ejercicioElegido.id, seriesEsperadas: Number(series), repsEsperadas: Number(reps) })
   }
 
-  if (ejercicioElegido || customMode) {
+  if (ejercicioElegido) {
     return createPortal(
       <motion.div
         style={s.page}
@@ -133,41 +124,11 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
           </motion.button>
           <div style={s.headerInfo}>
             <p style={s.headerSub}>Configurar</p>
-            <h2 style={s.titulo}>{customMode ? 'Ejercicio personalizado' : ejercicioElegido.nombre}</h2>
+            <h2 style={s.titulo}>{ejercicioElegido.nombre}</h2>
           </div>
         </div>
 
         <div style={s.bodyConfig}>
-          {customMode && (
-            <>
-              <div style={s.field}>
-                <label style={s.label}>Nombre del ejercicio</label>
-                <input
-                  style={s.input}
-                  value={customNombre}
-                  onChange={e => setCustomNombre(e.target.value)}
-                  placeholder="Ej: Curl araña"
-                  autoFocus
-                />
-              </div>
-              <div style={s.field}>
-                <label style={s.label}>Grupo muscular</label>
-                <div style={s.chips}>
-                  {GRUPOS.map(g => (
-                    <motion.button
-                      key={g}
-                      style={{ ...s.chip, ...(customGrupo === g ? s.chipActivo : {}) }}
-                      onClick={() => setCustomGrupo(g)}
-                      whileTap={{ scale: 0.94 }}
-                    >
-                      {g}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-
           <div style={s.row}>
             <div style={s.field}>
               <label style={s.label}>Series</label>
@@ -292,14 +253,6 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
           </AnimatePresence>
         )}
       </div>
-
-      <motion.button
-        style={s.customBtn}
-        onClick={() => setCustomMode(true)}
-        whileTap={{ scale: 0.97 }}
-      >
-        <Plus size={16} style={{ flexShrink: 0 }} /> Ejercicio personalizado
-      </motion.button>
     </motion.div>,
     document.body
   )
@@ -411,41 +364,13 @@ const s = {
     border: '1px solid rgba(93, 202, 165, 0.25)',
     fontWeight: 600,
   },
-  customBtn: {
-    margin: '14px 16px',
-    marginBottom: 'max(14px, env(safe-area-inset-bottom))',
-    padding: '14px',
-    background: 'transparent',
-    color: 'var(--green)',
-    border: '1px dashed rgba(93, 202, 165, 0.4)',
-    borderRadius: 'var(--r-md)',
-    fontSize: '0.95rem',
-    fontWeight: 600,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-  },
   muted: { color: 'var(--text-dim)', textAlign: 'center', padding: '32px 16px' },
   skel: { height: '54px', borderRadius: 'var(--r-md)' },
   bodyConfig: { padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '20px' },
   field: { display: 'flex', flexDirection: 'column', gap: '10px' },
   label: { fontSize: '0.72rem', color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 },
-  input: { padding: '14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', color: 'var(--text)', fontSize: '1rem', outline: 'none' },
   inputNum: { padding: '14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', color: 'var(--text)', fontSize: '1.6rem', fontWeight: 800, outline: 'none', textAlign: 'center', width: '100%', boxSizing: 'border-box', letterSpacing: '-0.03em' },
   row: { display: 'flex', gap: '10px' },
-  chips: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
-  chip: {
-    padding: '12px 18px',
-    background: 'var(--bg-card)',
-    color: 'var(--text-mute)',
-    border: '1px solid var(--border)',
-    borderRadius: '20px',
-    fontSize: '0.88rem', fontWeight: 500,
-  },
-  chipActivo: {
-    background: 'var(--green-grad)', color: '#fff',
-    borderColor: 'transparent',
-    boxShadow: '0 4px 14px rgba(12, 122, 95, 0.35)',
-    fontWeight: 600,
-  },
   confirmarBtn: {
     marginTop: '8px',
     padding: '17px',
