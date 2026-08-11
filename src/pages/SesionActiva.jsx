@@ -9,7 +9,6 @@ import {
   getSesionesConResumen, eliminarSesion, getRegistrosPorEjercicioLocal,
 } from '../firebase/sesiones'
 import { ConfirmDialog, Badge, EmptyState } from '../components/ui'
-import RestTimer from '../components/RestTimer'
 import { useUser } from '../context/UserContext'
 import { logEvento } from '../firebase/analytics'
 import { useDesktop } from '../hooks/useDesktop'
@@ -101,8 +100,6 @@ export default function SesionActiva() {
   const [cargando, setCargando] = useState(true)
   const [celebrar, setCelebrar] = useState(false)
   const [confirmData, setConfirmData] = useState(null)
-  const [showRestTimer, setShowRestTimer] = useState(false)
-  const [restPending, setRestPending] = useState(null)
   const ultimoPesoRef = useRef(ultimoPeso)
 
   useEffect(() => { ultimoPesoRef.current = ultimoPeso }, [ultimoPeso])
@@ -296,13 +293,7 @@ export default function SesionActiva() {
       show({ message: '¡Entrenamiento completado!', variant: 'success' })
     }
 
-    const esUltimo = esUltimaSerie && esUltimoEjercicio
-    if (esUltimo) {
-      avanzar()
-    } else {
-      setRestPending({ fn: avanzar })
-      setShowRestTimer(true)
-    }
+    avanzar()
   }
 
   function retroceder() {
@@ -635,15 +626,6 @@ export default function SesionActiva() {
       })()}
 
       <ConfirmDialog open={!!confirmData} data={confirmData} onClose={() => setConfirmData(null)} />
-
-      <AnimatePresence>
-        {showRestTimer && restPending && (
-          <RestTimer
-            onTerminar={() => { setShowRestTimer(false); restPending.fn() }}
-            onSaltar={() => { setShowRestTimer(false); restPending.fn() }}
-          />
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>{celebrar && <Confetti />}</AnimatePresence>
     </motion.div>

@@ -29,7 +29,6 @@ vi.mock('../components/ui', () => ({
   ConfirmDialog: () => null,
   Badge: ({ children }) => <span>{children}</span>,
 }))
-vi.mock('../components/RestTimer', () => ({ default: () => null }))
 vi.mock('../components/Toast', () => ({
   useToast: () => ({ show: vi.fn(), dismiss: vi.fn() }),
   ToastProvider: ({ children }) => children,
