@@ -17,6 +17,7 @@ import {
   getVolumenPorSesionLocal,
   getRegistrosPorEjercicioLocal,
   getStreaksLocal,
+  esMismoEjercicio,
 } from './sesiones'
 
 // Use local dates (y, m, d) to avoid UTC vs local timezone mismatches.
@@ -59,8 +60,8 @@ describe('getEjerciciosUsadosConGrupoLocal', () => {
     ]
     const result = getEjerciciosUsadosConGrupoLocal(sesiones)
     expect(result).toEqual([
-      { nombre: 'Press Banca', grupoMuscular: 'Pecho' },
-      { nombre: 'Sentadilla', grupoMuscular: 'Piernas' },
+      { nombre: 'Press Banca', grupoMuscular: 'Pecho', catalogoId: null },
+      { nombre: 'Sentadilla', grupoMuscular: 'Piernas', catalogoId: null },
     ])
   })
 
@@ -75,6 +76,60 @@ describe('getEjerciciosUsadosConGrupoLocal', () => {
     const result = getEjerciciosUsadosConGrupoLocal(sesiones)
     expect(result).toHaveLength(2)
     expect(result.map(e => e.nombre)).toEqual(['Curl Bíceps', 'Press Banca'])
+  })
+
+  it('deduplicates by catalogoId aunque el ejercicioId y el nombre difieran entre días', () => {
+    const sesiones = [
+      mkSesion(2026, 5, 24, [
+        { ejercicioId: 'ed-pecho1', catalogoId: 'press-banca-plano', nombre: 'Press de banca plano', grupoMuscular: 'Pecho', series: [] },
+      ]),
+      mkSesion(2026, 5, 25, [
+        { ejercicioId: 'ed-pecho2', catalogoId: 'press-banca-plano', nombre: 'Press de banca plano', grupoMuscular: 'Pecho', series: [] },
+      ]),
+    ]
+    const result = getEjerciciosUsadosConGrupoLocal(sesiones)
+    expect(result).toHaveLength(1)
+    expect(result[0].catalogoId).toBe('press-banca-plano')
+  })
+
+  it('un grupo sin catalogoId lo adopta apenas aparece en otra sesión', () => {
+    const sesiones = [
+      mkSesion(2026, 5, 24, [{ nombre: 'Press Banca', grupoMuscular: 'Pecho', series: [] }]), // sin catalogoId
+      mkSesion(2026, 5, 25, [{ nombre: 'Press Banca', catalogoId: 'press-banca-plano', grupoMuscular: 'Pecho', series: [] }]),
+    ]
+    const result = getEjerciciosUsadosConGrupoLocal(sesiones)
+    expect(result).toHaveLength(1)
+    expect(result[0].catalogoId).toBe('press-banca-plano')
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('esMismoEjercicio', () => {
+  it('matchea por catalogoId aunque el nombre difiera', () => {
+    expect(esMismoEjercicio(
+      { catalogoId: 'press-banca-plano', nombre: 'Press de banca plano' },
+      { catalogoId: 'press-banca-plano', nombre: 'Press banca' },
+    )).toBe(true)
+  })
+
+  it('no matchea si el catalogoId difiere', () => {
+    expect(esMismoEjercicio(
+      { catalogoId: 'press-banca-plano', nombre: 'Press de banca plano' },
+      { catalogoId: 'press-militar', nombre: 'Press de banca plano' },
+    )).toBe(false)
+  })
+
+  it('cae a comparar por nombre si a alguno le falta catalogoId', () => {
+    expect(esMismoEjercicio(
+      { catalogoId: null, nombre: 'Press de banca plano' },
+      { catalogoId: 'press-banca-plano', nombre: 'Press de banca plano' },
+    )).toBe(true)
+  })
+
+  it('sin catalogoId en ningún lado, matchea por nombre', () => {
+    expect(esMismoEjercicio({ nombre: 'Press Banca' }, { nombre: 'Press Banca' })).toBe(true)
+    expect(esMismoEjercicio({ nombre: 'Press Banca' }, { nombre: 'Sentadilla' })).toBe(false)
   })
 })
 
@@ -140,19 +195,42 @@ describe('getRegistrosPorEjercicioLocal', () => {
   ]
 
   it('returns empty array when exercise not found in any session', () => {
-    expect(getRegistrosPorEjercicioLocal(sesiones, 'Curl Bíceps')).toEqual([])
+    expect(getRegistrosPorEjercicioLocal(sesiones, { nombre: 'Curl Bíceps' })).toEqual([])
   })
 
   it('returns all series for a given exercise sorted by date (oldest first)', () => {
-    const result = getRegistrosPorEjercicioLocal(sesiones, 'Press Banca')
+    const result = getRegistrosPorEjercicioLocal(sesiones, { nombre: 'Press Banca' })
     expect(result).toHaveLength(3)
     expect(result[0].sesionId).toBe('s1')
     expect(result[2].pesoUsado).toBe(85)
   })
 
   it('includes correct fields in each record', () => {
-    const result = getRegistrosPorEjercicioLocal(sesiones, 'Sentadilla')
+    const result = getRegistrosPorEjercicioLocal(sesiones, { nombre: 'Sentadilla' })
     expect(result[0]).toMatchObject({ sesionId: 's2', pesoUsado: 100, repsHechas: 5, numeroSerie: 1 })
+  })
+
+  it('matchea por catalogoId aunque el nombre difiera entre sesiones', () => {
+    const sesionesConCatalogo = [
+      {
+        id: 's1', fecha: ts(2026, 5, 24),
+        resumen: { ejercicios: [
+          { catalogoId: 'press-banca-plano', nombre: 'Press de banca plano', grupoMuscular: 'Pecho', series: [
+            { numeroSerie: 1, pesoUsado: 80, repsHechas: 8 },
+          ]},
+        ]},
+      },
+      {
+        id: 's2', fecha: ts(2026, 5, 25),
+        resumen: { ejercicios: [
+          { catalogoId: 'press-banca-plano', nombre: 'Press banca (día 2)', grupoMuscular: 'Pecho', series: [
+            { numeroSerie: 1, pesoUsado: 85, repsHechas: 8 },
+          ]},
+        ]},
+      },
+    ]
+    const result = getRegistrosPorEjercicioLocal(sesionesConCatalogo, { catalogoId: 'press-banca-plano', nombre: 'Press de banca plano' })
+    expect(result).toHaveLength(2)
   })
 })
 

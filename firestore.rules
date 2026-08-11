@@ -58,7 +58,7 @@ service cloud.firestore {
       allow read, delete: if esElDueno();
       allow update: if esElDueno() && noCambiaDueno();
       allow create: if creandoComoDueno()
-        && request.resource.data.keys().hasOnly(['usuarioId', 'sesionId', 'ejercicioId', 'nombreEjercicio', 'grupoMuscular', 'numeroSerie', 'repsEsperadas', 'repsHechas', 'pesoUsado', 'nota']);
+        && request.resource.data.keys().hasOnly(['usuarioId', 'sesionId', 'ejercicioId', 'nombreEjercicio', 'grupoMuscular', 'catalogoId', 'numeroSerie', 'repsEsperadas', 'repsHechas', 'pesoUsado', 'nota']);
     }
 
     match /ejerciciosCatalogo/{id} {

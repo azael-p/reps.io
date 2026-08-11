@@ -5,9 +5,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { getEjerciciosDia } from '../firebase/ejerciciosDia'
 import { agregarRegistro, editarRegistro, getUltimaVezEjercicioLocal, getRegistrosSesion } from '../firebase/registros'
-import {
-  getSesionesConResumen, eliminarSesion, getRegistrosPorEjercicioLocal,
-} from '../firebase/sesiones'
+import { getSesionesConResumen, eliminarSesion, esMismoEjercicio } from '../firebase/sesiones'
 import { ConfirmDialog, Badge, EmptyState } from '../components/ui'
 import { useUser } from '../context/UserContext'
 import { logEvento } from '../firebase/analytics'
@@ -187,7 +185,7 @@ export default function SesionActiva() {
       setRefAnterior(refCache[ejercicio.id]) // eslint-disable-line
     } else {
       setRefAnterior(undefined)
-      const data = getUltimaVezEjercicioLocal(sesionesCache, ejercicio.id, sesionId)
+      const data = getUltimaVezEjercicioLocal(sesionesCache, ejercicio, sesionId)
       setRefCache(c => ({ ...c, [ejercicio.id]: data }))
       setRefAnterior(data)
     }
@@ -198,7 +196,7 @@ export default function SesionActiva() {
       let maxPeso = 0; let prData = null
       for (const sesion of sesionesCache) {
         if (sesion.id === sesionId) continue
-        const ej = sesion.resumen?.ejercicios?.find(e => e.ejercicioId === ejercicio.id)
+        const ej = sesion.resumen?.ejercicios?.find(e => esMismoEjercicio(e, ejercicio))
         if (!ej?.series?.length) continue
         const max = Math.max(...ej.series.map(s => s.pesoUsado || 0))
         if (max > maxPeso) { maxPeso = max; prData = { maxPeso: max, series: ej.series, fecha: sesion.fecha } }
@@ -269,6 +267,7 @@ export default function SesionActiva() {
           ejercicioId: ejercicio.id,
           nombreEjercicio: ejercicio.nombre,
           grupoMuscular: ejercicio.grupoMuscular,
+          catalogoId: ejercicio.catalogoId ?? null,
           numeroSerie: serieActual,
           repsEsperadas: ejercicio.repsEsperadas,
           repsHechas: Number(repsHechas),

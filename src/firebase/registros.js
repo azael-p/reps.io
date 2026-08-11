@@ -1,11 +1,12 @@
 import { db, auth } from './config'
 import { collection, addDoc, updateDoc, doc, query, where, getDocs } from 'firebase/firestore'
+import { esMismoEjercicio } from './sesiones'
 
 // Local lookup — no Firestore queries. sesiones must be sorted desc by fecha.
-export function getUltimaVezEjercicioLocal(sesiones, ejercicioId, sesionIdActual) {
+export function getUltimaVezEjercicioLocal(sesiones, ejercicio, sesionIdActual) {
   for (const sesion of sesiones) {
     if (sesion.id === sesionIdActual) continue
-    const ej = sesion.resumen?.ejercicios?.find(e => e.ejercicioId === ejercicioId)
+    const ej = sesion.resumen?.ejercicios?.find(e => esMismoEjercicio(e, ejercicio))
     if (ej?.series?.length > 0) {
       return { fecha: sesion.fecha, series: ej.series }
     }
@@ -13,9 +14,9 @@ export function getUltimaVezEjercicioLocal(sesiones, ejercicioId, sesionIdActual
   return null
 }
 
-export async function agregarRegistro({ sesionId, ejercicioId, nombreEjercicio, grupoMuscular, numeroSerie, repsEsperadas, repsHechas, pesoUsado, nota }) {
+export async function agregarRegistro({ sesionId, ejercicioId, nombreEjercicio, grupoMuscular, catalogoId = null, numeroSerie, repsEsperadas, repsHechas, pesoUsado, nota }) {
   const ref = await addDoc(collection(db, 'registros'), {
-    sesionId, ejercicioId, nombreEjercicio, grupoMuscular,
+    sesionId, ejercicioId, nombreEjercicio, grupoMuscular, catalogoId,
     numeroSerie, repsEsperadas, repsHechas, pesoUsado, nota,
     usuarioId: auth.currentUser.uid,
   })

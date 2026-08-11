@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
@@ -8,10 +9,15 @@ vi.mock('../hooks/useDesktop', () => ({ useDesktop: () => false }))
 vi.mock('../context/UserContext', () => ({
   useUser: () => ({ usuario: { id: 'user1', nombre: 'Test' } }),
 }))
-vi.mock('../firebase/sesiones', () => ({
-  getSesionesConResumen: vi.fn().mockResolvedValue([]),
-  eliminarSesion: vi.fn(),
-}))
+// esMismoEjercicio se deja real (importOriginal) — es lo que se está probando.
+vi.mock('../firebase/sesiones', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    getSesionesConResumen: vi.fn().mockResolvedValue([]),
+    eliminarSesion: vi.fn(),
+  }
+})
 vi.mock('../firebase/ejerciciosDia', () => ({
   getEjerciciosDia: vi.fn(),
 }))
@@ -40,10 +46,11 @@ vi.mock('../hooks/useKeyboardShortcut', () => ({
 
 import { getDoc } from 'firebase/firestore'
 import { getEjerciciosDia } from '../firebase/ejerciciosDia'
-import { getRegistrosSesion } from '../firebase/registros'
+import { getRegistrosSesion, getUltimaVezEjercicioLocal } from '../firebase/registros'
+import { getSesionesConResumen } from '../firebase/sesiones'
 import SesionActiva from './SesionActiva'
 
-const EJ1 = { id: 'ej1', nombre: 'Press Banca', grupoMuscular: 'Pecho', seriesEsperadas: 3, repsEsperadas: 8, orden: 1 }
+const EJ1 = { id: 'ej1', catalogoId: 'press-banca-plano', nombre: 'Press Banca', grupoMuscular: 'Pecho', seriesEsperadas: 3, repsEsperadas: 8, orden: 1 }
 
 function renderSesion(sesionId = 'ses1') {
   return render(
@@ -111,6 +118,61 @@ describe('SesionActiva — restauración desde Firestore', () => {
 
     await waitFor(() => {
       expect(localStorage.getItem('sesion_activa_user1')).toBe('ses-abc')
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('SesionActiva — "última vez" y PR cruzando días distintos (mismo catalogoId)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    getDoc.mockResolvedValue({ data: () => ({ diaId: 'dia1', completada: false }) })
+    getEjerciciosDia.mockResolvedValue([EJ1])
+    getRegistrosSesion.mockResolvedValue([])
+    getSesionesConResumen.mockResolvedValue([])
+  })
+
+  it('pide "última vez" pasando el ejercicio completo (con catalogoId), no solo el id del día', async () => {
+    getUltimaVezEjercicioLocal.mockReturnValue(null)
+    renderSesion()
+
+    await waitFor(() => {
+      expect(getUltimaVezEjercicioLocal).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ id: 'ej1', catalogoId: 'press-banca-plano' }),
+        expect.anything(),
+      )
+    })
+  })
+
+  it('el PR cruza una sesión de otro día que tiene el mismo catalogoId pero otro ejercicioId', async () => {
+    getSesionesConResumen.mockResolvedValue([
+      {
+        id: 'ses-pecho1',
+        fecha: { toMillis: () => new Date('2026-08-01').getTime() },
+        resumen: {
+          ejercicios: [
+            {
+              ejercicioId: 'ej-de-otro-dia', // id de ejerciciosDia distinto (otro día)
+              catalogoId: 'press-banca-plano', // mismo ejercicio real
+              nombre: 'Press de banca plano',
+              series: [{ numeroSerie: 1, pesoUsado: 100, repsHechas: 5 }],
+            },
+          ],
+        },
+      },
+    ])
+
+    renderSesion()
+
+    const user = userEvent.setup()
+    await waitFor(() => screen.getByText(/PR personal/i))
+    await user.click(screen.getByText('PR personal'))
+
+    await waitFor(() => {
+      expect(screen.getByText(/Tu marca: 100kg/i)).toBeInTheDocument()
     })
   })
 })

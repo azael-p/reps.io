@@ -9,8 +9,11 @@ vi.mock('firebase/firestore', () => ({
   getDocs: vi.fn(),
 }))
 
-import { describe, it, expect } from 'vitest'
-import { getUltimaVezEjercicioLocal } from './registros'
+import { describe, it, expect, vi } from 'vitest'
+import { addDoc } from 'firebase/firestore'
+import { getUltimaVezEjercicioLocal, agregarRegistro } from './registros'
+
+const ej = (nombre, catalogoId = null) => ({ nombre, catalogoId })
 
 const ts = (dateStr) => {
   const d = new Date(dateStr)
@@ -50,31 +53,83 @@ const sesiones = [
 
 describe('getUltimaVezEjercicioLocal', () => {
   it('returns null when exercise not found in any session', () => {
-    expect(getUltimaVezEjercicioLocal(sesiones, 'e99')).toBeNull()
+    expect(getUltimaVezEjercicioLocal(sesiones, ej('No existe'))).toBeNull()
   })
 
   it('returns null for empty sessions list', () => {
-    expect(getUltimaVezEjercicioLocal([], 'e1')).toBeNull()
+    expect(getUltimaVezEjercicioLocal([], ej('Press Banca'))).toBeNull()
   })
 
   it('returns data from the first session that has the exercise (most recent first)', () => {
-    const result = getUltimaVezEjercicioLocal(sesiones, 'e1')
+    const result = getUltimaVezEjercicioLocal(sesiones, ej('Press Banca'))
     expect(result).not.toBeNull()
     expect(result.series[0].pesoUsado).toBe(90)
   })
 
   it('skips the current session when sesionIdActual is provided', () => {
-    const result = getUltimaVezEjercicioLocal(sesiones, 'e1', 's3')
+    const result = getUltimaVezEjercicioLocal(sesiones, ej('Press Banca'), 's3')
     expect(result.series[0].pesoUsado).toBe(85)
   })
 
   it('returns null when the only matching session is the current one', () => {
-    expect(getUltimaVezEjercicioLocal(sesiones, 'e2', 's1')).toBeNull()
+    expect(getUltimaVezEjercicioLocal(sesiones, ej('Sentadilla'), 's1')).toBeNull()
   })
 
   it('returns the fecha of the matching session', () => {
-    const result = getUltimaVezEjercicioLocal(sesiones, 'e1')
+    const result = getUltimaVezEjercicioLocal(sesiones, ej('Press Banca'))
     expect(result.fecha).toBeDefined()
     expect(result.fecha.toMillis()).toBe(new Date('2026-05-26').getTime())
+  })
+
+  it('matchea por catalogoId aunque el ejercicioId y el nombre difieran (mismo ejercicio en otro día)', () => {
+    const sesionesConCatalogo = [
+      {
+        id: 's2', fecha: ts('2026-05-25'),
+        resumen: { ejercicios: [
+          { ejercicioId: 'ed-pecho1', catalogoId: 'press-banca-plano', nombre: 'Press de banca plano', series: [
+            { numeroSerie: 1, pesoUsado: 80, repsHechas: 8 },
+          ]},
+        ]},
+      },
+    ]
+    const result = getUltimaVezEjercicioLocal(sesionesConCatalogo, ej('Press de banca plano (pecho 2)', 'press-banca-plano'))
+    expect(result).not.toBeNull()
+    expect(result.series[0].pesoUsado).toBe(80)
+  })
+
+  it('no matchea si el catalogoId difiere, aunque casualmente el nombre coincida', () => {
+    const sesionesConCatalogo = [
+      {
+        id: 's2', fecha: ts('2026-05-25'),
+        resumen: { ejercicios: [
+          { ejercicioId: 'ed-1', catalogoId: 'press-militar', nombre: 'Press', series: [
+            { numeroSerie: 1, pesoUsado: 80, repsHechas: 8 },
+          ]},
+        ]},
+      },
+    ]
+    const result = getUltimaVezEjercicioLocal(sesionesConCatalogo, ej('Press', 'press-banca-plano'))
+    expect(result).toBeNull()
+  })
+})
+
+describe('agregarRegistro', () => {
+  it('incluye catalogoId en el documento (null si no se pasa)', async () => {
+    addDoc.mockResolvedValue({ id: 'r1' })
+    await agregarRegistro({
+      sesionId: 's1', ejercicioId: 'ed1', nombreEjercicio: 'Press Banca', grupoMuscular: 'Pecho',
+      numeroSerie: 1, repsEsperadas: 8, repsHechas: 8, pesoUsado: 80, nota: '',
+    })
+    expect(addDoc).toHaveBeenCalledWith(undefined, expect.objectContaining({ catalogoId: null }))
+  })
+
+  it('escribe el catalogoId recibido', async () => {
+    addDoc.mockResolvedValue({ id: 'r2' })
+    await agregarRegistro({
+      sesionId: 's1', ejercicioId: 'ed1', nombreEjercicio: 'Press Banca', grupoMuscular: 'Pecho',
+      catalogoId: 'press-banca-plano',
+      numeroSerie: 1, repsEsperadas: 8, repsHechas: 8, pesoUsado: 80, nota: '',
+    })
+    expect(addDoc).toHaveBeenCalledWith(undefined, expect.objectContaining({ catalogoId: 'press-banca-plano' }))
   })
 })

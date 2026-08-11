@@ -16,6 +16,7 @@ function buildResumen(regs, diaNombre) {
     if (!ejerciciosMap[r.ejercicioId]) {
       ejerciciosMap[r.ejercicioId] = {
         ejercicioId: r.ejercicioId,
+        catalogoId: r.catalogoId ?? null,
         nombre: r.nombreEjercicio,
         grupoMuscular: r.grupoMuscular,
         series: [],

@@ -94,7 +94,9 @@ export default function Progreso() {
   useEffect(() => {
     if (!sesionesConResumen || !ejercicioSel) return
     if (tab !== 'Gráfico' && !isDesktop) return
-    const registros = getRegistrosPorEjercicioLocal(sesionesConResumen, ejercicioSel)
+    const ejercicioObj = ejercicios.find(e => e.nombre === ejercicioSel)
+    if (!ejercicioObj) return
+    const registros = getRegistrosPorEjercicioLocal(sesionesConResumen, ejercicioObj)
     const porSesion = {}
     for (const r of registros) {
       const valor = modoGrafico === '1rm'
@@ -109,7 +111,7 @@ export default function Progreso() {
     }
     const arr = Object.values(porSesion) // antiguo → reciente
     setDatosGrafico(arr.map((d, i) => ({ ...d, xKey: `${d.fecha}#${i}` })))
-  }, [tab, ejercicioSel, modoGrafico, isDesktop, sesionesConResumen]) // eslint-disable-line
+  }, [tab, ejercicioSel, ejercicios, modoGrafico, isDesktop, sesionesConResumen]) // eslint-disable-line
 
   // Volumen total — client-side, sin Firestore
   useEffect(() => {

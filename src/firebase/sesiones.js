@@ -76,17 +76,27 @@ export async function getSesionesConResumen(usuarioId) {
     .sort((a, b) => (b.fecha?.toMillis?.() ?? 0) - (a.fecha?.toMillis?.() ?? 0))
 }
 
+// Dos ejercicios son "el mismo" si comparten catalogoId, o si a alguno le
+// falta (datos de antes de que ese campo existiera) — ahí se cae a nombre.
+export function esMismoEjercicio(a, b) {
+  if (a.catalogoId && b.catalogoId) return a.catalogoId === b.catalogoId
+  return a.nombre === b.nombre
+}
+
 // Client-side equivalents — call after getSesionesConResumen
 export function getEjerciciosUsadosConGrupoLocal(sesiones) {
-  const mapa = {}
+  const grupos = []
   for (const s of sesiones) {
     for (const ej of s.resumen?.ejercicios ?? []) {
-      if (!mapa[ej.nombre]) mapa[ej.nombre] = ej.grupoMuscular
+      const grupo = grupos.find(g => esMismoEjercicio(g, ej))
+      if (grupo) {
+        if (!grupo.catalogoId && ej.catalogoId) grupo.catalogoId = ej.catalogoId
+      } else {
+        grupos.push({ nombre: ej.nombre, grupoMuscular: ej.grupoMuscular, catalogoId: ej.catalogoId ?? null })
+      }
     }
   }
-  return Object.entries(mapa)
-    .map(([nombre, grupoMuscular]) => ({ nombre, grupoMuscular }))
-    .sort((a, b) => a.nombre.localeCompare(b.nombre))
+  return grupos.sort((a, b) => a.nombre.localeCompare(b.nombre))
 }
 
 export function getVolumenPorSesionLocal(sesiones) {
@@ -96,10 +106,10 @@ export function getVolumenPorSesionLocal(sesiones) {
     .sort((a, b) => (a.fecha?.toMillis?.() ?? 0) - (b.fecha?.toMillis?.() ?? 0))
 }
 
-export function getRegistrosPorEjercicioLocal(sesiones, nombreEjercicio) {
+export function getRegistrosPorEjercicioLocal(sesiones, ejercicio) {
   const result = []
   for (const s of sesiones) {
-    const ej = s.resumen?.ejercicios?.find(e => e.nombre === nombreEjercicio)
+    const ej = s.resumen?.ejercicios?.find(e => esMismoEjercicio(e, ejercicio))
     if (!ej) continue
     for (const serie of ej.series) {
       result.push({
