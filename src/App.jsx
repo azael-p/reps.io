@@ -7,6 +7,7 @@ import BottomNav from './components/BottomNav'
 import DesktopSidebar from './components/DesktopSidebar'
 import ErrorBoundary from './components/ErrorBoundary'
 import UpdateBanner from './components/UpdateBanner'
+import PageLoader from './components/PageLoader'
 import Login from './pages/Login'
 import Home from './pages/Home'
 
@@ -56,14 +57,14 @@ function AppRoutes() {
           <Routes location={location}>
             <Route path="/" element={<ErrorBoundary><Login /></ErrorBoundary>} />
             <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
-            <Route path="/programas" element={<PrivateRoute><Suspense fallback={null}><Programas /></Suspense></PrivateRoute>} />
-            <Route path="/programas/:programaId" element={<PrivateRoute><Suspense fallback={null}><Dias /></Suspense></PrivateRoute>} />
-            <Route path="/programas/:programaId/:diaId" element={<PrivateRoute><Suspense fallback={null}><EjerciciosDia /></Suspense></PrivateRoute>} />
-            <Route path="/entrenar" element={<PrivateRoute><Suspense fallback={null}><Entrenar /></Suspense></PrivateRoute>} />
-            <Route path="/sesion/:sesionId" element={<PrivateRoute><Suspense fallback={null}><SesionActiva /></Suspense></PrivateRoute>} />
-            <Route path="/sesion/:sesionId/resumen" element={<PrivateRoute><Suspense fallback={null}><ResumenSesion /></Suspense></PrivateRoute>} />
-            <Route path="/progreso" element={<PrivateRoute><Suspense fallback={null}><Progreso /></Suspense></PrivateRoute>} />
-            <Route path="/timer" element={<PrivateRoute><Suspense fallback={null}><Timer /></Suspense></PrivateRoute>} />
+            <Route path="/programas" element={<PrivateRoute><Suspense fallback={<PageLoader />}><Programas /></Suspense></PrivateRoute>} />
+            <Route path="/programas/:programaId" element={<PrivateRoute><Suspense fallback={<PageLoader />}><Dias /></Suspense></PrivateRoute>} />
+            <Route path="/programas/:programaId/:diaId" element={<PrivateRoute><Suspense fallback={<PageLoader />}><EjerciciosDia /></Suspense></PrivateRoute>} />
+            <Route path="/entrenar" element={<PrivateRoute><Suspense fallback={<PageLoader />}><Entrenar /></Suspense></PrivateRoute>} />
+            <Route path="/sesion/:sesionId" element={<PrivateRoute><Suspense fallback={<PageLoader />}><SesionActiva /></Suspense></PrivateRoute>} />
+            <Route path="/sesion/:sesionId/resumen" element={<PrivateRoute><Suspense fallback={<PageLoader />}><ResumenSesion /></Suspense></PrivateRoute>} />
+            <Route path="/progreso" element={<PrivateRoute><Suspense fallback={<PageLoader />}><Progreso /></Suspense></PrivateRoute>} />
+            <Route path="/timer" element={<PrivateRoute><Suspense fallback={<PageLoader />}><Timer /></Suspense></PrivateRoute>} />
           </Routes>
         </motion.div>
       </AnimatePresence>
