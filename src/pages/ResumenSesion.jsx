@@ -5,6 +5,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { getRegistrosSesion, editarRegistro } from '../firebase/registros'
 import { actualizarNotaSesion, completarSesion, backfillResumen } from '../firebase/sesiones'
+import { aplicarSesionAResumenGlobal } from '../firebase/statsGlobal'
 import { Modal, PageWrapper } from '../components/ui'
 import { useUser } from '../context/UserContext'
 import { logEvento } from '../firebase/analytics'
@@ -72,6 +73,7 @@ export default function ResumenSesion() {
   const [editReps, setEditReps] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
+  const [fechaSesion, setFechaSesion] = useState(null)
   const notaTimeoutRef = useRef(null)
 
   useEffect(() => () => clearTimeout(notaTimeoutRef.current), [])
@@ -85,20 +87,25 @@ export default function ResumenSesion() {
       if (!sesionSnap.exists()) throw new Error(`Sesión ${sesionId} inexistente`)
       const sesionData = sesionSnap.data()
       setNota(sesionData.nota || '')
+      setFechaSesion(sesionData.fecha ?? null)
       setRegistros(regs)
       const diaSnap = await getDoc(doc(db, 'dias', sesionData.diaId))
       const diaNombreVal = diaSnap.data()?.nombre ?? ''
       setDiaNombre(diaNombreVal)
 
       if (!sesionData.completada) {
-        await backfillResumen(sesionId, buildResumen(regs, diaNombreVal))
+        const resumen = buildResumen(regs, diaNombreVal)
+        await backfillResumen(sesionId, resumen)
         await completarSesion(sesionId)
+        if (usuario?.id) {
+          await aplicarSesionAResumenGlobal(usuario.id, { sesionId, fecha: sesionData.fecha, resumen })
+        }
       } else if (!sesionData.resumen && regs.length > 0) {
         await backfillResumen(sesionId, buildResumen(regs, diaNombreVal))
       }
     } catch (e) { console.error(e); setError('Error al cargar la sesión') }
     setCargando(false)
-  }, [sesionId])
+  }, [sesionId, usuario])
 
   useEffect(() => {
     if (usuario?.id) {
@@ -135,7 +142,11 @@ export default function ResumenSesion() {
         repsHechas: Number(editReps),
       })
       const regs = await getRegistrosSesion(sesionId)
-      await backfillResumen(sesionId, buildResumen(regs, diaNombre))
+      const resumen = buildResumen(regs, diaNombre)
+      await backfillResumen(sesionId, resumen)
+      if (usuario?.id && fechaSesion) {
+        await aplicarSesionAResumenGlobal(usuario.id, { sesionId, fecha: fechaSesion, resumen })
+      }
       setRegistros(regs)
     } catch (e) { console.error(e); setError('Error al guardar') }
     setEditando(null)

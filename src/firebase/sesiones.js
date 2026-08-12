@@ -1,6 +1,7 @@
 import { db, auth } from './config'
 import { collection, addDoc, updateDoc, doc, query, where, getDocs, writeBatch } from 'firebase/firestore'
 import { toDate } from '../utils/fechas'
+import { calcularStreaks } from '../utils/stats'
 
 export async function enrichSesionesConPrograma(usuarioId, sesiones) {
   if (sesiones.length === 0) return sesiones
@@ -126,40 +127,11 @@ export function getRegistrosPorEjercicioLocal(sesiones, ejercicio) {
 }
 
 export function getStreaksLocal(sesiones) {
-  const fechas = sesiones
+  const epochs = sesiones
     .map(d => toDate(d.fecha))
     .filter(Boolean)
-    .map(d => new Date(d.getFullYear(), d.getMonth(), d.getDate()))
-    .sort((a, b) => b - a)
-
-  if (fechas.length === 0) return { actual: 0, maxima: 0 }
-
-  const unicas = [...new Set(fechas.map(d => d.getTime()))]
-    .map(t => new Date(t))
-    .sort((a, b) => b - a)
-
-  let actual = 1
-  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
-  const diffHoy = Math.round((hoy - unicas[0]) / 86400000)
-  if (diffHoy > 1) {
-    actual = 0
-  } else {
-    for (let i = 1; i < unicas.length; i++) {
-      const diff = Math.round((unicas[i - 1] - unicas[i]) / 86400000)
-      if (diff === 1) actual++
-      else break
-    }
-  }
-
-  let maxima = 1
-  let temp = 1
-  for (let i = 1; i < unicas.length; i++) {
-    const diff = Math.round((unicas[i - 1] - unicas[i]) / 86400000)
-    if (diff === 1) { temp++; if (temp > maxima) maxima = temp }
-    else { temp = 1 }
-  }
-
-  return { actual, maxima }
+    .map(d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime())
+  return calcularStreaks(epochs)
 }
 
 export async function getFechasSesiones(usuarioId) {

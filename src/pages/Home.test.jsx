@@ -21,7 +21,7 @@ vi.mock('firebase/firestore', () => ({
   doc: vi.fn((_, col, id) => ({ _col: col, _id: id })),
   getDoc: vi.fn(),
 }))
-vi.mock('../firebase/sesiones', () => ({ getFechasSesiones: vi.fn() }))
+vi.mock('../firebase/statsGlobal', () => ({ getResumenGlobalConFallback: vi.fn() }))
 
 vi.mock('../components/Calendario', () => ({ default: () => <div data-testid="calendario" /> }))
 vi.mock('../components/PullToRefresh', () => ({ default: ({ children }) => children }))
@@ -38,7 +38,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { getDoc } from 'firebase/firestore'
-import { getFechasSesiones } from '../firebase/sesiones'
+import { getResumenGlobalConFallback } from '../firebase/statsGlobal'
 import Home from './Home'
 
 function renderPage() {
@@ -58,7 +58,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
   localStorage.setItem('onboarding_user1', '1')
-  getFechasSesiones.mockResolvedValue([])
+  getResumenGlobalConFallback.mockResolvedValue({ diasEntrenados: [], volumenPorSesion: [] })
 })
 
 // ---------------------------------------------------------------------------

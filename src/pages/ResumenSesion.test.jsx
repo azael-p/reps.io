@@ -17,6 +17,7 @@ vi.mock('../firebase/registros', () => ({
   getRegistrosSesion: vi.fn(),
   editarRegistro: vi.fn(),
 }))
+vi.mock('../firebase/statsGlobal', () => ({ aplicarSesionAResumenGlobal: vi.fn() }))
 vi.mock('firebase/firestore', () => ({
   doc: vi.fn(),
   getDoc: vi.fn(),

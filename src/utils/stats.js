@@ -6,6 +6,36 @@ export function calcular1RM(peso, reps) {
   return Math.round(peso * (1 + reps / 30))
 }
 
+// Rachas (actual y máxima) a partir de epochs de días entrenados (00:00 local).
+export function calcularStreaks(epochsDias) {
+  if (!epochsDias || epochsDias.length === 0) return { actual: 0, maxima: 0 }
+
+  const unicas = [...new Set(epochsDias)].sort((a, b) => b - a).map(t => new Date(t))
+
+  let actual = 1
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+  const diffHoy = Math.round((hoy - unicas[0]) / 86400000)
+  if (diffHoy > 1) {
+    actual = 0
+  } else {
+    for (let i = 1; i < unicas.length; i++) {
+      const diff = Math.round((unicas[i - 1] - unicas[i]) / 86400000)
+      if (diff === 1) actual++
+      else break
+    }
+  }
+
+  let maxima = 1
+  let temp = 1
+  for (let i = 1; i < unicas.length; i++) {
+    const diff = Math.round((unicas[i - 1] - unicas[i]) / 86400000)
+    if (diff === 1) { temp++; if (temp > maxima) maxima = temp }
+    else { temp = 1 }
+  }
+
+  return { actual, maxima }
+}
+
 export function frecuenciaSemanal(sesiones) {
   const semanas = {}
   const hoy = new Date(); hoy.setHours(0, 0, 0, 0)

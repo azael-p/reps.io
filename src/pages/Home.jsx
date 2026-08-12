@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useUser } from '../context/UserContext'
 import { useNavigate } from 'react-router-dom'
-import { getFechasSesiones } from '../firebase/sesiones'
+import { getResumenGlobalConFallback } from '../firebase/statsGlobal'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import Calendario from '../components/Calendario'
@@ -76,15 +76,14 @@ export default function Home() {
       const cached = localStorage.getItem(cacheKey)
       if (cached) {
         const { fechas: ms } = JSON.parse(cached)
-        if (mountedRef.current) setFechas(ms.map(t => ({ toDate: () => new Date(t), toMillis: () => t })))
+        if (mountedRef.current) setFechas(ms)
         if (mountedRef.current) setCargandoCal(false)
       }
-      const fetched = await getFechasSesiones(usuario.id)
+      // 1 lectura: el agregado resumenGlobal reemplaza la descarga de sesiones.
+      const { diasEntrenados } = await getResumenGlobalConFallback(usuario.id)
       if (mountedRef.current) {
-        setFechas(fetched)
-        localStorage.setItem(cacheKey, JSON.stringify({
-          fechas: fetched.map(f => f?.toMillis?.() ?? null).filter(Boolean),
-        }))
+        setFechas(diasEntrenados)
+        localStorage.setItem(cacheKey, JSON.stringify({ fechas: diasEntrenados }))
         if (!cached) setCargandoCal(false)
       }
     } catch (e) { console.error(e); if (mountedRef.current) setCargandoCal(false) }

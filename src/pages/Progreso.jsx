@@ -2,14 +2,15 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { useUser } from '../context/UserContext'
-import { getSesionesConResumen, enrichSesionesConPrograma, getEjerciciosUsadosConGrupoLocal, getVolumenPorSesionLocal, getRegistrosPorEjercicioLocal, getStreaksLocal, eliminarSesion } from '../firebase/sesiones'
+import { getSesionesConResumen, enrichSesionesConPrograma, getEjerciciosUsadosConGrupoLocal, getRegistrosPorEjercicioLocal, eliminarSesion } from '../firebase/sesiones'
+import { getResumenGlobalConFallback, removerSesionDeResumenGlobal } from '../firebase/statsGlobal'
 import { getHistorialPeso, agregarPeso } from '../firebase/peso'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { PageWrapper, EmptyState, ErrorState, ConfirmDialog, Modal } from '../components/ui'
 import PullToRefresh from '../components/PullToRefresh'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
-import { calcular1RM, frecuenciaSemanal } from '../utils/stats'
+import { calcular1RM, frecuenciaSemanal, calcularStreaks } from '../utils/stats'
 import { toDate } from '../utils/fechas'
 
 const TABS = ['Historial', 'Gráfico', 'Volumen', 'Rachas', 'Peso']
@@ -68,6 +69,7 @@ export default function Progreso() {
   const [tab, setTab] = useState('Historial')
   const [sesiones, setSesiones] = useState([])
   const [sesionesConResumen, setSesionesConResumen] = useState(null)
+  const [resumenGlobal, setResumenGlobal] = useState(null)
   const [ejercicios, setEjercicios] = useState([])
   const [ejercicioSel, setEjercicioSel] = useState('')
   const [grupoSel, setGrupoSel] = useState('')
@@ -88,8 +90,12 @@ export default function Progreso() {
 
   const cargar = useCallback(async () => {
     try {
-      const sesResumen = await getSesionesConResumen(usuario.id)
+      const [sesResumen, rg] = await Promise.all([
+        getSesionesConResumen(usuario.id),
+        getResumenGlobalConFallback(usuario.id),
+      ])
       setSesionesConResumen(sesResumen)
+      setResumenGlobal(rg)
       let enriched
       try {
         enriched = await enrichSesionesConPrograma(usuario.id, sesResumen)
@@ -147,20 +153,20 @@ export default function Progreso() {
     return arr.map((d, i) => ({ ...d, xKey: `${d.fecha}#${i}` }))
   }, [tab, ejercicioSel, ejercicios, modoGrafico, isDesktop, sesionesConResumen])
 
-  // Volumen total — derivación pura client-side, sin Firestore
+  // Volumen total — desde el agregado resumenGlobal (ya viene antiguo → reciente)
   const datosVolumen = useMemo(() => {
-    if (!sesionesConResumen) return []
+    if (!resumenGlobal) return []
     if (tab !== 'Volumen' && !isDesktop) return []
-    return getVolumenPorSesionLocal(sesionesConResumen)
-      .map(d => ({ fecha: formatFechaCorta(d.fecha), volumen: d.volumen })) // antiguo → reciente
+    return resumenGlobal.volumenPorSesion
+      .map(d => ({ fecha: formatFechaCorta(d.fecha), volumen: d.volumen }))
       .map((d, i) => ({ ...d, xKey: `${d.fecha}#${i}` }))
-  }, [tab, isDesktop, sesionesConResumen])
+  }, [tab, isDesktop, resumenGlobal])
 
-  // Rachas — derivación pura client-side, sin Firestore
-  const streaks = useMemo(() => {
-    if (!sesionesConResumen || (tab !== 'Rachas' && !isDesktop)) return { actual: 0, maxima: 0 }
-    return getStreaksLocal(sesionesConResumen)
-  }, [tab, isDesktop, sesionesConResumen])
+  // Rachas — desde los días entrenados del agregado
+  const streaks = useMemo(
+    () => calcularStreaks(resumenGlobal?.diasEntrenados ?? []),
+    [resumenGlobal]
+  )
 
   // Peso corporal — sigue siendo Firestore (subcollección separada)
   useEffect(() => {
@@ -183,7 +189,11 @@ export default function Progreso() {
     setGuardandoPeso(false)
   }
 
-  const frec = useMemo(() => frecuenciaSemanal(sesiones), [sesiones])
+  // Días entrenados por semana (desde el agregado; antes contaba sesiones)
+  const frec = useMemo(
+    () => frecuenciaSemanal((resumenGlobal?.diasEntrenados ?? []).map(e => ({ fecha: e }))),
+    [resumenGlobal]
+  )
   const maxFrec = useMemo(() => Math.max(7, ...frec.map(f => f.dias)), [frec])
 
   const grupos = useMemo(
@@ -310,6 +320,7 @@ export default function Progreso() {
                         onConfirm: async () => {
                           try {
                             await eliminarSesion(sesion.id)
+                            await removerSesionDeResumenGlobal(usuario.id, { sesionId: sesion.id, fecha: sesion.fecha })
                           } catch (e) {
                             console.error(e)
                             show({ message: 'No se pudo eliminar la sesión. Intentá de nuevo.', variant: 'error' })
