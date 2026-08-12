@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'motion/react'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { getEjerciciosDia } from '../firebase/ejerciciosDia'
-import { agregarRegistro, editarRegistro, getUltimaVezEjercicioLocal, getRegistrosSesion } from '../firebase/registros'
-import { getSesionesConResumen, eliminarSesion, esMismoEjercicio } from '../firebase/sesiones'
+import { agregarRegistro, editarRegistro, getRegistrosSesion } from '../firebase/registros'
+import { eliminarSesion, esMismoEjercicio } from '../firebase/sesiones'
+import { getStatsEjerciciosConFallback } from '../firebase/statsEjercicios'
 import { ConfirmDialog, Badge, EmptyState } from '../components/ui'
 import { useUser } from '../context/UserContext'
 import { logEvento } from '../firebase/analytics'
@@ -92,7 +93,7 @@ export default function SesionActiva() {
   const [refPR, setRefPR] = useState(undefined)
   const [prCache, setPRCache] = useState({})
   const [tabRef, setTabRef] = useState('ultima') // 'ultima' | 'pr'
-  const [sesionesCache, setSesionesCache] = useState(null) // null = loading
+  const [statsCache, setStatsCache] = useState(null) // null = loading
   const [guardando, setGuardando] = useState(false)
   const [mostrarNota, setMostrarNota] = useState(false)
   const [cargando, setCargando] = useState(true)
@@ -107,7 +108,7 @@ export default function SesionActiva() {
   // Preload all sessions once — replaces per-exercise Firestore queries
   useEffect(() => {
     if (!usuario) return
-    getSesionesConResumen(usuario.id).then(setSesionesCache).catch(e => { console.error(e); show({ variant: 'error', message: 'No se pudieron cargar las sesiones.' }) })
+    getStatsEjerciciosConFallback(usuario.id).then(setStatsCache).catch(e => { console.error(e); show({ variant: 'error', message: 'No se pudieron cargar las referencias.' }) })
   }, [usuario, show])
 
   const cargar = useCallback(async () => {
@@ -183,32 +184,25 @@ export default function SesionActiva() {
 
   useEffect(() => {
     const ejercicio = ejercicios[ejIdx]
-    if (!ejercicio || !usuario || sesionesCache === null) return
+    if (!ejercicio || !usuario || statsCache === null) return
+    const stats = statsCache.find(st => esMismoEjercicio(st, ejercicio))
     if (refCache[ejercicio.id] !== undefined) {
       setRefAnterior(refCache[ejercicio.id]) // eslint-disable-line
     } else {
-      setRefAnterior(undefined)
-      const data = getUltimaVezEjercicioLocal(sesionesCache, ejercicio, sesionId)
+      // Ignorar referencias de la sesión en curso (no debería estar en stats).
+      const data = (stats?.ultimaVez && stats.ultimaVez.sesionId !== sesionId) ? stats.ultimaVez : null
       setRefCache(c => ({ ...c, [ejercicio.id]: data }))
       setRefAnterior(data)
     }
     if (prCache[ejercicio.id] !== undefined) {
       setRefPR(prCache[ejercicio.id])
     } else {
-      setRefPR(undefined)
-      let maxPeso = 0; let prData = null
-      for (const sesion of sesionesCache) {
-        if (sesion.id === sesionId) continue
-        const ej = sesion.resumen?.ejercicios?.find(e => esMismoEjercicio(e, ejercicio))
-        if (!ej?.series?.length) continue
-        const max = Math.max(...ej.series.map(s => s.pesoUsado || 0))
-        if (max > maxPeso) { maxPeso = max; prData = { maxPeso: max, series: ej.series, fecha: sesion.fecha } }
-      }
+      const prData = (stats?.pr && stats.pr.sesionId !== sesionId) ? stats.pr : null
       setPRCache(c => ({ ...c, [ejercicio.id]: prData }))
       setRefPR(prData)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ejIdx, ejercicios, sesionId, usuario, sesionesCache])
+  }, [ejIdx, ejercicios, sesionId, usuario, statsCache])
 
   const ejercicio = ejercicios[ejIdx]
   const totalSeries = ejercicio?.seriesEsperadas ?? 0

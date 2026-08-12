@@ -30,7 +30,9 @@ vi.mock('../firebase/registros', () => ({
   getRegistrosSesion: vi.fn(),
   agregarRegistro: vi.fn(),
   editarRegistro: vi.fn(),
-  getUltimaVezEjercicioLocal: vi.fn().mockReturnValue(null),
+}))
+vi.mock('../firebase/statsEjercicios', () => ({
+  getStatsEjerciciosConFallback: vi.fn().mockResolvedValue([]),
 }))
 vi.mock('firebase/firestore', () => ({
   doc: vi.fn(),
@@ -51,8 +53,8 @@ vi.mock('../hooks/useKeyboardShortcut', () => ({
 
 import { getDoc } from 'firebase/firestore'
 import { getEjerciciosDia } from '../firebase/ejerciciosDia'
-import { getRegistrosSesion, getUltimaVezEjercicioLocal } from '../firebase/registros'
-import { getSesionesConResumen } from '../firebase/sesiones'
+import { getRegistrosSesion } from '../firebase/registros'
+import { getStatsEjerciciosConFallback } from '../firebase/statsEjercicios'
 import SesionActiva from './SesionActiva'
 
 const EJ1 = { id: 'ej1', catalogoId: 'press-banca-plano', nombre: 'Press Banca', grupoMuscular: 'Pecho', seriesEsperadas: 3, repsEsperadas: 8, orden: 1 }
@@ -129,44 +131,55 @@ describe('SesionActiva — restauración desde Firestore', () => {
 
 // ---------------------------------------------------------------------------
 
-describe('SesionActiva — "última vez" y PR cruzando días distintos (mismo catalogoId)', () => {
+describe('SesionActiva — "última vez" y PR desde statsEjercicios (cruce por catalogoId)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
     getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'dia1', completada: false }) })
     getEjerciciosDia.mockResolvedValue([EJ1])
     getRegistrosSesion.mockResolvedValue([])
-    getSesionesConResumen.mockResolvedValue([])
+    getStatsEjerciciosConFallback.mockResolvedValue([])
   })
 
-  it('pide "última vez" pasando el ejercicio completo (con catalogoId), no solo el id del día', async () => {
-    getUltimaVezEjercicioLocal.mockReturnValue(null)
+  it('muestra "última vez" desde el doc de stats que comparte catalogoId (aunque el nombre difiera)', async () => {
+    getStatsEjerciciosConFallback.mockResolvedValue([
+      {
+        id: 'press-banca-plano',
+        catalogoId: 'press-banca-plano', // mismo ejercicio real, nombre distinto
+        nombre: 'Press de banca plano',
+        grupoMuscular: 'Pecho',
+        pr: null,
+        ultimaVez: {
+          fecha: new Date('2026-08-01').getTime(),
+          sesionId: 'otra-sesion',
+          series: [{ numeroSerie: 1, pesoUsado: 80, repsHechas: 8 }],
+        },
+        puntos: [],
+      },
+    ])
+
     renderSesion()
 
     await waitFor(() => {
-      expect(getUltimaVezEjercicioLocal).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ id: 'ej1', catalogoId: 'press-banca-plano' }),
-        expect.anything(),
-      )
+      expect(screen.getByText(/80kg ×/)).toBeInTheDocument()
     })
   })
 
-  it('el PR cruza una sesión de otro día que tiene el mismo catalogoId pero otro ejercicioId', async () => {
-    getSesionesConResumen.mockResolvedValue([
+  it('el PR sale del doc de stats con el mismo catalogoId pero otro ejercicioId', async () => {
+    getStatsEjerciciosConFallback.mockResolvedValue([
       {
-        id: 'ses-pecho1',
-        fecha: { toMillis: () => new Date('2026-08-01').getTime() },
-        resumen: {
-          ejercicios: [
-            {
-              ejercicioId: 'ej-de-otro-dia', // id de ejerciciosDia distinto (otro día)
-              catalogoId: 'press-banca-plano', // mismo ejercicio real
-              nombre: 'Press de banca plano',
-              series: [{ numeroSerie: 1, pesoUsado: 100, repsHechas: 5 }],
-            },
-          ],
+        id: 'press-banca-plano',
+        catalogoId: 'press-banca-plano',
+        nombre: 'Press de banca plano',
+        grupoMuscular: 'Pecho',
+        pr: {
+          maxPeso: 100,
+          fecha: new Date('2026-08-01').getTime(),
+          sesionId: 'otra-sesion',
+          series: [{ numeroSerie: 1, pesoUsado: 100, repsHechas: 5 }],
         },
+        ultimaVez: null,
+        puntos: [],
       },
     ])
 
@@ -178,6 +191,26 @@ describe('SesionActiva — "última vez" y PR cruzando días distintos (mismo ca
 
     await waitFor(() => {
       expect(screen.getByText(/Tu marca: 100kg/i)).toBeInTheDocument()
+    })
+  })
+
+  it('la referencia de la sesión en curso se ignora (no se muestra a sí misma como "última vez")', async () => {
+    getStatsEjerciciosConFallback.mockResolvedValue([
+      {
+        id: 'press-banca-plano',
+        catalogoId: 'press-banca-plano',
+        nombre: 'Press Banca',
+        grupoMuscular: 'Pecho',
+        pr: null,
+        ultimaVez: { fecha: Date.now(), sesionId: 'ses1', series: [{ numeroSerie: 1, pesoUsado: 90, repsHechas: 5 }] },
+        puntos: [],
+      },
+    ])
+
+    renderSesion() // renderSesion usa sesionId 'ses1'
+
+    await waitFor(() => {
+      expect(screen.getByText(/Primera vez con este ejercicio/)).toBeInTheDocument()
     })
   })
 })

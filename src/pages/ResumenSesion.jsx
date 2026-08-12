@@ -6,6 +6,7 @@ import { db } from '../firebase/config'
 import { getRegistrosSesion, editarRegistro } from '../firebase/registros'
 import { actualizarNotaSesion, completarSesion, backfillResumen } from '../firebase/sesiones'
 import { aplicarSesionAResumenGlobal } from '../firebase/statsGlobal'
+import { aplicarSesionAStats, rebuildStatsEjercicios } from '../firebase/statsEjercicios'
 import { Modal, PageWrapper } from '../components/ui'
 import { useUser } from '../context/UserContext'
 import { logEvento } from '../firebase/analytics'
@@ -99,6 +100,7 @@ export default function ResumenSesion() {
         await completarSesion(sesionId)
         if (usuario?.id) {
           await aplicarSesionAResumenGlobal(usuario.id, { sesionId, fecha: sesionData.fecha, resumen })
+          await aplicarSesionAStats(usuario.id, { sesionId, fecha: sesionData.fecha, resumen })
         }
       } else if (!sesionData.resumen && regs.length > 0) {
         await backfillResumen(sesionId, buildResumen(regs, diaNombreVal))
@@ -146,6 +148,12 @@ export default function ResumenSesion() {
       await backfillResumen(sesionId, resumen)
       if (usuario?.id && fechaSesion) {
         await aplicarSesionAResumenGlobal(usuario.id, { sesionId, fecha: fechaSesion, resumen })
+        // La edición puede BAJAR un PR: rebuild del ejercicio afectado.
+        await rebuildStatsEjercicios(usuario.id, [{
+          nombre: editando.nombreEjercicio,
+          grupoMuscular: editando.grupoMuscular,
+          catalogoId: editando.catalogoId ?? null,
+        }])
       }
       setRegistros(regs)
     } catch (e) { console.error(e); setError('Error al guardar') }

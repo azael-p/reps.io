@@ -2,15 +2,16 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { useUser } from '../context/UserContext'
-import { getSesionesConResumen, enrichSesionesConPrograma, getEjerciciosUsadosConGrupoLocal, getRegistrosPorEjercicioLocal, eliminarSesion } from '../firebase/sesiones'
+import { getSesionesConResumen, enrichSesionesConPrograma, eliminarSesion, esMismoEjercicio } from '../firebase/sesiones'
 import { getResumenGlobalConFallback, removerSesionDeResumenGlobal } from '../firebase/statsGlobal'
+import { getStatsEjerciciosConFallback, rebuildStatsEjercicios } from '../firebase/statsEjercicios'
 import { getHistorialPeso, agregarPeso } from '../firebase/peso'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { PageWrapper, EmptyState, ErrorState, ConfirmDialog, Modal } from '../components/ui'
 import PullToRefresh from '../components/PullToRefresh'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
-import { calcular1RM, frecuenciaSemanal, calcularStreaks } from '../utils/stats'
+import { frecuenciaSemanal, calcularStreaks } from '../utils/stats'
 import { toDate } from '../utils/fechas'
 
 const TABS = ['Historial', 'Gráfico', 'Volumen', 'Rachas', 'Peso']
@@ -70,6 +71,7 @@ export default function Progreso() {
   const [sesiones, setSesiones] = useState([])
   const [sesionesConResumen, setSesionesConResumen] = useState(null)
   const [resumenGlobal, setResumenGlobal] = useState(null)
+  const [statsEjercicios, setStatsEjercicios] = useState(null)
   const [ejercicios, setEjercicios] = useState([])
   const [ejercicioSel, setEjercicioSel] = useState('')
   const [grupoSel, setGrupoSel] = useState('')
@@ -90,12 +92,14 @@ export default function Progreso() {
 
   const cargar = useCallback(async () => {
     try {
-      const [sesResumen, rg] = await Promise.all([
+      const [sesResumen, rg, statsEj] = await Promise.all([
         getSesionesConResumen(usuario.id),
         getResumenGlobalConFallback(usuario.id),
+        getStatsEjerciciosConFallback(usuario.id),
       ])
       setSesionesConResumen(sesResumen)
       setResumenGlobal(rg)
+      setStatsEjercicios(statsEj)
       let enriched
       try {
         enriched = await enrichSesionesConPrograma(usuario.id, sesResumen)
@@ -104,7 +108,10 @@ export default function Progreso() {
         enriched = sesResumen.map(s => ({ ...s, diaNombre: s.resumen?.diaNombre ?? '–', programaNombre: '–' }))
       }
       setSesiones(enriched)
-      const ejs = getEjerciciosUsadosConGrupoLocal(sesResumen)
+      const ejs = statsEj
+        .filter(e => e.puntos?.length > 0)
+        .map(e => ({ nombre: e.nombre, grupoMuscular: e.grupoMuscular, catalogoId: e.catalogoId ?? null }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre))
       setEjercicios(ejs)
       if (ejs.length > 0) {
         setGrupoSel(prev => ejs.some(e => e.grupoMuscular === prev) ? prev : ejs[0].grupoMuscular)
@@ -130,28 +137,22 @@ export default function Progreso() {
 
   useEffect(() => { cargar() }, [cargar])
 
-  // Gráfico de ejercicio — derivación pura client-side, sin Firestore
+  // Gráfico de ejercicio — desde los puntos del agregado statsEjercicios
   const datosGrafico = useMemo(() => {
-    if (!sesionesConResumen || !ejercicioSel) return []
+    if (!statsEjercicios || !ejercicioSel) return []
     if (tab !== 'Gráfico' && !isDesktop) return []
     const ejercicioObj = ejercicios.find(e => e.nombre === ejercicioSel)
     if (!ejercicioObj) return []
-    const registros = getRegistrosPorEjercicioLocal(sesionesConResumen, ejercicioObj)
-    const porSesion = {}
-    for (const r of registros) {
-      const valor = modoGrafico === '1rm'
-        ? calcular1RM(r.pesoUsado, r.repsHechas)
-        : modoGrafico === 'volumen'
-          ? Math.round((r.pesoUsado || 0) * (r.repsHechas || 0))
-          : r.pesoUsado
-      const key = modoGrafico === '1rm' ? '1rm' : modoGrafico === 'volumen' ? 'volumen' : 'peso'
-      if (!porSesion[r.sesionId] || valor > porSesion[r.sesionId][key]) {
-        porSesion[r.sesionId] = { fecha: formatFechaCorta(r.fecha), sesionId: r.sesionId, [key]: valor }
-      }
-    }
-    const arr = Object.values(porSesion) // antiguo → reciente
-    return arr.map((d, i) => ({ ...d, xKey: `${d.fecha}#${i}` }))
-  }, [tab, ejercicioSel, ejercicios, modoGrafico, isDesktop, sesionesConResumen])
+    const stats = statsEjercicios.find(e => esMismoEjercicio(e, ejercicioObj))
+    const key = modoGrafico === '1rm' ? '1rm' : modoGrafico === 'volumen' ? 'volumen' : 'peso'
+    return (stats?.puntos ?? []) // ya vienen antiguo → reciente
+      .map(p => ({
+        fecha: formatFechaCorta(p.fecha),
+        sesionId: p.sesionId,
+        [key]: modoGrafico === '1rm' ? p.oneRm : modoGrafico === 'volumen' ? p.volSerie : p.pesoMax,
+      }))
+      .map((d, i) => ({ ...d, xKey: `${d.fecha}#${i}` }))
+  }, [tab, ejercicioSel, ejercicios, modoGrafico, isDesktop, statsEjercicios])
 
   // Volumen total — desde el agregado resumenGlobal (ya viene antiguo → reciente)
   const datosVolumen = useMemo(() => {
@@ -321,6 +322,7 @@ export default function Progreso() {
                           try {
                             await eliminarSesion(sesion.id)
                             await removerSesionDeResumenGlobal(usuario.id, { sesionId: sesion.id, fecha: sesion.fecha })
+                            await rebuildStatsEjercicios(usuario.id, sesion.resumen?.ejercicios ?? [])
                           } catch (e) {
                             console.error(e)
                             show({ message: 'No se pudo eliminar la sesión. Intentá de nuevo.', variant: 'error' })
