@@ -59,6 +59,7 @@ export function Modal({ open, onClose, children }) {
   const onCloseRef = useRef(onClose)
   const firstFocusRef = useRef(null)
   const triggerRef = useRef(null)
+  const boxRef = useRef(null)
   useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
   useEffect(() => {
@@ -68,8 +69,8 @@ export function Modal({ open, onClose, children }) {
     const handler = () => { onCloseRef.current?.() }
     window.addEventListener('popstate', handler)
     requestAnimationFrame(() => {
-      const btns = document.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
-      if (btns.length) {
+      const btns = boxRef.current?.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+      if (btns?.length) {
         firstFocusRef.current = btns[0]
         btns[0].focus()
       }
@@ -95,6 +96,7 @@ export function Modal({ open, onClose, children }) {
           onPointerDown={e => e.stopPropagation()}
         >
           <motion.div
+            ref={boxRef}
             style={ms.box}
             onClick={e => e.stopPropagation()}
             drag="y"
