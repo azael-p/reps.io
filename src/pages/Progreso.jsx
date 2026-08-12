@@ -1,68 +1,29 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
 import { useUser } from '../context/UserContext'
 import { getSesionesPaginadas, enrichSesionesConPrograma, eliminarSesion, esMismoEjercicio } from '../firebase/sesiones'
 import { getResumenGlobalConFallback, removerSesionDeResumenGlobal } from '../firebase/statsGlobal'
 import { getStatsEjerciciosConFallback, rebuildStatsEjercicios } from '../firebase/statsEjercicios'
 import { getHistorialPeso, agregarPeso } from '../firebase/peso'
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { PageWrapper, EmptyState, ErrorState, ConfirmDialog, Modal } from '../components/ui'
+import { PageWrapper, ConfirmDialog } from '../components/ui'
 import PullToRefresh from '../components/PullToRefresh'
 import LazyPanel from '../components/LazyPanel'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
 import { frecuenciaSemanal, calcularStreaks } from '../utils/stats'
 import { toDate } from '../utils/fechas'
+import { formatFecha, formatFechaCorta } from './progreso/format'
+import HeaderProgreso from './progreso/HeaderProgreso'
+import HistorialTab from './progreso/HistorialTab'
+import GraficoTab from './progreso/GraficoTab'
+import VolumenTab from './progreso/VolumenTab'
+import RachasTab from './progreso/RachasTab'
+import PesoTab from './progreso/PesoTab'
+import PesoModal from './progreso/PesoModal'
 
 const TABS = ['Historial', 'Gráfico', 'Volumen', 'Rachas', 'Peso']
 const PAGE_SIZE = 20
-
-function formatFecha(ts) {
-  if (!ts) return ''
-  return toDate(ts).toLocaleDateString('es-UY', { day: 'numeric', month: 'short' })
-}
-
-function formatFechaCorta(ts) {
-  if (!ts) return ''
-  return toDate(ts).toLocaleDateString('es-UY', { day: 'numeric', month: 'numeric' })
-}
-
-function ChipsFiltro({ values, selected, onChange }) {
-  return (
-    <div style={{ display: 'flex', gap: '6px', padding: '0 16px 8px', overflowX: 'auto', flexWrap: 'nowrap' }}>
-      {values.map(v => (
-        <motion.button
-          key={v}
-          style={{
-            padding: '6px 12px',
-            borderRadius: '20px',
-            fontSize: '0.78rem',
-            fontWeight: 600,
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-            ...(selected === v ? {
-              background: 'var(--green-grad)',
-              color: '#fff',
-              border: 'none',
-              boxShadow: 'var(--shadow-green)',
-            } : {
-              background: 'var(--bg-card)',
-              color: 'var(--text-mute)',
-              border: '1px solid var(--border)',
-              borderTopColor: 'var(--highlight)',
-            }),
-          }}
-          onClick={() => onChange(v)}
-          whileTap={{ scale: 0.94 }}
-          aria-pressed={selected === v}
-        >
-          {v === 'todos' ? 'Todos' : v}
-        </motion.button>
-      ))}
-    </div>
-  )
-}
 
 export default function Progreso() {
   const isDesktop = useDesktop()
@@ -214,6 +175,11 @@ export default function Progreso() {
     setGuardandoPeso(false)
   }
 
+  function abrirModalPeso() {
+    setPesoInput('')
+    setModalPeso(true)
+  }
+
   // Días entrenados por semana (desde el agregado; antes contaba sesiones)
   const frec = useMemo(
     () => frecuenciaSemanal((resumenGlobal?.diasEntrenados ?? []).map(e => ({ fecha: e }))),
@@ -253,436 +219,77 @@ export default function Progreso() {
     })
   }, [sesiones, filtroPrograma, filtroMes])
 
-  const headerContent = (
-    <motion.div
-      style={isDesktop ? s.headerDesktop : s.header}
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      {!isDesktop && (
-        <motion.button
-          style={s.back}
-          onClick={() => navigate('/home')}
-          whileTap={{ scale: 0.9, x: -2 }}
-          aria-label="Volver al inicio"
-        >
-          ←
-        </motion.button>
-      )}
-      <div style={s.headerInfo}>
-        <p style={s.headerSub}>Estadísticas</p>
-        <h1 style={s.titulo}>Mi progreso</h1>
-      </div>
-    </motion.div>
-  )
+  function confirmarEliminarSesion(sesion) {
+    setConfirmData({
+      titulo: `¿Eliminar esta sesión?`,
+      descripcion: `${sesion.diaNombre} — ${formatFecha(sesion.fecha)}. Se borrarán todos los registros de series.`,
+      icon: '🗑️',
+      onConfirm: async () => {
+        try {
+          await eliminarSesion(sesion.id)
+          await removerSesionDeResumenGlobal(usuario.id, { sesionId: sesion.id, fecha: sesion.fecha })
+          await rebuildStatsEjercicios(usuario.id, sesion.resumen?.ejercicios ?? [])
+        } catch (e) {
+          console.error(e)
+          show({ message: 'No se pudo eliminar la sesión. Intentá de nuevo.', variant: 'error' })
+        }
+        cargar()
+      },
+    })
+  }
 
   const historialContent = (
-    <div>
-      {errorCarga ? (
-        <ErrorState mensaje="No se pudo cargar tu historial." onRetry={cargar} />
-      ) : sesiones.length === 0 ? (
-        <EmptyState mensaje="Cero sesiones. ¿La primera?" icon="📊" sub="Empezá a entrenar para ver tu progreso acá" action={{ label: 'Empezar entrenamiento', onClick: () => navigate('/entrenar') }} />
-      ) : (
-        <>
-          <div style={s.frecuenciaCard}>
-            <p style={s.secLabel}>Frecuencia semanal</p>
-            <div style={s.barras}>
-              {frec.map(({ semana, dias }, i) => (
-                <div key={semana} style={s.barraItem}>
-                  <div style={s.barraWrap}>
-                    <span style={s.barraNum}>{dias}</span>
-                    <motion.div
-                      style={s.barra}
-                      initial={{ height: 0 }}
-                      animate={{ height: `${(dias / maxFrec) * 100}%` }}
-                      transition={{ delay: 0.05 * i, duration: 0.55, ease: 'easeOut' }}
-                    />
-                  </div>
-                  <span style={s.barraLabel}>{semana}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <p style={{ ...s.secLabel, padding: '8px 16px' }}>Sesiones</p>
-          {uniqueProgramas.length > 2 && <ChipsFiltro values={uniqueProgramas} selected={filtroPrograma} onChange={setFiltroPrograma} />}
-          {uniqueMeses.length > 2 && <ChipsFiltro values={uniqueMeses} selected={filtroMes} onChange={setFiltroMes} />}
-          <div style={s.lista}>
-            <AnimatePresence>
-              {sesionesFiltradas.map((sesion, i) => (
-                <motion.div
-                  key={sesion.id}
-                  style={s.sesionCard}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -16, transition: { duration: 0.2 } }}
-                  transition={{ delay: i * 0.04, type: 'spring', stiffness: 220, damping: 22 }}
-                >
-                  <div style={s.sesionInfo} onClick={() => navigate(`/sesion/${sesion.id}/resumen`)}>
-                    <div style={s.fechaBadge}>
-                      <span style={s.fechaDia}>{toDate(sesion.fecha)?.getDate()}</span>
-                      <span style={s.fechaMes}>{toDate(sesion.fecha)?.toLocaleDateString('es-UY', { month: 'short' })}</span>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <span style={s.sesionNombre}>{sesion.diaNombre}</span>
-                      <span style={s.sesionFecha}>{formatFecha(sesion.fecha)}</span>
-                    </div>
-                  </div>
-                  <div style={s.sesionAcciones}>
-                    <motion.button
-                      style={s.accionBtn}
-                      onClick={() => navigate(`/sesion/${sesion.id}/resumen`)}
-                      whileTap={{ scale: 0.96 }}
-                    >
-                      Ver
-                    </motion.button>
-                    <motion.button
-                      style={{ ...s.accionBtn, ...s.accionEliminar }}
-                      onClick={() => setConfirmData({
-                        titulo: `¿Eliminar esta sesión?`,
-                        descripcion: `${sesion.diaNombre} — ${formatFecha(sesion.fecha)}. Se borrarán todos los registros de series.`,
-                        icon: '🗑️',
-                        onConfirm: async () => {
-                          try {
-                            await eliminarSesion(sesion.id)
-                            await removerSesionDeResumenGlobal(usuario.id, { sesionId: sesion.id, fecha: sesion.fecha })
-                            await rebuildStatsEjercicios(usuario.id, sesion.resumen?.ejercicios ?? [])
-                          } catch (e) {
-                            console.error(e)
-                            show({ message: 'No se pudo eliminar la sesión. Intentá de nuevo.', variant: 'error' })
-                          }
-                          cargar()
-                        },
-                      })}
-                      whileTap={{ scale: 0.96 }}
-                    >
-                      Eliminar
-                    </motion.button>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            {hayMas && (
-              <motion.button
-                style={{ ...s.verMasBtn, opacity: cargandoMas ? 0.6 : 1 }}
-                onClick={cargarMas}
-                disabled={cargandoMas}
-                whileTap={{ scale: 0.97 }}
-              >
-                {cargandoMas ? <span className="spinner" /> : 'Ver más'}
-              </motion.button>
-            )}
-          </div>
-        </>
-      )}
-    </div>
+    <HistorialTab
+      errorCarga={errorCarga}
+      cargar={cargar}
+      sesiones={sesiones}
+      navigate={navigate}
+      frec={frec}
+      maxFrec={maxFrec}
+      uniqueProgramas={uniqueProgramas}
+      filtroPrograma={filtroPrograma}
+      setFiltroPrograma={setFiltroPrograma}
+      uniqueMeses={uniqueMeses}
+      filtroMes={filtroMes}
+      setFiltroMes={setFiltroMes}
+      sesionesFiltradas={sesionesFiltradas}
+      onEliminar={confirmarEliminarSesion}
+      hayMas={hayMas}
+      cargandoMas={cargandoMas}
+      cargarMas={cargarMas}
+    />
   )
 
   const graficoContent = (
-    <div style={s.graficoWrap}>
-      {ejercicios.length === 0 ? (
-        <EmptyState mensaje="Todavía no hay datos de ejercicios." icon="📈" />
-      ) : (
-        <>
-          <div style={s.selector}>
-            <p style={s.secLabel}>Grupo muscular</p>
-            <div style={s.chips}>
-              {grupos.map(g => {
-                const activo = grupoSel === g
-                return (
-                  <motion.button
-                    key={g}
-                    style={{ ...s.chip, ...(activo ? s.chipActivo : {}) }}
-                    onClick={() => {
-                      setGrupoSel(g)
-                      const primero = ejercicios.find(e => e.grupoMuscular === g)
-                      if (primero) setEjercicioSel(primero.nombre)
-                    }}
-                    whileTap={{ scale: 0.94 }}
-                  >
-                    {g}
-                  </motion.button>
-                )
-              })}
-            </div>
-          </div>
-
-          <div style={s.selector}>
-            <p style={s.secLabel}>Ejercicio</p>
-            <div style={s.chips}>
-              {ejercicios
-                .filter(e => e.grupoMuscular === grupoSel)
-                .map(e => {
-                  const activo = ejercicioSel === e.nombre
-                  return (
-                    <motion.button
-                      key={e.nombre}
-                      style={{ ...s.chip, ...(activo ? s.chipActivo : {}) }}
-                      onClick={() => setEjercicioSel(e.nombre)}
-                      whileTap={{ scale: 0.94 }}
-                    >
-                      {e.nombre}
-                    </motion.button>
-                  )
-                })}
-            </div>
-          </div>
-
-          <div style={s.selector}>
-            <div style={s.toggleRow}>
-              {['peso', '1rm', 'volumen'].map(m => (
-                <motion.button
-                  key={m}
-                  style={{ ...s.toggleChip, ...(modoGrafico === m ? s.toggleChipActivo : {}) }}
-                  onClick={() => setModoGrafico(m)}
-                  whileTap={{ scale: 0.94 }}
-                >
-                  {{ peso: 'Peso máx.', '1rm': 'PR personal', volumen: 'Vol. serie' }[m]}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-
-          {datosGrafico.length === 0 ? (
-            <EmptyState mensaje="No hay registros para este ejercicio." icon="📉" />
-          ) : (
-            <motion.div
-              style={s.chartCard}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <p style={s.chartTitulo}>
-                {{ peso: 'Peso máximo por sesión', '1rm': 'Tu mejor marca personal por sesión', volumen: 'Mejor serie por volumen' }[modoGrafico]}
-              </p>
-              <p style={s.chartSub}>{modoGrafico === 'volumen' ? 'en kg × reps' : 'en kilogramos'}</p>
-              <div style={{ width: '100%', height: 240, marginTop: '12px' }}>
-                <ResponsiveContainer>
-                  <LineChart data={datosGrafico} margin={{ top: 12, right: 18, left: -18, bottom: 0 }} key={`g${ejercicioSel}-${modoGrafico}-${datosGrafico.length}`}>
-                    <defs>
-                      <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#85b7eb" stopOpacity={1} />
-                        <stop offset="100%" stopColor="#1879c9" stopOpacity={0.5} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                    <XAxis dataKey="xKey" tickFormatter={v => String(v).split('#')[0]} tick={{ fill: 'var(--text-dim)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: 'var(--text-dim)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{
-                        background: 'var(--bg-elev)',
-                        border: '1px solid var(--border-strong)',
-                        borderRadius: 12,
-                        color: '#fff',
-                        fontSize: '0.85rem',
-                        padding: '8px 12px',
-                        boxShadow: 'var(--shadow-md)',
-                      }}
-                      labelFormatter={v => String(v).split('#')[0]}
-                      formatter={(v) => {
-                        const label = { peso: 'Peso', '1rm': '1RM', volumen: 'Vol. serie' }[modoGrafico]
-                        const unit = modoGrafico === 'volumen' ? 'kg·rep' : 'kg'
-                        return [`${v.toLocaleString()} ${unit}`, label]
-                      }}
-                      cursor={{ stroke: 'rgba(133, 183, 235, 0.3)', strokeWidth: 2 }}
-                    />
-                    <Line
-                      type="monotone" dataKey={modoGrafico === 'peso' ? 'peso' : modoGrafico === '1rm' ? '1rm' : 'volumen'}
-                      stroke="url(#lineGrad)" strokeWidth={3}
-                      dot={{ fill: '#85b7eb', r: 4, strokeWidth: 0 }}
-                      activeDot={{ r: 7, fill: '#fff', stroke: '#85b7eb', strokeWidth: 2 }}
-                      isAnimationActive={true}
-                      animationDuration={900}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </motion.div>
-          )}
-        </>
-      )}
-    </div>
+    <GraficoTab
+      ejercicios={ejercicios}
+      grupos={grupos}
+      grupoSel={grupoSel}
+      setGrupoSel={setGrupoSel}
+      ejercicioSel={ejercicioSel}
+      setEjercicioSel={setEjercicioSel}
+      modoGrafico={modoGrafico}
+      setModoGrafico={setModoGrafico}
+      datosGrafico={datosGrafico}
+    />
   )
 
-  const volumenContent = (
-    <div>
-      {datosVolumen.length === 0 ? (
-        <EmptyState mensaje="No hay datos de volumen todavía." icon="📊" />
-      ) : (
-        <motion.div
-          style={s.chartCard}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <p style={s.chartTitulo}>Volumen total por sesión</p>
-          <p style={s.chartSub}>peso × reps × series</p>
-          <div style={{ width: '100%', height: 240, marginTop: '12px' }}>
-            <ResponsiveContainer>
-              <BarChart data={datosVolumen} margin={{ top: 12, right: 18, left: -18, bottom: 0 }} key={`v${datosVolumen.length}`}>
-                <defs>
-                  <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#5dcaa5" stopOpacity={1} />
-                    <stop offset="100%" stopColor="#0c7a5f" stopOpacity={0.5} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis dataKey="xKey" tickFormatter={v => String(v).split('#')[0]} tick={{ fill: 'var(--text-dim)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--text-dim)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: 'var(--bg-elev)',
-                    border: '1px solid var(--border-strong)',
-                    borderRadius: 12,
-                    color: '#fff',
-                    fontSize: '0.85rem',
-                    padding: '8px 12px',
-                    boxShadow: 'var(--shadow-md)',
-                  }}
-                  labelFormatter={v => String(v).split('#')[0]}
-                  formatter={(v) => [`${v.toLocaleString()} kg`, 'Volumen']}
-                  cursor={{ fill: 'rgba(93, 202, 165, 0.1)' }}
-                />
-                <Bar dataKey="volumen" fill="url(#barGrad)" radius={[6, 6, 0, 0]} maxBarSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
-      )}
-    </div>
-  )
+  const volumenContent = <VolumenTab datosVolumen={datosVolumen} />
 
-  const rachasContent = (
-    <div style={s.rachasWrap}>
-      {!resumenGlobal ? (
-        <div style={{ padding: '60px 0', display: 'flex', justifyContent: 'center' }}>
-          <span className="spinner" style={{ color: 'var(--orange)' }} />
-        </div>
-      ) : streaks.actual === 0 && streaks.maxima === 0 ? (
-        <EmptyState mensaje="Entrená para empezar a generar rachas." icon="🔥" />
-      ) : (
-        <>
-          <motion.div
-            style={s.streakCard}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-          >
-            <div style={s.streakNumWrap}>
-              <motion.span
-                style={s.streakNum}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 16, delay: 0.1 }}
-              >
-                {streaks.actual}
-              </motion.span>
-              <span style={s.streakLabel}>días seguidos</span>
-            </div>
-            <div style={s.streakFire}>🔥</div>
-          </motion.div>
-
-          <motion.div
-            style={s.streakMeta}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-          >
-            <span style={s.streakMetaNum}>{streaks.maxima}</span>
-            <span style={s.streakMetaLabel}>récord de racha</span>
-          </motion.div>
-        </>
-      )}
-    </div>
-  )
-
-  const pesoChartData = useMemo(
-    () => historialPeso.map((e, i) => ({
-      xKey: `${e.fecha.getDate()}/${e.fecha.getMonth() + 1}#${i}`,
-      fecha: `${e.fecha.getDate()}/${e.fecha.getMonth() + 1}`,
-      peso: e.peso,
-    })),
-    [historialPeso]
-  )
+  const rachasContent = <RachasTab resumenGlobal={resumenGlobal} streaks={streaks} />
 
   const pesoContent = (
-    <div style={s.graficoWrap}>
-      {cargandoPeso ? (
-        <div style={{ padding: '60px 0', display: 'flex', justifyContent: 'center' }}>
-          <span className="spinner" style={{ color: 'var(--blue)' }} />
-        </div>
-      ) : historialPeso.length === 0 ? (
-        <EmptyState
-          mensaje="Sin registros de peso"
-          icon="⚖️"
-          sub="Registrá tu peso para ver tu evolución"
-          action={{ label: 'Registrar peso', onClick: () => { setPesoInput(''); setModalPeso(true) } }}
-        />
-      ) : (
-        <>
-          <motion.div
-            style={s.chartCard}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <p style={s.chartTitulo}>Evolución de peso corporal</p>
-            <p style={s.chartSub}>en kilogramos</p>
-            <div style={{ width: '100%', height: 240, marginTop: '12px' }}>
-              <ResponsiveContainer>
-                <LineChart data={pesoChartData} margin={{ top: 12, right: 18, left: -18, bottom: 0 }} key={`p${pesoChartData.length}`}>
-                  <defs>
-                    <linearGradient id="pesoGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#85b7eb" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#1879c9" stopOpacity={0.5} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                  <XAxis dataKey="xKey" tickFormatter={v => String(v).split('#')[0]} tick={{ fill: 'var(--text-dim)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis domain={['auto', 'auto']} tick={{ fill: 'var(--text-dim)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      background: 'var(--bg-elev)',
-                      border: '1px solid var(--border-strong)',
-                      borderRadius: 12,
-                      color: '#fff',
-                      fontSize: '0.85rem',
-                      padding: '8px 12px',
-                      boxShadow: 'var(--shadow-md)',
-                    }}
-                    labelFormatter={v => String(v).split('#')[0]}
-                    formatter={(v) => [`${v} kg`, 'Peso']}
-                    cursor={{ stroke: 'rgba(133, 183, 235, 0.3)', strokeWidth: 2 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="peso"
-                    stroke="url(#pesoGrad)"
-                    strokeWidth={3}
-                    dot={{ fill: '#85b7eb', r: 4, strokeWidth: 0 }}
-                    activeDot={{ r: 7, fill: '#fff', stroke: '#85b7eb', strokeWidth: 2 }}
-                    isAnimationActive
-                    animationDuration={900}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
-          <div style={{ padding: '0 16px 24px' }}>
-            <motion.button
-              style={s.registrarPesoBtn}
-              onClick={() => { setPesoInput(''); setModalPeso(true) }}
-              whileTap={{ scale: 0.97 }}
-            >
-              + Registrar peso hoy
-            </motion.button>
-          </div>
-        </>
-      )}
-    </div>
+    <PesoTab
+      cargandoPeso={cargandoPeso}
+      historialPeso={historialPeso}
+      onRegistrarPeso={abrirModalPeso}
+    />
   )
 
   return (
     <PageWrapper>
       <PullToRefresh onRefresh={cargar}>
-        {headerContent}
+        <HeaderProgreso isDesktop={isDesktop} navigate={navigate} />
 
       {isDesktop ? (
         cargando ? (
@@ -766,37 +373,15 @@ export default function Progreso() {
 
       <ConfirmDialog open={!!confirmData} data={confirmData} onClose={() => setConfirmData(null)} />
 
-      <Modal open={modalPeso} onClose={() => { setModalPeso(false); setErrorPeso('') }}>
-        <h2 style={s.modalTitulo}>Registrar peso</h2>
-        <div style={s.pesoModalRow}>
-          <input
-            type="number"
-            style={s.pesoModalInput}
-            placeholder="Ej: 78"
-            value={pesoInput}
-            onChange={e => setPesoInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleGuardarPeso()}
-            autoFocus
-            min="20"
-            max="300"
-          />
-          <span style={s.pesoModalKg}>kg</span>
-        </div>
-        {errorPeso && <p style={{ color: 'var(--danger)', fontSize: '0.82rem', margin: '0 0 12px' }} role="alert">{errorPeso}</p>}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <motion.button style={s.cancelBtn} onClick={() => { setModalPeso(false); setErrorPeso('') }} whileTap={{ scale: 0.97 }}>
-            Cancelar
-          </motion.button>
-          <motion.button
-            style={{ ...s.saveBtn, opacity: !pesoInput.trim() || guardandoPeso ? 0.5 : 1 }}
-            onClick={handleGuardarPeso}
-            disabled={!pesoInput.trim() || guardandoPeso}
-            whileTap={{ scale: 0.97 }}
-          >
-            {guardandoPeso ? <span className="spinner" /> : 'Guardar'}
-          </motion.button>
-        </div>
-      </Modal>
+      <PesoModal
+        open={modalPeso}
+        onClose={() => { setModalPeso(false); setErrorPeso('') }}
+        pesoInput={pesoInput}
+        setPesoInput={setPesoInput}
+        errorPeso={errorPeso}
+        guardandoPeso={guardandoPeso}
+        onGuardar={handleGuardarPeso}
+      />
 
       </PullToRefresh>
     </PageWrapper>
@@ -804,23 +389,6 @@ export default function Progreso() {
 }
 
 const s = {
-  header: {
-    display: 'flex', alignItems: 'center',
-    padding: '20px 16px 16px',
-    paddingTop: 'max(20px, env(safe-area-inset-top))',
-    gap: '12px',
-    borderBottom: '1px solid var(--border)',
-  },
-  back: {
-    background: 'var(--bg-card)', border: '1px solid var(--border)',
-    color: 'var(--text-mute)',
-    width: '44px', height: '44px',
-    borderRadius: '12px', fontSize: '1.2rem',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
-  headerInfo: { flex: 1 },
-  headerSub: { margin: 0, fontSize: '0.7rem', color: 'var(--blue)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' },
-  titulo: { margin: '2px 0 0', fontSize: '1.2rem', fontWeight: 700, letterSpacing: '-0.02em' },
   tabs: { display: 'flex', borderBottom: '1px solid var(--border)', overflowX: 'auto' },
   tab: {
     flex: 1, padding: '14px',
@@ -837,170 +405,6 @@ const s = {
     background: 'var(--orange-grad)',
     borderRadius: '2px',
     boxShadow: '0 0 8px rgba(240,153,123,0.5)',
-  },
-  frecuenciaCard: {
-    margin: '16px',
-    padding: '18px 16px 14px',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-lg)',
-    boxShadow: 'var(--shadow-sm)',
-  },
-  secLabel: {
-    margin: '0 0 12px',
-    fontSize: '0.7rem', color: 'var(--text-mute)',
-    textTransform: 'uppercase', letterSpacing: '0.07em',
-    fontWeight: 700,
-  },
-  barras: { display: 'flex', gap: '8px', alignItems: 'flex-end', height: '120px', paddingTop: '20px' },
-  barraItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1, height: '100%' },
-  barraWrap: { width: '100%', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end' },
-  barra: {
-    width: '100%',
-    background: 'var(--blue-grad)',
-    borderRadius: '6px 6px 0 0',
-    minHeight: '4px',
-    boxShadow: '0 0 12px rgba(133, 183, 235, 0.15)',
-  },
-  barraNum: { fontSize: '0.68rem', color: 'var(--blue)', fontWeight: 700, marginBottom: '3px' },
-  barraLabel: { fontSize: '0.62rem', color: 'var(--text-dim)' },
-  lista: { display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 16px 8px' },
-  sesionCard: {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-lg)',
-    padding: '14px',
-    display: 'flex', flexDirection: 'column', gap: '12px',
-    boxShadow: 'var(--shadow-sm)',
-  },
-  sesionInfo: { display: 'flex', gap: '14px', alignItems: 'center', cursor: 'pointer' },
-  fechaBadge: {
-    width: '50px', height: '50px',
-    borderRadius: '14px',
-    background: 'var(--blue-glow)',
-    border: '1px solid rgba(133, 183, 235, 0.2)',
-    display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  },
-  fechaDia: { fontSize: '1.3rem', fontWeight: 800, color: 'var(--blue)', lineHeight: 1, letterSpacing: '-0.02em' },
-  fechaMes: { fontSize: '0.62rem', color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 },
-  sesionNombre: { display: 'block', fontSize: '1rem', fontWeight: 600, letterSpacing: '-0.01em' },
-  sesionFecha: { fontSize: '0.82rem', color: 'var(--text-mute)' },
-  sesionAcciones: { display: 'flex', gap: '8px' },
-  accionBtn: { flex: 1, padding: '14px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', fontSize: '0.9rem', fontWeight: 500 },
-  accionEliminar: { color: 'var(--danger)', background: 'var(--danger-bg)', borderColor: 'rgba(255,107,107,0.18)' },
-  verMasBtn: { width: '100%', padding: '14px', background: 'var(--bg-card)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', fontSize: '0.9rem', fontWeight: 500 },
-  graficoWrap: { padding: 0 },
-  selector: { padding: '16px 16px 0' },
-  chips: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
-  chip: {
-    padding: '12px 18px',
-    background: 'var(--bg-card)',
-    color: 'var(--text-mute)',
-    border: '1px solid var(--border)',
-    borderRadius: '20px',
-    fontSize: '0.88rem', fontWeight: 500,
-  },
-  chipActivo: {
-    background: 'var(--blue-grad)',
-    color: '#fff',
-    borderColor: 'transparent',
-    boxShadow: '0 4px 14px rgba(13, 83, 150, 0.35)',
-    fontWeight: 600,
-  },
-  select: {
-    width: '100%', padding: '14px',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-md)',
-    color: 'var(--text)', fontSize: '1rem',
-    outline: 'none',
-  },
-  chartCard: {
-    margin: '8px 16px 24px',
-    padding: '18px 16px',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-lg)',
-    boxShadow: 'var(--shadow-md)',
-  },
-  chartTitulo: { margin: 0, fontSize: '1rem', color: 'var(--text)', fontWeight: 700, letterSpacing: '-0.01em' },
-  chartSub: { margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--text-mute)' },
-  toggleRow: { display: 'flex', gap: '8px' },
-  toggleChip: {
-    flex: 1, padding: '12px 16px', textAlign: 'center',
-    background: 'var(--bg-card)', color: 'var(--text-mute)',
-    border: '1px solid var(--border)', borderRadius: '20px',
-    fontSize: '0.88rem', fontWeight: 500,
-  },
-  toggleChipActivo: {
-    background: 'var(--blue-grad)', color: '#fff',
-    borderColor: 'transparent', fontWeight: 600,
-    boxShadow: '0 4px 14px rgba(13, 83, 150, 0.35)',
-  },
-  rachasWrap: { padding: '16px' },
-  streakCard: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px',
-    padding: '32px',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderTop: '1px solid var(--highlight)',
-    borderRadius: 'var(--r-xl)',
-    boxShadow: 'var(--shadow-md)',
-  },
-  streakNumWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' },
-  streakNum: {
-    fontSize: '3.2rem', fontWeight: 800,
-    letterSpacing: '-0.04em',
-    background: 'linear-gradient(135deg, #f0997b, #ffd166)',
-    WebkitBackgroundClip: 'text',
-    backgroundClip: 'text',
-    color: 'transparent',
-    lineHeight: 1,
-    fontVariantNumeric: 'tabular-nums',
-  },
-  streakLabel: { fontSize: '0.78rem', color: 'var(--text-mute)', fontWeight: 600 },
-  streakFire: { fontSize: '2.5rem' },
-  streakMeta: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-    padding: '20px',
-    marginTop: '10px',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderTop: '1px solid var(--highlight)',
-    borderRadius: 'var(--r-lg)',
-    boxShadow: 'var(--shadow-sm)',
-  },
-  streakMetaNum: { fontSize: '1.6rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' },
-  streakMetaLabel: { fontSize: '0.7rem', color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700 },
-  registrarPesoBtn: {
-    width: '100%', padding: '14px',
-    background: 'var(--bg-card)',
-    color: 'var(--blue)',
-    border: '1px solid rgba(133, 183, 235, 0.3)',
-    borderRadius: 'var(--r-lg)',
-    fontSize: '0.95rem', fontWeight: 600,
-    boxShadow: 'var(--shadow-sm)',
-  },
-  modalTitulo: { margin: 0, fontSize: '1.15rem', fontWeight: 700, letterSpacing: '-0.01em' },
-  pesoModalRow: { display: 'flex', alignItems: 'center', gap: '10px' },
-  pesoModalInput: {
-    flex: 1, padding: '14px',
-    background: 'var(--bg-input)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-md)',
-    color: 'var(--text)', fontSize: '1.1rem',
-    outline: 'none',
-  },
-  pesoModalKg: { fontSize: '1rem', color: 'var(--text-mute)', fontWeight: 600, flexShrink: 0 },
-  cancelBtn: { flex: 1, padding: '14px', background: 'var(--bg-input)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', fontSize: '0.95rem' },
-  saveBtn: { flex: 1, padding: '14px', background: 'var(--blue-grad)', color: '#fff', border: 'none', borderRadius: 'var(--r-md)', fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(13, 83, 150, 0.35)' },
-  headerDesktop: {
-    display: 'flex', alignItems: 'center',
-    padding: '32px 40px 24px',
-    gap: '12px',
-    borderBottom: '1px solid var(--border)',
   },
   desktopGrid: {
     display: 'grid',
