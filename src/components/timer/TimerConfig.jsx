@@ -90,7 +90,7 @@ export default function TimerConfig({ onIniciar }) {
     try {
       await deletePreset(usuario.id, id)
       setPresets(prev => prev.filter(p => p.id !== id))
-    } catch (e) {
+    } catch {
       setError('Error al eliminar preset')
     }
   }

@@ -32,9 +32,14 @@ function AppRoutes() {
 
   useEffect(() => {
     logPaginaVista(location.pathname)
+  }, [location.pathname])
+
+  // Ajuste de estado durante el render (patrón "derivar de renders previos"):
+  // la dirección de la transición depende de la ruta anterior.
+  if (prevPath !== location.pathname) {
     setDirection(location.pathname.length >= prevPath.length ? 1 : -1)
     setPrevPath(location.pathname)
-  }, [location.pathname])
+  }
 
   return (
     <>

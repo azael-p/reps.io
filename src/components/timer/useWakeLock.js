@@ -10,7 +10,7 @@ export function useWakeLock() {
       try {
         wakeLockRef.current = await navigator.wakeLock.request('screen')
         return
-      } catch (_) {}
+      } catch { /* sin soporte o permiso denegado: cae a la estrategia 2 */ }
     }
 
     // Strategy 2: silent audio loop for iOS/Safari
@@ -23,7 +23,7 @@ export function useWakeLock() {
     }
     try {
       await audioRef.current.play()
-    } catch (_) {}
+    } catch { /* autoplay bloqueado: no hay fallback posible */ }
   }, [])
 
   const liberar = useCallback(() => {

@@ -39,7 +39,7 @@ export default function EjerciciosDia() {
     setCargando(false)
   }, [diaId, programaId, navigate])
 
-  useEffect(() => { setCargando(true); cargar() }, [cargar]) // eslint-disable-line
+  useEffect(() => { cargar() }, [cargar])
 
   async function onSeleccionar({ nombre, grupoMuscular, esCustom, catalogoId, seriesEsperadas, repsEsperadas }) {
     setPicker(false)

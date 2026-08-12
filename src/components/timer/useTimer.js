@@ -26,6 +26,8 @@ const ESTADO_INICIAL = {
   pausado: false,
   config: null,
   iniciado: false,
+  // Se calcula al llegar a la fase 'fin'; terminar() lo resetea a 0.
+  tiempoTotalSegundos: 0,
 }
 
 export function useTimer() {
@@ -57,9 +59,11 @@ export function useTimer() {
     }
   }, [])
 
-  // iniciarFase is defined as a ref so interval callbacks always call the latest version
+  // Interval callbacks call iniciarFase via ref (assigned in un effect) so
+  // siempre usan la última versión sin recrear el interval.
   const iniciarFaseRef = useRef(null)
-  iniciarFaseRef.current = (fase, setActual, config) => {
+
+  const iniciarFase = useCallback((fase, setActual, config) => {
     const duracion = duracionFase(fase, config)
     timestampInicioFaseRef.current = Date.now()
     segundosPausadosRef.current = 0
@@ -72,6 +76,9 @@ export function useTimer() {
       segundosRestantes: duracion,
       pausado: false,
       config,
+      ...(fase === 'fin' && tiempoTotalInicioRef.current
+        ? { tiempoTotalSegundos: Math.round((Date.now() - tiempoTotalInicioRef.current) / 1000) }
+        : {}),
     }))
 
     detenerInterval()
@@ -94,15 +101,17 @@ export function useTimer() {
 
       setEstadoSync(prev => ({ ...prev, segundosRestantes: restantes }))
     }, 250)
-  }
+  }, [setEstadoSync, detenerInterval])
+
+  useEffect(() => { iniciarFaseRef.current = iniciarFase }, [iniciarFase])
 
   const iniciar = useCallback((config) => {
     tiempoTotalInicioRef.current = Date.now()
     const next = { ...ESTADO_INICIAL, iniciado: true, config }
     estadoRef.current = next
     setEstado(next)
-    iniciarFaseRef.current('calentamiento', 1, config)
-  }, [setEstadoSync]) // eslint-disable-line
+    iniciarFase('calentamiento', 1, config)
+  }, [iniciarFase])
 
   const pausar = useCallback(() => {
     if (estadoRef.current.pausado) return
@@ -123,8 +132,8 @@ export function useTimer() {
     const cur = estadoRef.current
     if (!cur.iniciado || cur.fase === 'fin') return
     const siguiente = calcularSiguienteFase(cur.fase, cur.setActual, cur.config)
-    if (siguiente) iniciarFaseRef.current(siguiente.fase, siguiente.setActual, cur.config)
-  }, []) // eslint-disable-line
+    if (siguiente) iniciarFase(siguiente.fase, siguiente.setActual, cur.config)
+  }, [iniciarFase])
 
   const terminar = useCallback(() => {
     detenerInterval()
@@ -136,9 +145,5 @@ export function useTimer() {
 
   useEffect(() => () => detenerInterval(), [detenerInterval])
 
-  const tiempoTotalSegundos = tiempoTotalInicioRef.current
-    ? Math.round((Date.now() - tiempoTotalInicioRef.current) / 1000)
-    : 0
-
-  return { ...estado, tiempoTotalSegundos, iniciar, pausar, reanudar, saltarIntervalo, terminar }
+  return { ...estado, iniciar, pausar, reanudar, saltarIntervalo, terminar }
 }

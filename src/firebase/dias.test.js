@@ -104,7 +104,6 @@ describe('marcarDiaParaEliminar / desmarcarDiaParaEliminar', () => {
   })
 
   it('desmarcar envía deleteField', async () => {
-    const { where } = await import('firebase/firestore')
     await desmarcarDiaParaEliminar('dia1')
     const [, update] = updateDoc.mock.calls[0]
     expect(update.eliminadoEn).toBe('__DELETE__')

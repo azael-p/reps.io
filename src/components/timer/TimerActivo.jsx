@@ -33,7 +33,6 @@ const LONG_PRESS_MS = 2000
 export default function TimerActivo({ fase, segundosRestantes, setActual, config, pausado, onPausar, onReanudar, onSaltar, onTerminar }) {
   const [presionando, setPresionando] = useState(false)
   const [progresoTerminar, setProgresoTerminar] = useState(0)
-  const longPressRef = useRef(null)
   const startRef = useRef(null)
   const animFrameRef = useRef(null)
 

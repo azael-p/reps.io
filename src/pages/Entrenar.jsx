@@ -23,6 +23,7 @@ export default function Entrenar() {
   const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
+    if (!usuario?.id) return
     getProgramas(usuario.id).then(p => { setProgramas(p); setCargando(false) }).catch(e => { console.error(e); setErrorMsg('Error al cargar programas'); setCargando(false) })
   }, [usuario?.id])
 
@@ -45,7 +46,7 @@ export default function Entrenar() {
           navigate(`/sesion/${stored}`)
           return
         }
-      } catch { /* si falla, creamos nueva sesión */ }
+      } catch (e) { console.error('No se pudo verificar la sesión previa:', e) /* si falla, creamos nueva sesión */ }
     }
 
     try {

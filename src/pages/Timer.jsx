@@ -1,4 +1,3 @@
-import { useState, useRef } from 'react'
 import { useTimer } from '../components/timer/useTimer'
 import { useWakeLock } from '../components/timer/useWakeLock'
 import TimerConfig from '../components/timer/TimerConfig'
@@ -8,7 +7,6 @@ import TimerFin from '../components/timer/TimerFin'
 export default function Timer() {
   const timer = useTimer()
   const wakeLock = useWakeLock()
-  const tiempoTotalFinalRef = useRef(0)
 
   function handleIniciar(config) {
     wakeLock.activar()
@@ -16,7 +14,6 @@ export default function Timer() {
   }
 
   function handleTerminar() {
-    tiempoTotalFinalRef.current = timer.tiempoTotalSegundos
     wakeLock.liberar()
     timer.terminar()
   }
@@ -26,16 +23,12 @@ export default function Timer() {
   }
 
   if (timer.fase === 'fin') {
-    // tiempoTotalFinalRef is set by TERMINAR (manual stop).
-    // When the timer completes all phases naturally, capture it from the hook here
-    // (timer.tiempoTotalSegundos becomes 0 once terminar() is called, so we capture before).
-    const tiempoMostrar = tiempoTotalFinalRef.current || timer.tiempoTotalSegundos
+    // tiempoTotalSegundos se fija en el estado del hook al entrar a 'fin'.
     return (
       <TimerFin
-        config={timer.config}
         setsCompletados={timer.config?.sets ?? 0}
-        tiempoTotal={tiempoMostrar}
-        onVolver={() => { wakeLock.liberar(); timer.terminar() }}
+        tiempoTotal={timer.tiempoTotalSegundos}
+        onVolver={handleTerminar}
       />
     )
   }

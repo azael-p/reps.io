@@ -20,7 +20,8 @@ export function UserProvider({ children }) {
       try {
         const { usuario } = await handleFirstLogin(firebaseUser)
         setUsuario(usuario)
-      } catch {
+      } catch (e) {
+        console.error('handleFirstLogin falló:', e)
         setUsuario(null)
       } finally {
         setLoading(false)

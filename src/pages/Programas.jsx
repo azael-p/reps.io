@@ -30,7 +30,7 @@ export default function Programas() {
     setCargando(false)
   }, [usuario])
 
-  useEffect(() => { setCargando(true); cargar() }, [cargar]) // eslint-disable-line
+  useEffect(() => { cargar() }, [cargar])
 
   useKeyboardShortcut('n', abrirCrear, [])
 

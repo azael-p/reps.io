@@ -1,5 +1,5 @@
 import { db } from './config'
-import { collection, addDoc, deleteDoc, doc, query, where, getDocs, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, deleteDoc, doc, query, getDocs, serverTimestamp } from 'firebase/firestore'
 
 const COL = (uid) => collection(db, 'usuarios', uid, 'timerPresets')
 

@@ -69,7 +69,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
     } else {
       handlerRef.current = () => onCerrarRef.current?.()
     }
-  }, [ejercicioElegido]) // eslint-disable-line
+  }, [ejercicioElegido])
 
   const fuse = useMemo(() => new Fuse(
     catalogo.map(e => ({ ...e, nombreNorm: normalizar(e.nombre), grupoNorm: normalizar(e.grupoMuscular) })),

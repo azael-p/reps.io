@@ -14,49 +14,71 @@ service cloud.firestore {
       return request.resource.data.usuarioId == resource.data.usuarioId;
     }
 
+    // Solo los campos tocados por el update deben estar en la lista.
+    // (diff sobre el doc previo: no rompe docs con campos legacy.)
+    function soloCambia(campos) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos);
+    }
+
     match /usuarios/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['nombre', 'email', 'photoURL']);
+      allow update: if request.auth != null && request.auth.uid == userId
+        && soloCambia(['nombre', 'email', 'photoURL']);
 
       match /historialPeso/{id} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['peso', 'fecha'])
+          && request.resource.data.peso is number
+          && request.resource.data.peso >= 20
+          && request.resource.data.peso <= 300;
       }
 
       match /timerPresets/{presetId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['nombre', 'calentamiento', 'trabajo', 'descanso', 'sets', 'enfriamiento', 'creadoEn']);
       }
     }
 
     match /programas/{id} {
       allow read, delete: if esElDueno();
-      allow update: if esElDueno() && noCambiaDueno();
+      allow update: if esElDueno() && noCambiaDueno()
+        && soloCambia(['nombre', 'orden', 'eliminadoEn']);
       allow create: if creandoComoDueno()
         && request.resource.data.keys().hasOnly(['usuarioId', 'nombre', 'orden']);
     }
 
     match /dias/{id} {
       allow read, delete: if esElDueno();
-      allow update: if esElDueno() && noCambiaDueno();
+      allow update: if esElDueno() && noCambiaDueno()
+        && soloCambia(['nombre', 'orden', 'eliminadoEn']);
       allow create: if creandoComoDueno()
         && request.resource.data.keys().hasOnly(['usuarioId', 'programaId', 'nombre', 'orden']);
     }
 
     match /ejerciciosDia/{id} {
       allow read, delete: if esElDueno();
-      allow update: if esElDueno() && noCambiaDueno();
+      allow update: if esElDueno() && noCambiaDueno()
+        && soloCambia(['nombre', 'seriesEsperadas', 'repsEsperadas', 'orden', 'eliminadoEn']);
       allow create: if creandoComoDueno()
         && request.resource.data.keys().hasOnly(['usuarioId', 'diaId', 'nombre', 'grupoMuscular', 'esCustom', 'catalogoId', 'seriesEsperadas', 'repsEsperadas', 'orden']);
     }
 
     match /sesiones/{id} {
       allow read, delete: if esElDueno();
-      allow update: if esElDueno() && noCambiaDueno();
+      allow update: if esElDueno() && noCambiaDueno()
+        && soloCambia(['nota', 'completada', 'resumen']);
       allow create: if creandoComoDueno()
         && request.resource.data.keys().hasOnly(['usuarioId', 'diaId', 'fecha', 'nota', 'completada']);
     }
 
     match /registros/{id} {
       allow read, delete: if esElDueno();
-      allow update: if esElDueno() && noCambiaDueno();
+      allow update: if esElDueno() && noCambiaDueno()
+        && soloCambia(['pesoUsado', 'repsHechas', 'nota']);
       allow create: if creandoComoDueno()
         && request.resource.data.keys().hasOnly(['usuarioId', 'sesionId', 'ejercicioId', 'nombreEjercicio', 'grupoMuscular', 'catalogoId', 'numeroSerie', 'repsEsperadas', 'repsHechas', 'pesoUsado', 'nota']);
     }

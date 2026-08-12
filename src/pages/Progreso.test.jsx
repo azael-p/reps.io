@@ -1,7 +1,7 @@
 vi.mock('../firebase/config', () => ({ db: {}, auth: {} }))
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { calcular1RM, frecuenciaSemanal } from './Progreso'
+import { calcular1RM, frecuenciaSemanal } from '../utils/stats'
 
 const ts = (y, m, d) => {
   const date = new Date(y, m - 1, d)

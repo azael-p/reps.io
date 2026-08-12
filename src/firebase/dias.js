@@ -1,6 +1,6 @@
 import { db, auth } from './config'
 import {
-  collection, addDoc, updateDoc, writeBatch, deleteDoc,
+  collection, addDoc, updateDoc, writeBatch,
   doc, query, where, getDocs, deleteField,
 } from 'firebase/firestore'
 

@@ -37,7 +37,7 @@ export default function Dias() {
     setCargando(false)
   }, [programaId, navigate])
 
-  useEffect(() => { setCargando(true); cargar() }, [cargar]) // eslint-disable-line
+  useEffect(() => { cargar() }, [cargar])
 
   function abrirCrear() { setNombre(''); setModal('crear') }
   useKeyboardShortcut('n', abrirCrear, [])

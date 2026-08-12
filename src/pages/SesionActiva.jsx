@@ -108,7 +108,7 @@ export default function SesionActiva() {
   useEffect(() => {
     if (!usuario) return
     getSesionesConResumen(usuario.id).then(setSesionesCache).catch(e => { console.error(e); show({ variant: 'error', message: 'No se pudieron cargar las sesiones.' }) })
-  }, [usuario])
+  }, [usuario, show])
 
   const cargar = useCallback(async () => {
     try {
@@ -173,12 +173,12 @@ export default function SesionActiva() {
     setPesoUsado(ultimoPesoRestaurado[ejs[restoredEjIdx].id] ?? '')
     } catch (e) { console.error(e); show({ variant: 'error', message: 'No se pudo cargar la sesion.' }) }
     setCargando(false)
-  }, [sesionId, navigate])
+  }, [sesionId, navigate, show])
 
   useEffect(() => {
-    localStorage.setItem(`sesion_activa_${usuario?.id}`, sesionId)
+    if (usuario?.id) localStorage.setItem(`sesion_activa_${usuario.id}`, sesionId)
     logEvento('sesion_iniciada')
-    setCargando(true); cargar() // eslint-disable-line
+    cargar()
   }, [cargar, sesionId, usuario?.id])
 
   useEffect(() => {
@@ -244,7 +244,7 @@ export default function SesionActiva() {
       setNota('')
       setMostrarNota(false)
     } else {
-      localStorage.removeItem(`sesion_activa_${usuario?.id}`)
+      if (usuario?.id) localStorage.removeItem(`sesion_activa_${usuario.id}`)
       navigate(`/sesion/${sesionId}/resumen`)
     }
   }
@@ -327,8 +327,8 @@ export default function SesionActiva() {
           show({ variant: 'error', message: 'No se pudo cancelar la sesion.' })
           return
         }
-        localStorage.removeItem(`sesion_activa_${usuario?.id}`)
-        localStorage.removeItem(`calendario_${usuario?.id}`)
+        if (usuario?.id) localStorage.removeItem(`sesion_activa_${usuario.id}`)
+        if (usuario?.id) localStorage.removeItem(`calendario_${usuario.id}`)
         show({ message: 'Sesion cancelada.', variant: 'success' })
         navigate('/home')
       },
@@ -343,7 +343,7 @@ export default function SesionActiva() {
       confirmLabel: 'Terminar',
       danger: false,
       onConfirm: () => {
-        localStorage.removeItem(`sesion_activa_${usuario?.id}`)
+        if (usuario?.id) localStorage.removeItem(`sesion_activa_${usuario.id}`)
         navigate(`/sesion/${sesionId}/resumen`)
       },
     })

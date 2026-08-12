@@ -4,6 +4,7 @@ vi.mock('motion/react', async (importOriginal) => {
 })
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { useEffect } from 'react'
 import { render, screen, act } from '@testing-library/react'
 import { ToastProvider, useToast } from './Toast'
 
@@ -11,8 +12,7 @@ let showFn, dismissFn
 
 function Fixture() {
   const { show, dismiss } = useToast()
-  showFn = show
-  dismissFn = dismiss
+  useEffect(() => { showFn = show; dismissFn = dismiss })
   return null
 }
 

@@ -101,10 +101,11 @@ export default function ResumenSesion() {
   }, [sesionId])
 
   useEffect(() => {
-    localStorage.removeItem(`sesion_activa_${usuario?.id}`)
-    localStorage.removeItem(`calendario_${usuario?.id}`)
-    setCargando(true)
-    cargar() // eslint-disable-line
+    if (usuario?.id) {
+      localStorage.removeItem(`sesion_activa_${usuario.id}`)
+      localStorage.removeItem(`calendario_${usuario.id}`)
+    }
+    cargar()
   }, [sesionId, cargar, usuario?.id])
 
   // Loguear sesion_finalizada una vez que tengamos los datos cargados

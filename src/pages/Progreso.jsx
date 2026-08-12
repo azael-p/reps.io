@@ -9,6 +9,7 @@ import { PageWrapper, EmptyState, ConfirmDialog, Modal } from '../components/ui'
 import PullToRefresh from '../components/PullToRefresh'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
+import { calcular1RM, frecuenciaSemanal } from '../utils/stats'
 
 const TABS = ['Historial', 'Gráfico', 'Volumen', 'Rachas', 'Peso']
 
@@ -22,39 +23,6 @@ function formatFechaCorta(ts) {
   if (!ts) return ''
   const d = ts.toDate ? ts.toDate() : new Date(ts)
   return d.toLocaleDateString('es-UY', { day: 'numeric', month: 'numeric' })
-}
-
-export function calcular1RM(peso, reps) {
-  if (!peso || !reps || reps <= 1) return peso
-  return Math.round(peso * (1 + reps / 30))
-}
-
-export function frecuenciaSemanal(sesiones) {
-  const semanas = {}
-  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
-  const lunesHoy = new Date(hoy)
-  lunesHoy.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7))
-
-  for (const s of sesiones) {
-    if (!s.fecha) continue
-    const d = s.fecha.toDate ? s.fecha.toDate() : new Date(s.fecha)
-    const lunes = new Date(d)
-    lunes.setDate(d.getDate() - ((d.getDay() + 6) % 7))
-    lunes.setHours(0, 0, 0, 0)
-    const key = lunes.getTime()
-    if (!semanas[key]) semanas[key] = { fecha: lunes, dias: 0 }
-    semanas[key].dias += 1
-  }
-  return Object.values(semanas)
-    .sort((a, b) => a.fecha - b.fecha)
-    .map(({ fecha, dias }) => {
-      const esActual = fecha.getTime() === lunesHoy.getTime()
-      const domingo = new Date(fecha); domingo.setDate(fecha.getDate() + 6)
-      const fmtDia = d => d.toLocaleDateString('es-UY', { day: 'numeric', month: 'short' }).replace('.', '')
-      const semana = esActual ? 'Esta sem.' : `${fmtDia(fecha)}–${fmtDia(domingo)}`
-      return { semana, dias }
-    })
-    .slice(-8)
 }
 
 function ChipsFiltro({ values, selected, onChange }) {
@@ -103,11 +71,8 @@ export default function Progreso() {
   const [ejercicios, setEjercicios] = useState([])
   const [ejercicioSel, setEjercicioSel] = useState('')
   const [grupoSel, setGrupoSel] = useState('')
-  const [datosGrafico, setDatosGrafico] = useState([])
   const [cargando, setCargando] = useState(true)
   const [confirmData, setConfirmData] = useState(null)
-  const [datosVolumen, setDatosVolumen] = useState([])
-  const [streaks, setStreaks] = useState({ actual: 0, maxima: 0 })
   const [displayCount, setDisplayCount] = useState(20)
   const [filtroPrograma, setFiltroPrograma] = useState('todos')
   const [filtroMes, setFiltroMes] = useState('todos')
@@ -146,6 +111,7 @@ export default function Progreso() {
   }, [usuario])
 
   const cargarPeso = useCallback(async () => {
+    setCargandoPeso(true)
     try {
       const data = await getHistorialPeso(usuario.id)
       setHistorialPeso(data)
@@ -154,14 +120,14 @@ export default function Progreso() {
     setCargandoPeso(false)
   }, [usuario])
 
-  useEffect(() => { setCargando(true); cargar() }, [cargar]) // eslint-disable-line
+  useEffect(() => { cargar() }, [cargar])
 
-  // Gráfico de ejercicio — client-side, sin Firestore
-  useEffect(() => {
-    if (!sesionesConResumen || !ejercicioSel) return
-    if (tab !== 'Gráfico' && !isDesktop) return
+  // Gráfico de ejercicio — derivación pura client-side, sin Firestore
+  const datosGrafico = useMemo(() => {
+    if (!sesionesConResumen || !ejercicioSel) return []
+    if (tab !== 'Gráfico' && !isDesktop) return []
     const ejercicioObj = ejercicios.find(e => e.nombre === ejercicioSel)
-    if (!ejercicioObj) return
+    if (!ejercicioObj) return []
     const registros = getRegistrosPorEjercicioLocal(sesionesConResumen, ejercicioObj)
     const porSesion = {}
     for (const r of registros) {
@@ -176,29 +142,28 @@ export default function Progreso() {
       }
     }
     const arr = Object.values(porSesion) // antiguo → reciente
-    setDatosGrafico(arr.map((d, i) => ({ ...d, xKey: `${d.fecha}#${i}` })))
-  }, [tab, ejercicioSel, ejercicios, modoGrafico, isDesktop, sesionesConResumen]) // eslint-disable-line
+    return arr.map((d, i) => ({ ...d, xKey: `${d.fecha}#${i}` }))
+  }, [tab, ejercicioSel, ejercicios, modoGrafico, isDesktop, sesionesConResumen])
 
-  // Volumen total — client-side, sin Firestore
-  useEffect(() => {
-    if (!sesionesConResumen) return
-    if (tab !== 'Volumen' && !isDesktop) return
-    const arr = getVolumenPorSesionLocal(sesionesConResumen)
+  // Volumen total — derivación pura client-side, sin Firestore
+  const datosVolumen = useMemo(() => {
+    if (!sesionesConResumen) return []
+    if (tab !== 'Volumen' && !isDesktop) return []
+    return getVolumenPorSesionLocal(sesionesConResumen)
       .map(d => ({ fecha: formatFechaCorta(d.fecha), volumen: d.volumen })) // antiguo → reciente
-    setDatosVolumen(arr.map((d, i) => ({ ...d, xKey: `${d.fecha}#${i}` })))
-  }, [tab, isDesktop, sesionesConResumen]) // eslint-disable-line
+      .map((d, i) => ({ ...d, xKey: `${d.fecha}#${i}` }))
+  }, [tab, isDesktop, sesionesConResumen])
 
-  // Rachas — client-side, sin Firestore
-  useEffect(() => {
-    if (!sesionesConResumen) return
-    if (tab !== 'Rachas' && !isDesktop) return
-    setStreaks(getStreaksLocal(sesionesConResumen))
-  }, [tab, isDesktop, sesionesConResumen]) // eslint-disable-line
+  // Rachas — derivación pura client-side, sin Firestore
+  const streaks = useMemo(() => {
+    if (!sesionesConResumen || (tab !== 'Rachas' && !isDesktop)) return { actual: 0, maxima: 0 }
+    return getStreaksLocal(sesionesConResumen)
+  }, [tab, isDesktop, sesionesConResumen])
 
   // Peso corporal — sigue siendo Firestore (subcollección separada)
   useEffect(() => {
     if ((tab === 'Peso' || isDesktop) && !pesoCargado && !cargandoPeso) {
-      setCargandoPeso(true); cargarPeso() // eslint-disable-line react-hooks/set-state-in-effect
+      cargarPeso()
     }
   }, [tab, isDesktop, pesoCargado, cargandoPeso, cargarPeso])
 
@@ -211,7 +176,6 @@ export default function Progreso() {
       await agregarPeso(usuario.id, kg)
       setModalPeso(false)
       setPesoCargado(false)
-      setCargandoPeso(true)
       cargarPeso()
     } catch (e) { console.error(e); setErrorPeso('Error al guardar. Intentá de nuevo.') }
     setGuardandoPeso(false)

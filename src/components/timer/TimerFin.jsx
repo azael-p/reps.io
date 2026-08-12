@@ -7,7 +7,7 @@ function formatTiempo(segundos) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-export default function TimerFin({ config, setsCompletados, tiempoTotal, onVolver }) {
+export default function TimerFin({ setsCompletados, tiempoTotal, onVolver }) {
   return (
     <motion.div
       style={s.page}
