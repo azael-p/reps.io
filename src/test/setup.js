@@ -6,6 +6,12 @@ global.ResizeObserver = class {
   disconnect() {}
 }
 
+global.IntersectionObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 // WakeLock API mock
 Object.defineProperty(global.navigator, 'wakeLock', {
   writable: true,

@@ -9,6 +9,7 @@ import { getHistorialPeso, agregarPeso } from '../firebase/peso'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { PageWrapper, EmptyState, ErrorState, ConfirmDialog, Modal } from '../components/ui'
 import PullToRefresh from '../components/PullToRefresh'
+import LazyPanel from '../components/LazyPanel'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
 import { frecuenciaSemanal, calcularStreaks } from '../utils/stats'
@@ -693,11 +694,11 @@ export default function Progreso() {
             <div style={s.desktopCol}>
               <div style={s.desktopPanel}>
                 <p style={s.desktopPanelTitle}>Evolución de ejercicios</p>
-                {graficoContent}
+                <LazyPanel minHeight={320}>{graficoContent}</LazyPanel>
               </div>
               <div style={s.desktopPanel}>
                 <p style={s.desktopPanelTitle}>Volumen total</p>
-                {volumenContent}
+                <LazyPanel minHeight={280}>{volumenContent}</LazyPanel>
               </div>
               <div style={s.desktopPanel}>
                 <p style={s.desktopPanelTitle}>Peso corporal</p>
@@ -707,7 +708,7 @@ export default function Progreso() {
             <div style={s.desktopColNarrow}>
               <div style={s.desktopPanel}>
                 <p style={s.desktopPanelTitle}>Rachas</p>
-                {rachasContent}
+                <LazyPanel minHeight={200}>{rachasContent}</LazyPanel>
               </div>
               <div style={s.desktopPanel}>
                 <p style={s.desktopPanelTitle}>Historial de sesiones</p>
