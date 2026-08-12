@@ -9,6 +9,7 @@ global.ResizeObserver = class {
 // WakeLock API mock
 Object.defineProperty(global.navigator, 'wakeLock', {
   writable: true,
+  configurable: true,
   value: {
     request: vi.fn().mockResolvedValue({ release: vi.fn() }),
   },
