@@ -7,6 +7,7 @@ import { db } from '../firebase/config'
 import SeleccionarEjercicio from '../components/SeleccionarEjercicio'
 import { Header, Modal, ListSkeleton, EmptyState, ErrorState, PageWrapper, Badge } from '../components/ui'
 import { useToast } from '../components/Toast'
+import { useEliminarConUndo } from '../hooks/useEliminarConUndo'
 import DnDList from '../components/DnDList'
 import { GripVertical, Pencil, Trash2, Dumbbell } from 'lucide-react'
 
@@ -69,31 +70,17 @@ export default function EjerciciosDia() {
     cargar()
   }
 
-  async function eliminar(e) {
-    try {
-      await marcarEjercicioParaEliminar(e.id)
-    } catch (err) {
-      console.error(err)
-      show({ message: 'No se pudo eliminar. Intentá de nuevo.', variant: 'error' })
-      return
-    }
-    setEjercicios(prev => prev.filter(ej => ej.id !== e.id))
-    show({
-      message: `"${e.nombre}" eliminado`,
-      action: {
-        label: 'Deshacer',
-        onClick: async () => {
-          try {
-            await desmarcarEjercicioParaEliminar(e.id)
-          } catch (err) {
-            console.error(err)
-            show({ message: 'No se pudo restaurar. Intentá de nuevo.', variant: 'error' })
-          }
-          cargar()
-        },
-      },
-      duration: 5000,
-      onTimeout: () => eliminarEjercicioDefinitivo(e.id),
+  const eliminarConUndo = useEliminarConUndo({
+    marcar: marcarEjercicioParaEliminar,
+    desmarcar: desmarcarEjercicioParaEliminar,
+    eliminarDefinitivo: eliminarEjercicioDefinitivo,
+  })
+
+  function eliminar(ej) {
+    eliminarConUndo(ej, {
+      mensaje: `"${ej.nombre}" eliminado`,
+      onOptimista: () => setEjercicios(prev => prev.filter(e => e.id !== ej.id)),
+      onRecargar: cargar,
     })
   }
 

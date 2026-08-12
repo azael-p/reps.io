@@ -6,6 +6,7 @@ import { getProgramas, crearPrograma, editarPrograma, marcarParaEliminar, desmar
 import { Header, Modal, ListSkeleton, EmptyState, ErrorState, PageWrapper } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
+import { useEliminarConUndo } from '../hooks/useEliminarConUndo'
 import DnDList from '../components/DnDList'
 import SwipeToDelete from '../components/SwipeToDelete'
 import { useDesktop } from '../hooks/useDesktop'
@@ -57,31 +58,17 @@ export default function Programas() {
     cargar()
   }
 
-  async function eliminar(p) {
-    try {
-      await marcarParaEliminar(p.id)
-    } catch (e) {
-      console.error(e)
-      show({ message: 'No se pudo eliminar. Intentá de nuevo.', variant: 'error' })
-      return
-    }
-    setProgramas(prev => prev.filter(prog => prog.id !== p.id))
-    show({
-      message: `"${p.nombre}" eliminado`,
-      action: {
-        label: 'Deshacer',
-        onClick: async () => {
-          try {
-            await desmarcarParaEliminar(p.id)
-          } catch (e) {
-            console.error(e)
-            show({ message: 'No se pudo restaurar. Intentá de nuevo.', variant: 'error' })
-          }
-          cargar()
-        },
-      },
-      duration: 5000,
-      onTimeout: () => eliminarProgramaDefinitivo(p.id),
+  const eliminarConUndo = useEliminarConUndo({
+    marcar: marcarParaEliminar,
+    desmarcar: desmarcarParaEliminar,
+    eliminarDefinitivo: eliminarProgramaDefinitivo,
+  })
+
+  function eliminar(p) {
+    eliminarConUndo(p, {
+      mensaje: `"${p.nombre}" eliminado`,
+      onOptimista: () => setProgramas(prev => prev.filter(prog => prog.id !== p.id)),
+      onRecargar: cargar,
     })
   }
 

@@ -7,6 +7,7 @@ import { db } from '../firebase/config'
 import { Header, Modal, ListSkeleton, EmptyState, ErrorState, PageWrapper } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
+import { useEliminarConUndo } from '../hooks/useEliminarConUndo'
 import DnDList from '../components/DnDList'
 import { useDesktop } from '../hooks/useDesktop'
 import { GripVertical, Pencil, Trash2, ChevronRight, CalendarDays } from 'lucide-react'
@@ -64,31 +65,17 @@ export default function Dias() {
     cargar()
   }
 
-  async function eliminar(d) {
-    try {
-      await marcarDiaParaEliminar(d.id)
-    } catch (e) {
-      console.error(e)
-      show({ message: 'No se pudo eliminar. Intentá de nuevo.', variant: 'error' })
-      return
-    }
-    setDias(prev => prev.filter(dia => dia.id !== d.id))
-    show({
-      message: `"${d.nombre}" eliminado`,
-      action: {
-        label: 'Deshacer',
-        onClick: async () => {
-          try {
-            await desmarcarDiaParaEliminar(d.id)
-          } catch (e) {
-            console.error(e)
-            show({ message: 'No se pudo restaurar. Intentá de nuevo.', variant: 'error' })
-          }
-          cargar()
-        },
-      },
-      duration: 5000,
-      onTimeout: () => eliminarDiaDefinitivo(d.id),
+  const eliminarConUndo = useEliminarConUndo({
+    marcar: marcarDiaParaEliminar,
+    desmarcar: desmarcarDiaParaEliminar,
+    eliminarDefinitivo: eliminarDiaDefinitivo,
+  })
+
+  function eliminar(d) {
+    eliminarConUndo(d, {
+      mensaje: `"${d.nombre}" eliminado`,
+      onOptimista: () => setDias(prev => prev.filter(dia => dia.id !== d.id)),
+      onRecargar: cargar,
     })
   }
 
