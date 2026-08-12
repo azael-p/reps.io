@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { useKeyboardShortcut, useEnterShortcut } from './useKeyboardShortcut'
+import { useKeyboardShortcut } from './useKeyboardShortcut'
 
 function ShortcutFixture({ onMatch }) {
   useKeyboardShortcut('n', onMatch)
@@ -9,17 +9,6 @@ function ShortcutFixture({ onMatch }) {
       <input data-testid="input" />
       <textarea data-testid="textarea" />
       <div contentEditable data-testid="editable" />
-      <button data-testid="button">btn</button>
-    </div>
-  )
-}
-
-function EnterFixture({ onEnter }) {
-  useEnterShortcut(onEnter)
-  return (
-    <div>
-      <input data-testid="input" />
-      <textarea data-testid="textarea" />
       <button data-testid="button">btn</button>
     </div>
   )
@@ -86,37 +75,5 @@ describe('useKeyboardShortcut', () => {
     fireEvent.keyDown(document.body, { key: 'n' })
     expect(onMatchViejo).not.toHaveBeenCalled()
     expect(onMatchNuevo).toHaveBeenCalledTimes(1)
-  })
-})
-
-// ---------------------------------------------------------------------------
-
-describe('useEnterShortcut', () => {
-  it('llama al handler al presionar Enter dentro de un input', () => {
-    const onEnter = vi.fn()
-    render(<EnterFixture onEnter={onEnter} />)
-    fireEvent.keyDown(screen.getByTestId('input'), { key: 'Enter' })
-    expect(onEnter).toHaveBeenCalledTimes(1)
-  })
-
-  it('llama al handler al presionar Enter dentro de un textarea', () => {
-    const onEnter = vi.fn()
-    render(<EnterFixture onEnter={onEnter} />)
-    fireEvent.keyDown(screen.getByTestId('textarea'), { key: 'Enter' })
-    expect(onEnter).toHaveBeenCalledTimes(1)
-  })
-
-  it('no llama al handler si Enter se presiona fuera de un input/textarea', () => {
-    const onEnter = vi.fn()
-    render(<EnterFixture onEnter={onEnter} />)
-    fireEvent.keyDown(screen.getByTestId('button'), { key: 'Enter' })
-    expect(onEnter).not.toHaveBeenCalled()
-  })
-
-  it('no llama al handler con otra tecla dentro del input', () => {
-    const onEnter = vi.fn()
-    render(<EnterFixture onEnter={onEnter} />)
-    fireEvent.keyDown(screen.getByTestId('input'), { key: 'Tab' })
-    expect(onEnter).not.toHaveBeenCalled()
   })
 })

@@ -48,7 +48,6 @@ vi.mock('../components/Toast', () => ({
 }))
 vi.mock('../hooks/useKeyboardShortcut', () => ({
   useKeyboardShortcut: vi.fn(),
-  useEnterShortcut: vi.fn(),
 }))
 
 import { getDoc } from 'firebase/firestore'

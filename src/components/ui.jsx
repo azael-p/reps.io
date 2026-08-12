@@ -135,21 +135,6 @@ export function ListSkeleton({ count = 3, height = 92 }) {
   )
 }
 
-export function CardSkeleton({ lines = 2 }) {
-  return (
-    <div className="card-elevated" style={{ padding: 16 }}>
-      <div className="skeleton" style={{ height: 18, width: '60%', marginBottom: 12 }} />
-      {Array.from({ length: lines }).map((_, i) => (
-        <div key={i} className="skeleton" style={{ height: 12, width: `${90 - i * 15}%`, marginBottom: 8 }} />
-      ))}
-    </div>
-  )
-}
-
-export function ChartSkeleton() {
-  return <div className="skeleton" style={{ height: 220, width: '100%', borderRadius: 'var(--r-lg)' }} />
-}
-
 export function ErrorState({ titulo = 'Algo salió mal', mensaje, onRetry }) {
   return (
     <motion.div
