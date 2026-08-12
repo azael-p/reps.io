@@ -74,7 +74,7 @@ describe('SesionActiva — restauración desde Firestore', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
-    getDoc.mockResolvedValue({ data: () => ({ diaId: 'dia1', completada: false }) })
+    getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'dia1', completada: false }) })
     getEjerciciosDia.mockResolvedValue([EJ1])
   })
 
@@ -133,7 +133,7 @@ describe('SesionActiva — "última vez" y PR cruzando días distintos (mismo ca
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
-    getDoc.mockResolvedValue({ data: () => ({ diaId: 'dia1', completada: false }) })
+    getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'dia1', completada: false }) })
     getEjerciciosDia.mockResolvedValue([EJ1])
     getRegistrosSesion.mockResolvedValue([])
     getSesionesConResumen.mockResolvedValue([])

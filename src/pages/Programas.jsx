@@ -56,14 +56,25 @@ export default function Programas() {
   }
 
   async function eliminar(p) {
-    await marcarParaEliminar(p.id)
+    try {
+      await marcarParaEliminar(p.id)
+    } catch (e) {
+      console.error(e)
+      show({ message: 'No se pudo eliminar. Intentá de nuevo.', variant: 'error' })
+      return
+    }
     setProgramas(prev => prev.filter(prog => prog.id !== p.id))
     show({
       message: `"${p.nombre}" eliminado`,
       action: {
         label: 'Deshacer',
         onClick: async () => {
-          await desmarcarParaEliminar(p.id)
+          try {
+            await desmarcarParaEliminar(p.id)
+          } catch (e) {
+            console.error(e)
+            show({ message: 'No se pudo restaurar. Intentá de nuevo.', variant: 'error' })
+          }
           cargar()
         },
       },

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, useMotionValue, useTransform, animate } from 'motion/react'
 import { doc, getDoc } from 'firebase/firestore'
@@ -72,6 +72,9 @@ export default function ResumenSesion() {
   const [editReps, setEditReps] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
+  const notaTimeoutRef = useRef(null)
+
+  useEffect(() => () => clearTimeout(notaTimeoutRef.current), [])
 
   const cargar = useCallback(async () => {
     try {
@@ -79,6 +82,7 @@ export default function ResumenSesion() {
         getDoc(doc(db, 'sesiones', sesionId)),
         getRegistrosSesion(sesionId),
       ])
+      if (!sesionSnap.exists()) throw new Error(`Sesión ${sesionId} inexistente`)
       const sesionData = sesionSnap.data()
       setNota(sesionData.nota || '')
       setRegistros(regs)
@@ -142,7 +146,8 @@ export default function ResumenSesion() {
     try { await actualizarNotaSesion(sesionId, nota) } catch (e) { console.error(e); setError('Error al guardar la nota') }
     setGuardandoNota(false)
     setNotaGuardada(true)
-    setTimeout(() => setNotaGuardada(false), 1800)
+    clearTimeout(notaTimeoutRef.current)
+    notaTimeoutRef.current = setTimeout(() => setNotaGuardada(false), 1800)
   }
 
   const porEjercicio = useMemo(() => registros.reduce((acc, r) => {

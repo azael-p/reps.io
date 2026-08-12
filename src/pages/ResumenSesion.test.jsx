@@ -58,8 +58,8 @@ describe('ResumenSesion — orden de escrituras', () => {
     completarSesion.mockImplementation(async () => { callOrder.push('completar') })
 
     getDoc
-      .mockResolvedValueOnce({ data: () => ({ diaId: 'dia1', nota: '', completada: false }) })
-      .mockResolvedValueOnce({ data: () => ({ nombre: 'Push' }) })
+      .mockResolvedValueOnce({ exists: () => true, data: () => ({ diaId: 'dia1', nota: '', completada: false }) })
+      .mockResolvedValueOnce({ exists: () => true, data: () => ({ nombre: 'Push' }) })
 
     renderResumen()
 
@@ -74,12 +74,13 @@ describe('ResumenSesion — orden de escrituras', () => {
 
     getDoc
       .mockResolvedValueOnce({
+        exists: () => true,
         data: () => ({
           diaId: 'dia1', nota: '', completada: true,
           resumen: { ejercicios: [], volumenTotal: 0, diaNombre: 'Push' },
         }),
       })
-      .mockResolvedValueOnce({ data: () => ({ nombre: 'Push' }) })
+      .mockResolvedValueOnce({ exists: () => true, data: () => ({ nombre: 'Push' }) })
 
     renderResumen()
 

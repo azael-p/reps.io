@@ -11,12 +11,18 @@ const STEPS = [
 export default function Onboarding({ onCompletar, usuarioId }) {
   const [peso, setPeso] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const [errorPeso, setErrorPeso] = useState('')
 
   async function handleEmpezar() {
+    const kg = Number(peso)
+    if (peso.trim() && (!kg || kg < 20 || kg > 300)) {
+      setErrorPeso('Ingresá un peso entre 20 y 300 kg, o dejalo vacío')
+      return
+    }
+    setErrorPeso('')
     setGuardando(true)
     try {
-      const kg = Number(peso)
-      if (peso.trim() && kg >= 20 && kg <= 300) {
+      if (peso.trim()) {
         await agregarPeso(usuarioId, kg)
       }
     } catch (e) { console.error(e) }
@@ -81,6 +87,7 @@ export default function Onboarding({ onCompletar, usuarioId }) {
           />
           <span style={s.pesoKg}>kg</span>
         </div>
+        {errorPeso && <p style={{ color: 'var(--danger)', fontSize: '0.82rem', margin: '8px 0 0' }} role="alert">{errorPeso}</p>}
       </motion.div>
 
       <motion.button

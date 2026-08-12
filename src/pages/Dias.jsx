@@ -63,14 +63,25 @@ export default function Dias() {
   }
 
   async function eliminar(d) {
-    await marcarDiaParaEliminar(d.id)
+    try {
+      await marcarDiaParaEliminar(d.id)
+    } catch (e) {
+      console.error(e)
+      show({ message: 'No se pudo eliminar. Intentá de nuevo.', variant: 'error' })
+      return
+    }
     setDias(prev => prev.filter(dia => dia.id !== d.id))
     show({
       message: `"${d.nombre}" eliminado`,
       action: {
         label: 'Deshacer',
         onClick: async () => {
-          await desmarcarDiaParaEliminar(d.id)
+          try {
+            await desmarcarDiaParaEliminar(d.id)
+          } catch (e) {
+            console.error(e)
+            show({ message: 'No se pudo restaurar. Intentá de nuevo.', variant: 'error' })
+          }
           cargar()
         },
       },

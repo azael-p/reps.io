@@ -99,8 +99,10 @@ export default function SesionActiva() {
   const [celebrar, setCelebrar] = useState(false)
   const [confirmData, setConfirmData] = useState(null)
   const ultimoPesoRef = useRef(ultimoPeso)
+  const celebrarTimeoutRef = useRef(null)
 
   useEffect(() => { ultimoPesoRef.current = ultimoPeso }, [ultimoPeso])
+  useEffect(() => () => clearTimeout(celebrarTimeoutRef.current), [])
 
   // Preload all sessions once — replaces per-exercise Firestore queries
   useEffect(() => {
@@ -111,6 +113,7 @@ export default function SesionActiva() {
   const cargar = useCallback(async () => {
     try {
       const snap = await getDoc(doc(db, 'sesiones', sesionId))
+      if (!snap.exists()) throw new Error(`Sesión ${sesionId} inexistente`)
       const sesionData = snap.data()
       const [ejs, registrosExistentes] = await Promise.all([
         getEjerciciosDia(sesionData.diaId),
@@ -287,7 +290,8 @@ export default function SesionActiva() {
     })
     setGuardando(false)
     setCelebrar(true)
-    setTimeout(() => setCelebrar(false), 600)
+    clearTimeout(celebrarTimeoutRef.current)
+    celebrarTimeoutRef.current = setTimeout(() => setCelebrar(false), 600)
     if (esUltimaSerie && esUltimoEjercicio) {
       show({ message: '¡Entrenamiento completado!', variant: 'success' })
     }

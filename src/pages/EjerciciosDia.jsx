@@ -68,14 +68,25 @@ export default function EjerciciosDia() {
   }
 
   async function eliminar(e) {
-    await marcarEjercicioParaEliminar(e.id)
+    try {
+      await marcarEjercicioParaEliminar(e.id)
+    } catch (err) {
+      console.error(err)
+      show({ message: 'No se pudo eliminar. Intentá de nuevo.', variant: 'error' })
+      return
+    }
     setEjercicios(prev => prev.filter(ej => ej.id !== e.id))
     show({
       message: `"${e.nombre}" eliminado`,
       action: {
         label: 'Deshacer',
         onClick: async () => {
-          await desmarcarEjercicioParaEliminar(e.id)
+          try {
+            await desmarcarEjercicioParaEliminar(e.id)
+          } catch (err) {
+            console.error(err)
+            show({ message: 'No se pudo restaurar. Intentá de nuevo.', variant: 'error' })
+          }
           cargar()
         },
       },

@@ -8,6 +8,7 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContai
 import { PageWrapper, EmptyState, ConfirmDialog, Modal } from '../components/ui'
 import PullToRefresh from '../components/PullToRefresh'
 import { useDesktop } from '../hooks/useDesktop'
+import { useToast } from '../components/Toast'
 
 const TABS = ['Historial', 'Gráfico', 'Volumen', 'Rachas', 'Peso']
 
@@ -56,10 +57,46 @@ export function frecuenciaSemanal(sesiones) {
     .slice(-8)
 }
 
+function ChipsFiltro({ values, selected, onChange }) {
+  return (
+    <div style={{ display: 'flex', gap: '6px', padding: '0 16px 8px', overflowX: 'auto', flexWrap: 'nowrap' }}>
+      {values.map(v => (
+        <motion.button
+          key={v}
+          style={{
+            padding: '6px 12px',
+            borderRadius: '20px',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            ...(selected === v ? {
+              background: 'var(--green-grad)',
+              color: '#fff',
+              border: 'none',
+              boxShadow: 'var(--shadow-green)',
+            } : {
+              background: 'var(--bg-card)',
+              color: 'var(--text-mute)',
+              border: '1px solid var(--border)',
+              borderTopColor: 'var(--highlight)',
+            }),
+          }}
+          onClick={() => onChange(v)}
+          whileTap={{ scale: 0.94 }}
+        >
+          {v === 'todos' ? 'Todos' : v}
+        </motion.button>
+      ))}
+    </div>
+  )
+}
+
 export default function Progreso() {
   const isDesktop = useDesktop()
   const { usuario } = useUser()
   const navigate = useNavigate()
+  const { show } = useToast()
   const [tab, setTab] = useState('Historial')
   const [sesiones, setSesiones] = useState([])
   const [sesionesConResumen, setSesionesConResumen] = useState(null)
@@ -80,6 +117,7 @@ export default function Progreso() {
   const [pesoCargado, setPesoCargado] = useState(false)
   const [modalPeso, setModalPeso] = useState(false)
   const [pesoInput, setPesoInput] = useState('')
+  const [errorPeso, setErrorPeso] = useState('')
   const [guardandoPeso, setGuardandoPeso] = useState(false)
 
   const cargar = useCallback(async () => {
@@ -166,7 +204,8 @@ export default function Progreso() {
 
   async function handleGuardarPeso() {
     const kg = Number(pesoInput)
-    if (!kg || kg < 20 || kg > 300) return
+    if (!kg || kg < 20 || kg > 300) { setErrorPeso('Ingresá un peso entre 20 y 300 kg'); return }
+    setErrorPeso('')
     setGuardandoPeso(true)
     try {
       await agregarPeso(usuario.id, kg)
@@ -174,7 +213,7 @@ export default function Progreso() {
       setPesoCargado(false)
       setCargandoPeso(true)
       cargarPeso()
-    } catch (e) { console.error(e) }
+    } catch (e) { console.error(e); setErrorPeso('Error al guardar. Intentá de nuevo.') }
     setGuardandoPeso(false)
   }
 
@@ -212,39 +251,6 @@ export default function Progreso() {
       return true
     })
   }, [sesiones, filtroPrograma, filtroMes])
-
-  const ChipsFiltro = ({ values, selected, onChange }) => (
-    <div style={{ display: 'flex', gap: '6px', padding: '0 16px 8px', overflowX: 'auto', flexWrap: 'nowrap' }}>
-      {values.map(v => (
-        <motion.button
-          key={v}
-          style={{
-            padding: '6px 12px',
-            borderRadius: '20px',
-            fontSize: '0.78rem',
-            fontWeight: 600,
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-            ...(selected === v ? {
-              background: 'var(--green-grad)',
-              color: '#fff',
-              border: 'none',
-              boxShadow: 'var(--shadow-green)',
-            } : {
-              background: 'var(--bg-card)',
-              color: 'var(--text-mute)',
-              border: '1px solid var(--border)',
-              borderTopColor: 'var(--highlight)',
-            }),
-          }}
-          onClick={() => onChange(v)}
-          whileTap={{ scale: 0.94 }}
-        >
-          {v === 'todos' ? 'Todos' : v}
-        </motion.button>
-      ))}
-    </div>
-  )
 
   const headerContent = (
     <motion.div
@@ -338,7 +344,12 @@ export default function Progreso() {
                         descripcion: `${sesion.diaNombre} — ${formatFecha(sesion.fecha)}. Se borrarán todos los registros de series.`,
                         icon: '🗑️',
                         onConfirm: async () => {
-                          await eliminarSesion(sesion.id)
+                          try {
+                            await eliminarSesion(sesion.id)
+                          } catch (e) {
+                            console.error(e)
+                            show({ message: 'No se pudo eliminar la sesión. Intentá de nuevo.', variant: 'error' })
+                          }
                           cargar()
                         },
                       })}
@@ -350,13 +361,13 @@ export default function Progreso() {
                 </motion.div>
               ))}
             </AnimatePresence>
-            {sesiones.length > displayCount && (
+            {sesionesFiltradas.length > displayCount && (
               <motion.button
                 style={s.verMasBtn}
                 onClick={() => setDisplayCount(c => c + 20)}
                 whileTap={{ scale: 0.97 }}
               >
-                Ver más ({sesiones.length - displayCount} restantes)
+                Ver más ({sesionesFiltradas.length - displayCount} restantes)
               </motion.button>
             )}
           </div>
@@ -752,7 +763,7 @@ export default function Progreso() {
 
       <ConfirmDialog open={!!confirmData} data={confirmData} onClose={() => setConfirmData(null)} />
 
-      <Modal open={modalPeso} onClose={() => setModalPeso(false)}>
+      <Modal open={modalPeso} onClose={() => { setModalPeso(false); setErrorPeso('') }}>
         <h2 style={s.modalTitulo}>Registrar peso</h2>
         <div style={s.pesoModalRow}>
           <input
@@ -768,8 +779,9 @@ export default function Progreso() {
           />
           <span style={s.pesoModalKg}>kg</span>
         </div>
+        {errorPeso && <p style={{ color: 'var(--danger)', fontSize: '0.82rem', margin: '0 0 12px' }} role="alert">{errorPeso}</p>}
         <div style={{ display: 'flex', gap: '10px' }}>
-          <motion.button style={s.cancelBtn} onClick={() => setModalPeso(false)} whileTap={{ scale: 0.97 }}>
+          <motion.button style={s.cancelBtn} onClick={() => { setModalPeso(false); setErrorPeso('') }} whileTap={{ scale: 0.97 }}>
             Cancelar
           </motion.button>
           <motion.button

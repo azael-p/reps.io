@@ -9,6 +9,7 @@ import Calendario from '../components/Calendario'
 import Onboarding from '../components/Onboarding'
 import PullToRefresh from '../components/PullToRefresh'
 import { useDesktop } from '../hooks/useDesktop'
+import { useToast } from '../components/Toast'
 import { Layers, Zap, TrendingUp, ChevronRight, LogOut } from 'lucide-react'
 
 const ICON_STYLE = { color: 'rgba(255,255,255,0.95)', strokeWidth: 1.8 }
@@ -58,6 +59,7 @@ const SECCIONES = [
 export default function Home() {
   const isDesktop = useDesktop()
   const { usuario, logout } = useUser()
+  const { show } = useToast()
   const navigate = useNavigate()
   const [fechas, setFechas] = useState([])
   const [cargandoCal, setCargandoCal] = useState(true)
@@ -123,7 +125,15 @@ export default function Home() {
         </div>
         <motion.button
           style={s.logoutBtn}
-          onClick={() => { logout(); navigate('/') }}
+          onClick={async () => {
+            try {
+              await logout()
+              navigate('/')
+            } catch (e) {
+              console.error(e)
+              show({ message: 'No se pudo cerrar sesión. Intentá de nuevo.', variant: 'error' })
+            }
+          }}
           whileTap={{ scale: 0.95 }}
           whileHover={{ borderColor: 'var(--border-strong)' }}
           title="Salir"
