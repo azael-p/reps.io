@@ -1,3 +1,5 @@
+vi.mock('../firebase/config', () => ({ db: {}, auth: {} }))
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { calcular1RM, frecuenciaSemanal } from './Progreso'
 
