@@ -36,7 +36,9 @@ function ToastItem({ toast, onDismiss }) {
   const variant = VARIANT_STYLES[toast.variant] || VARIANT_STYLES.info
   const handleAction = (e) => {
     e.stopPropagation()
-    if (toast.onActionTimeoutClear) toast.onActionTimeoutClear()
+    // Descartar primero: cancela el timeoutId para que onTimeout (ej. borrado
+    // definitivo) no dispare después de deshacer.
+    onDismiss(toast.id)
     toast.action.onClick()
   }
   return (
@@ -50,6 +52,9 @@ function ToastItem({ toast, onDismiss }) {
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
+        // El contenedor usa pointerEvents:'none' para no bloquear la UI;
+        // hay que restaurarlos acá o los botones del toast no reciben clicks.
+        pointerEvents: 'auto',
         padding: '12px 14px',
         background: variant.bg,
         border: `1px solid ${variant.border}`,
@@ -111,11 +116,12 @@ export function ToastProvider({ children }) {
     let timeoutId = null
     if (toast.duration !== 0) {
       timeoutId = setTimeout(() => {
-        setToasts(prev => {
-          const current = prev.find(t => t.id === id)
-          if (current?.onTimeout) current.onTimeout()
-          return prev.filter(t => t.id !== id)
-        })
+        setToasts(prev => prev.filter(t => t.id !== id))
+        // onTimeout va fuera del updater: los updaters deben ser puros
+        // (StrictMode los ejecuta dos veces) y la promesa necesita su catch.
+        if (toast.onTimeout) {
+          Promise.resolve(toast.onTimeout()).catch(err => console.error(err))
+        }
       }, toast.duration ?? 3000)
     }
     setToasts(t => [...t, { id, duration: 3000, variant: 'success', timeoutId, ...toast }])

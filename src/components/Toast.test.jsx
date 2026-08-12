@@ -80,3 +80,44 @@ describe('ToastProvider — dismiss', () => {
     expect(onTimeout).not.toHaveBeenCalled()
   })
 })
+
+describe('ToastProvider — action (Deshacer)', () => {
+  it('ejecuta onClick de la acción y descarta el toast', () => {
+    const onClick = vi.fn()
+    renderProvider()
+    act(() => showFn({
+      message: 'Eliminado',
+      duration: 5000,
+      action: { label: 'Deshacer', onClick },
+    }))
+    act(() => { screen.getByText('Deshacer').click() })
+    expect(onClick).toHaveBeenCalledOnce()
+    expect(screen.queryByText('Eliminado')).not.toBeInTheDocument()
+  })
+
+  it('clickear la acción cancela onTimeout — no hay borrado definitivo tras deshacer', () => {
+    const onTimeout = vi.fn()
+    renderProvider()
+    act(() => showFn({
+      message: 'Eliminado',
+      duration: 5000,
+      action: { label: 'Deshacer', onClick: vi.fn() },
+      onTimeout,
+    }))
+    act(() => { screen.getByText('Deshacer').click() })
+    act(() => vi.advanceTimersByTime(5000))
+    expect(onTimeout).not.toHaveBeenCalled()
+  })
+
+  it('si onTimeout rechaza, el error se captura y se loguea', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const onTimeout = vi.fn().mockRejectedValue(new Error('firestore caído'))
+    renderProvider()
+    act(() => showFn({ message: 'Msg', duration: 500, onTimeout }))
+    act(() => vi.advanceTimersByTime(500))
+    await act(async () => { await Promise.resolve() })
+    expect(onTimeout).toHaveBeenCalledOnce()
+    expect(consoleError).toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+})
