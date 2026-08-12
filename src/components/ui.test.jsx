@@ -48,7 +48,8 @@ describe('Modal', () => {
   it('clickear el overlay (fuera del contenido) llama a onClose', () => {
     const onClose = vi.fn()
     withRouter(<Modal open={true} onClose={onClose}><p>Hola</p></Modal>)
-    fireEvent.click(screen.getByRole('dialog'))
+    // El role="dialog" vive en el contenido; el overlay es su padre.
+    fireEvent.click(screen.getByRole('dialog').parentElement)
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 

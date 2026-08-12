@@ -1,4 +1,5 @@
 // Cálculos puros de estadísticas de entrenamiento (sin React ni Firestore).
+import { toDate } from './fechas'
 
 export function calcular1RM(peso, reps) {
   if (!peso || !reps || reps <= 1) return peso
@@ -13,7 +14,7 @@ export function frecuenciaSemanal(sesiones) {
 
   for (const s of sesiones) {
     if (!s.fecha) continue
-    const d = s.fecha.toDate ? s.fecha.toDate() : new Date(s.fecha)
+    const d = toDate(s.fecha)
     const lunes = new Date(d)
     lunes.setDate(d.getDate() - ((d.getDay() + 6) % 7))
     lunes.setHours(0, 0, 0, 0)

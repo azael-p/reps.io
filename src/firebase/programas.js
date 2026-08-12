@@ -1,8 +1,9 @@
 import { db, auth } from './config'
 import {
   collection, addDoc, updateDoc, writeBatch,
-  doc, query, where, getDocs, deleteField,
+  doc, query, where, getDocs,
 } from 'firebase/firestore'
+import { marcarDocParaEliminar, desmarcarDocParaEliminar, reordenarDocs } from './softDelete'
 
 export async function getProgramas(usuarioId) {
   const snap = await getDocs(query(collection(db, 'programas'), where('usuarioId', '==', usuarioId)))
@@ -21,13 +22,9 @@ export async function editarPrograma(id, nombre) {
   await updateDoc(doc(db, 'programas', id), { nombre })
 }
 
-export async function marcarParaEliminar(programaId) {
-  await updateDoc(doc(db, 'programas', programaId), { eliminadoEn: Date.now() })
-}
+export const marcarParaEliminar = (programaId) => marcarDocParaEliminar('programas', programaId)
 
-export async function desmarcarParaEliminar(programaId) {
-  await updateDoc(doc(db, 'programas', programaId), { eliminadoEn: deleteField() })
-}
+export const desmarcarParaEliminar = (programaId) => desmarcarDocParaEliminar('programas', programaId)
 
 export async function eliminarProgramaDefinitivo(programaId) {
   const uid = auth.currentUser.uid
@@ -53,10 +50,4 @@ export async function eliminarProgramaDefinitivo(programaId) {
   await batch.commit()
 }
 
-export async function reordenarProgramas(items) {
-  const batch = writeBatch(db)
-  items.forEach(({ id, orden }) => {
-    batch.update(doc(db, 'programas', id), { orden })
-  })
-  await batch.commit()
-}
+export const reordenarProgramas = (items) => reordenarDocs('programas', items)

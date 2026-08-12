@@ -4,7 +4,7 @@ import { motion } from 'motion/react'
 import { getDias, crearDia, editarDia, marcarDiaParaEliminar, desmarcarDiaParaEliminar, eliminarDiaDefinitivo, reordenarDias } from '../firebase/dias'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
-import { Header, Modal, ListSkeleton, EmptyState, PageWrapper } from '../components/ui'
+import { Header, Modal, ListSkeleton, EmptyState, ErrorState, PageWrapper } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
 import DnDList from '../components/DnDList'
@@ -23,6 +23,7 @@ export default function Dias() {
   const [nombre, setNombre] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [errorCarga, setErrorCarga] = useState(false)
 
   const cargar = useCallback(async () => {
     try {
@@ -33,7 +34,8 @@ export default function Dias() {
       if (!snap.exists()) { navigate('/programas'); return }
       setPrograma({ id: snap.id, ...snap.data() })
       setDias(data)
-    } catch (e) { console.error(e) }
+      setErrorCarga(false)
+    } catch (e) { console.error(e); setErrorCarga(true) }
     setCargando(false)
   }, [programaId, navigate])
 
@@ -103,6 +105,8 @@ export default function Dias() {
 
       {cargando ? (
         <ListSkeleton />
+      ) : errorCarga ? (
+        <ErrorState mensaje="No se pudo cargar el programa." onRetry={cargar} />
       ) : dias.length === 0 ? (
         <EmptyState mensaje="Este programa no tiene días" icon={CalendarDays} sub="Agregá los días de la semana que entrenás" action={{ label: 'Agregar día', onClick: abrirCrear }} />
       ) : isDesktop ? (

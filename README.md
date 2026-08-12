@@ -60,39 +60,43 @@ npm run preview  # preview del build
 
 ```
 usuarios/{uid}
-  nombre, email, creadoEn
+  nombre, email, photoURL
 
 programas/{id}
-  usuarioId, nombre, descripcion, activo
+  usuarioId, nombre, orden
+  eliminadoEn               ← transitorio: soft-delete con undo (toast)
 
 dias/{id}
   programaId, usuarioId, nombre, orden
+  eliminadoEn               ← transitorio (ídem programas)
 
 ejerciciosDia/{id}
   diaId, usuarioId, nombre, grupoMuscular, esCustom, catalogoId
   seriesEsperadas, repsEsperadas, orden
+  eliminadoEn               ← transitorio (ídem programas)
 
 ejerciciosCatalogo/{id}      ← catálogo global (búsqueda fuzzy en el picker)
   nombre, grupoMuscular
 
 sesiones/{id}
-  usuarioId, diaId, programaId
-  creadaEn, completada
+  usuarioId, diaId, fecha, nota, completada
   resumen: {                 ← denormalizado al completar
-    volumenTotal: number,
+    diaNombre, volumenTotal,
     ejercicios: [{ ejercicioId, catalogoId, nombre, grupoMuscular, series: [...] }]
   }
 
 registros/{id}
-  sesionId, ejercicioId, catalogoId, numeroSerie
-  usuarioId, pesoUsado, repsHechas, nota
+  usuarioId, sesionId, ejercicioId, nombreEjercicio, grupoMuscular, catalogoId
+  numeroSerie, repsEsperadas, repsHechas, pesoUsado, nota
 
-peso/{id}
-  usuarioId, fecha, valor
+usuarios/{uid}/historialPeso/{id}
+  peso, fecha               ← peso corporal (validado 20–300 en las reglas)
 
 usuarios/{uid}/timerPresets/{id}
-  nombre, duracion, creadoEn
+  nombre, calentamiento, trabajo, descanso, sets, enfriamiento, creadoEn
 ```
+
+Las reglas (`firestore.rules`) validan la propiedad por `usuarioId`, los campos permitidos en cada `create` (`hasOnly`) y los campos que cada `update` puede tocar (`diff().affectedKeys()`).
 
 ## Optimización de lecturas (Firestore Spark)
 
@@ -114,37 +118,28 @@ Las sesiones antiguas (sin `resumen`) se ignoran en los gráficos. El fallback a
 
 ## Testing
 
-**149 tests** — unitarios y de componentes, en 16 archivos.
+**283 tests** — unitarios, de componentes y de páginas, en 31 archivos colocados junto al código.
 
 ```bash
 npm run test        # modo watch (re-corre al guardar)
 npm run test:run    # una sola pasada (para antes de hacer push)
+npm run lint        # ESLint (también corre en CI)
 ```
 
 ### Cobertura
 
 | Área | Tests |
 |---|---|
-| `sesiones.js` (CRUD, `getSesionesConResumen`, `esMismoEjercicio`) | 25 |
-| `SeleccionarEjercicio` (componente) | 15 |
-| `useTimer` (hook) | 15 |
-| `TimerActivo` (componente) | 11 |
-| `programas.js` (CRUD) | 11 |
-| `registros.js` (CRUD, `getUltimaVezEjercicioLocal`) | 10 |
-| `Calendario` (componente) | 9 |
-| `ejerciciosDia.js` (CRUD) | 8 |
-| `BottomNav` (componente) | 8 |
-| `dias.js` (CRUD) | 7 |
-| `TimerConfig` (componente) | 7 |
-| `Toast` / `ToastProvider` | 6 |
-| `SesionActiva` (página) | 6 |
-| `timerPresets.js` (CRUD, límite de 5) | 5 |
-| `TimerFin` (componente) | 4 |
-| `ResumenSesion` (página) | 2 |
+| Capa Firebase (`sesiones` 25, `programas` 11, `registros` 10, `ejerciciosDia` 8, `dias` 7, `auth` 6, `timerPresets` 5, `peso` 4) | 76 |
+| Timer (`useTimer` 15, `TimerActivo` 11, `useWakeLock` 10, `TimerConfig` 7, `TimerFin` 4, página `Timer` 6) | 53 |
+| Componentes (`ui` 15, `SeleccionarEjercicio` 15, `SwipeToDelete` 11, `Toast` 9, `Calendario` 9, `BottomNav` 8, `ErrorBoundary` 5) | 72 |
+| Páginas (`Progreso` 16, `Home` 9, `Entrenar` 9, `Dias` 8, `Programas` 7, `EjerciciosDia` 7, `SesionActiva` 6, `Login` 6, `ResumenSesion` 2) | 70 |
+| Hooks (`useKeyboardShortcut`) | 12 |
 
 ### GitHub Actions
 
-Los tests corren automáticamente en cada push y pull request a `main`. Ver resultados en la pestaña **Actions** del repositorio.
+- **Tests** (`test.yml`): lint + tests en cada push y pull request a `main`.
+- **Deploy** (`deploy.yml`): en cada push a `main`, build y deploy de hosting **y reglas de Firestore**.
 
 ---
 

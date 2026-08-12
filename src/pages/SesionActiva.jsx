@@ -465,6 +465,7 @@ export default function SesionActiva() {
                       key={tab}
                       style={{ ...s.refTab, ...(tabRef === tab ? s.refTabActivo : {}) }}
                       onClick={() => setTabRef(tab)}
+                      aria-pressed={tabRef === tab}
                     >
                       {tab === 'ultima' ? 'Última' : 'PR personal'}
                     </button>
@@ -529,9 +530,9 @@ export default function SesionActiva() {
             <div style={s.inputGroup}>
               <label style={s.inputLabel}>Peso (kg)</label>
               <div style={s.stepper}>
-                <motion.button style={s.stepperBtn} onClick={() => setPesoUsado(p => String(Math.round(Math.max(0, (Number(p) || 0) - 2.5) * 10) / 10))} whileTap={BTN_TAP_SMALL}>−</motion.button>
+                <motion.button style={s.stepperBtn} aria-label="Restar 2,5 kg" onClick={() => setPesoUsado(p => String(Math.round(Math.max(0, (Number(p) || 0) - 2.5) * 10) / 10))} whileTap={BTN_TAP_SMALL}>−</motion.button>
                 <motion.input style={s.inputBig} type="number" inputMode="decimal" placeholder={ultimoPeso[ejercicio.id] ? String(ultimoPeso[ejercicio.id]) : ''} value={pesoUsado} onChange={e => setPesoUsado(e.target.value)} aria-label="Peso (kg)" whileFocus={INPUT_FOCUS} />
-                <motion.button style={s.stepperBtn} onClick={() => setPesoUsado(p => String(Math.round(((Number(p) || 0) + 2.5) * 10) / 10))} whileTap={BTN_TAP_SMALL}>+</motion.button>
+                <motion.button style={s.stepperBtn} aria-label="Sumar 2,5 kg" onClick={() => setPesoUsado(p => String(Math.round(((Number(p) || 0) + 2.5) * 10) / 10))} whileTap={BTN_TAP_SMALL}>+</motion.button>
               </div>
               {ultimoPeso[ejercicio.id] && !pesoUsado && (
                 <p style={s.hintTocable} onClick={() => setPesoUsado(String(ultimoPeso[ejercicio.id]))}>↳ Última vez: {ultimoPeso[ejercicio.id]}kg</p>
@@ -540,9 +541,9 @@ export default function SesionActiva() {
             <div style={s.inputGroup}>
               <label style={s.inputLabel}>Reps</label>
               <div style={s.stepper}>
-                <motion.button style={s.stepperBtn} onClick={() => setRepsHechas(r => String(Math.max(1, (Number(r) || ejercicio.repsEsperadas) - 1)))} whileTap={BTN_TAP_SMALL}>−</motion.button>
+                <motion.button style={s.stepperBtn} aria-label="Restar una repetición" onClick={() => setRepsHechas(r => String(Math.max(1, (Number(r) || ejercicio.repsEsperadas) - 1)))} whileTap={BTN_TAP_SMALL}>−</motion.button>
                 <motion.input style={s.inputBig} type="number" inputMode="numeric" placeholder={String(ejercicio.repsEsperadas)} value={repsHechas} onChange={e => setRepsHechas(e.target.value)} aria-label="Repeticiones" whileFocus={INPUT_FOCUS} />
-                <motion.button style={s.stepperBtn} onClick={() => setRepsHechas(r => String((Number(r) || ejercicio.repsEsperadas) + 1))} whileTap={BTN_TAP_SMALL}>+</motion.button>
+                <motion.button style={s.stepperBtn} aria-label="Sumar una repetición" onClick={() => setRepsHechas(r => String((Number(r) || ejercicio.repsEsperadas) + 1))} whileTap={BTN_TAP_SMALL}>+</motion.button>
               </div>
             </div>
           </div>

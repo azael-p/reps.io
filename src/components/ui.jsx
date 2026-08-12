@@ -22,6 +22,7 @@ export function Header({ titulo, subtitulo, accent = 'var(--green)', onBack, onA
         style={hs.back}
         onClick={onBack ?? (() => navigate(-1))}
         whileTap={{ scale: 0.9, x: -2 }}
+        aria-label="Volver"
       >
         <ChevronLeft size={20} strokeWidth={2} />
       </motion.button>
@@ -46,6 +47,7 @@ export function Header({ titulo, subtitulo, accent = 'var(--green)', onBack, onA
           whileTap={{ scale: 0.88, rotate: 90 }}
           whileHover={{ scale: 1.05 }}
           transition={{ type: 'spring', stiffness: 320, damping: 18 }}
+          aria-label="Agregar"
         >
           <Plus size={20} strokeWidth={2.5} />
         </motion.button>
@@ -69,6 +71,12 @@ export function Modal({ open, onClose, children }) {
     const handler = () => { onCloseRef.current?.() }
     window.addEventListener('popstate', handler)
     requestAnimationFrame(() => {
+      // Nombre accesible: el primer heading del contenido etiqueta al dialog.
+      const heading = boxRef.current?.querySelector('h1, h2, h3')
+      if (heading) {
+        if (!heading.id) heading.id = 'modal-titulo'
+        boxRef.current.setAttribute('aria-labelledby', heading.id)
+      }
       const btns = boxRef.current?.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
       if (btns?.length) {
         firstFocusRef.current = btns[0]
@@ -87,8 +95,6 @@ export function Modal({ open, onClose, children }) {
       {open && (
         <motion.div
           style={ms.overlay}
-          role="dialog"
-          aria-modal="true"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -97,6 +103,8 @@ export function Modal({ open, onClose, children }) {
         >
           <motion.div
             ref={boxRef}
+            role="dialog"
+            aria-modal="true"
             style={ms.box}
             onClick={e => e.stopPropagation()}
             drag="y"

@@ -193,6 +193,7 @@ export default function ResumenSesion() {
           style={s.back}
           onClick={() => navigate('/home')}
           whileTap={{ scale: 0.9 }}
+          aria-label="Volver al inicio"
         >
           ←
         </motion.button>

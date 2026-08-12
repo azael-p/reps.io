@@ -5,7 +5,7 @@ import { getEjerciciosDia, agregarEjercicioDia, editarEjercicioDia, marcarEjerci
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import SeleccionarEjercicio from '../components/SeleccionarEjercicio'
-import { Header, Modal, ListSkeleton, EmptyState, PageWrapper, Badge } from '../components/ui'
+import { Header, Modal, ListSkeleton, EmptyState, ErrorState, PageWrapper, Badge } from '../components/ui'
 import { useToast } from '../components/Toast'
 import DnDList from '../components/DnDList'
 import { GripVertical, Pencil, Trash2, Dumbbell } from 'lucide-react'
@@ -23,6 +23,7 @@ export default function EjerciciosDia() {
   const [editSeries, setEditSeries] = useState('')
   const [editReps, setEditReps] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+  const [errorCarga, setErrorCarga] = useState(false)
 
   const cargar = useCallback(async () => {
     try {
@@ -35,7 +36,8 @@ export default function EjerciciosDia() {
       setDia({ id: diaSnap.id, ...diaSnap.data() })
       setProgramaNombre(progSnap.data()?.nombre ?? '')
       setEjercicios(data)
-    } catch (e) { console.error(e) }
+      setErrorCarga(false)
+    } catch (e) { console.error(e); setErrorCarga(true) }
     setCargando(false)
   }, [diaId, programaId, navigate])
 
@@ -117,6 +119,8 @@ export default function EjerciciosDia() {
 
       {cargando ? (
         <ListSkeleton height={120} />
+      ) : errorCarga ? (
+        <ErrorState mensaje="No se pudo cargar el día." onRetry={cargar} />
       ) : ejercicios.length === 0 ? (
         <EmptyState mensaje="Este día no tiene ejercicios" icon={Dumbbell} sub="Agregá los ejercicios que vas a hacer" action={{ label: 'Agregar ejercicio', onClick: () => setPicker(true) }} />
       ) : (

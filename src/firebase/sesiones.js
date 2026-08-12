@@ -1,5 +1,6 @@
 import { db, auth } from './config'
 import { collection, addDoc, updateDoc, doc, query, where, getDocs, writeBatch } from 'firebase/firestore'
+import { toDate } from '../utils/fechas'
 
 export async function enrichSesionesConPrograma(usuarioId, sesiones) {
   if (sesiones.length === 0) return sesiones
@@ -126,7 +127,7 @@ export function getRegistrosPorEjercicioLocal(sesiones, ejercicio) {
 
 export function getStreaksLocal(sesiones) {
   const fechas = sesiones
-    .map(d => d.fecha?.toDate ? d.fecha.toDate() : null)
+    .map(d => toDate(d.fecha))
     .filter(Boolean)
     .map(d => new Date(d.getFullYear(), d.getMonth(), d.getDate()))
     .sort((a, b) => b - a)

@@ -5,24 +5,23 @@ import { useUser } from '../context/UserContext'
 import { getSesionesConResumen, enrichSesionesConPrograma, getEjerciciosUsadosConGrupoLocal, getVolumenPorSesionLocal, getRegistrosPorEjercicioLocal, getStreaksLocal, eliminarSesion } from '../firebase/sesiones'
 import { getHistorialPeso, agregarPeso } from '../firebase/peso'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { PageWrapper, EmptyState, ConfirmDialog, Modal } from '../components/ui'
+import { PageWrapper, EmptyState, ErrorState, ConfirmDialog, Modal } from '../components/ui'
 import PullToRefresh from '../components/PullToRefresh'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
 import { calcular1RM, frecuenciaSemanal } from '../utils/stats'
+import { toDate } from '../utils/fechas'
 
 const TABS = ['Historial', 'Gráfico', 'Volumen', 'Rachas', 'Peso']
 
 function formatFecha(ts) {
   if (!ts) return ''
-  const d = ts.toDate ? ts.toDate() : new Date(ts)
-  return d.toLocaleDateString('es-UY', { day: 'numeric', month: 'short' })
+  return toDate(ts).toLocaleDateString('es-UY', { day: 'numeric', month: 'short' })
 }
 
 function formatFechaCorta(ts) {
   if (!ts) return ''
-  const d = ts.toDate ? ts.toDate() : new Date(ts)
-  return d.toLocaleDateString('es-UY', { day: 'numeric', month: 'numeric' })
+  return toDate(ts).toLocaleDateString('es-UY', { day: 'numeric', month: 'numeric' })
 }
 
 function ChipsFiltro({ values, selected, onChange }) {
@@ -52,6 +51,7 @@ function ChipsFiltro({ values, selected, onChange }) {
           }}
           onClick={() => onChange(v)}
           whileTap={{ scale: 0.94 }}
+          aria-pressed={selected === v}
         >
           {v === 'todos' ? 'Todos' : v}
         </motion.button>
@@ -72,6 +72,7 @@ export default function Progreso() {
   const [ejercicioSel, setEjercicioSel] = useState('')
   const [grupoSel, setGrupoSel] = useState('')
   const [cargando, setCargando] = useState(true)
+  const [errorCarga, setErrorCarga] = useState(false)
   const [confirmData, setConfirmData] = useState(null)
   const [displayCount, setDisplayCount] = useState(20)
   const [filtroPrograma, setFiltroPrograma] = useState('todos')
@@ -103,7 +104,8 @@ export default function Progreso() {
         setGrupoSel(prev => ejs.some(e => e.grupoMuscular === prev) ? prev : ejs[0].grupoMuscular)
         setEjercicioSel(prev => ejs.some(e => e.nombre === prev) ? prev : ejs[0].nombre)
       }
-    } catch (e) { console.error(e) }
+      setErrorCarga(false)
+    } catch (e) { console.error(e); setErrorCarga(true) }
     setHistorialPeso([])
     setPesoCargado(false)
     setDisplayCount(20)
@@ -198,7 +200,7 @@ export default function Progreso() {
     const meses = new Set()
     sesiones.forEach(s => {
       if (!s.fecha) return
-      const d = s.fecha.toDate ? s.fecha.toDate() : new Date(s.fecha)
+      const d = toDate(s.fecha)
       meses.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
     })
     return ['todos', ...Array.from(meses).sort().reverse()]
@@ -208,7 +210,7 @@ export default function Progreso() {
     return sesiones.filter(s => {
       if (filtroPrograma !== 'todos' && s.programaNombre !== filtroPrograma) return false
       if (filtroMes !== 'todos') {
-        const d = s.fecha?.toDate ? s.fecha.toDate() : new Date(s.fecha)
+        const d = toDate(s.fecha)
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
         if (key !== filtroMes) return false
       }
@@ -227,6 +229,7 @@ export default function Progreso() {
           style={s.back}
           onClick={() => navigate('/home')}
           whileTap={{ scale: 0.9, x: -2 }}
+          aria-label="Volver al inicio"
         >
           ←
         </motion.button>
@@ -240,7 +243,9 @@ export default function Progreso() {
 
   const historialContent = (
     <div>
-      {sesiones.length === 0 ? (
+      {errorCarga ? (
+        <ErrorState mensaje="No se pudo cargar tu historial." onRetry={cargar} />
+      ) : sesiones.length === 0 ? (
         <EmptyState mensaje="Cero sesiones. ¿La primera?" icon="📊" sub="Empezá a entrenar para ver tu progreso acá" action={{ label: 'Empezar entrenamiento', onClick: () => navigate('/entrenar') }} />
       ) : (
         <>
@@ -280,13 +285,8 @@ export default function Progreso() {
                 >
                   <div style={s.sesionInfo} onClick={() => navigate(`/sesion/${sesion.id}/resumen`)}>
                     <div style={s.fechaBadge}>
-                      <span style={s.fechaDia}>{
-                        (sesion.fecha?.toDate ? sesion.fecha.toDate() : new Date(sesion.fecha))?.getDate()
-                      }</span>
-                      <span style={s.fechaMes}>{
-                        (sesion.fecha?.toDate ? sesion.fecha.toDate() : new Date(sesion.fecha))
-                          ?.toLocaleDateString('es-UY', { month: 'short' })
-                      }</span>
+                      <span style={s.fechaDia}>{toDate(sesion.fecha)?.getDate()}</span>
+                      <span style={s.fechaMes}>{toDate(sesion.fecha)?.toLocaleDateString('es-UY', { month: 'short' })}</span>
                     </div>
                     <div style={{ flex: 1 }}>
                       <span style={s.sesionNombre}>{sesion.diaNombre}</span>
@@ -690,6 +690,7 @@ export default function Progreso() {
                   style={{ ...s.tab, position: 'relative' }}
                   onClick={() => setTab(t)}
                   whileTap={{ scale: 0.97 }}
+                  aria-pressed={activo}
                 >
                   <span style={{ ...s.tabLabel, color: activo ? 'var(--orange)' : 'var(--text-mute)' }}>{t}</span>
                   {activo && (

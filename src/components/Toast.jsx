@@ -100,7 +100,7 @@ function ToastItem({ toast, onDismiss }) {
           padding: 4, cursor: 'pointer',
           color: 'var(--text-mute)', display: 'flex',
         }}
-        aria-label="Dismiss"
+        aria-label="Cerrar"
       >
         <X size={16} />
       </button>

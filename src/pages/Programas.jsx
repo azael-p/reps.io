@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useUser } from '../context/UserContext'
 import { getProgramas, crearPrograma, editarPrograma, marcarParaEliminar, desmarcarParaEliminar, eliminarProgramaDefinitivo, reordenarProgramas } from '../firebase/programas'
-import { Header, Modal, ListSkeleton, EmptyState, PageWrapper } from '../components/ui'
+import { Header, Modal, ListSkeleton, EmptyState, ErrorState, PageWrapper } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
 import DnDList from '../components/DnDList'
@@ -22,11 +22,13 @@ export default function Programas() {
   const [nombre, setNombre] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [errorCarga, setErrorCarga] = useState(false)
 
   const cargar = useCallback(async () => {
     try {
       setProgramas(await getProgramas(usuario.id))
-    } catch (e) { console.error(e) }
+      setErrorCarga(false)
+    } catch (e) { console.error(e); setErrorCarga(true) }
     setCargando(false)
   }, [usuario])
 
@@ -95,6 +97,8 @@ export default function Programas() {
 
       {cargando ? (
         <ListSkeleton />
+      ) : errorCarga ? (
+        <ErrorState mensaje="No se pudieron cargar tus programas." onRetry={cargar} />
       ) : programas.length === 0 ? (
         <EmptyState mensaje="No tenés programas todavía" icon={Layers} sub="Creá tu primera rutina para empezar a entrenar" action={{ label: 'Crear programa', onClick: abrirCrear }} />
       ) : isDesktop ? (

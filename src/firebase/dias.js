@@ -1,8 +1,9 @@
 import { db, auth } from './config'
 import {
   collection, addDoc, updateDoc, writeBatch,
-  doc, query, where, getDocs, deleteField,
+  doc, query, where, getDocs,
 } from 'firebase/firestore'
+import { marcarDocParaEliminar, desmarcarDocParaEliminar, reordenarDocs } from './softDelete'
 
 export async function getDias(programaId) {
   const snap = await getDocs(
@@ -30,13 +31,9 @@ export async function editarDia(id, nombre) {
   await updateDoc(doc(db, 'dias', id), { nombre })
 }
 
-export async function marcarDiaParaEliminar(diaId) {
-  await updateDoc(doc(db, 'dias', diaId), { eliminadoEn: Date.now() })
-}
+export const marcarDiaParaEliminar = (diaId) => marcarDocParaEliminar('dias', diaId)
 
-export async function desmarcarDiaParaEliminar(diaId) {
-  await updateDoc(doc(db, 'dias', diaId), { eliminadoEn: deleteField() })
-}
+export const desmarcarDiaParaEliminar = (diaId) => desmarcarDocParaEliminar('dias', diaId)
 
 export async function eliminarDiaDefinitivo(diaId) {
   const ejSnap = await getDocs(query(
@@ -50,10 +47,4 @@ export async function eliminarDiaDefinitivo(diaId) {
   await batch.commit()
 }
 
-export async function reordenarDias(items) {
-  const batch = writeBatch(db)
-  items.forEach(({ id, orden }) => {
-    batch.update(doc(db, 'dias', id), { orden })
-  })
-  await batch.commit()
-}
+export const reordenarDias = (items) => reordenarDocs('dias', items)

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { toDate } from '../utils/fechas'
 
 const DIAS_SEMANA = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
@@ -11,12 +12,12 @@ export default function Calendario({ fechas = [] }) {
   const año = referencia.getFullYear()
   const mes = referencia.getMonth()
 
-  const fechasSet = new Set(
+  const fechasSet = useMemo(() => new Set(
     fechas.map(f => {
-      const d = f?.toDate ? f.toDate() : new Date(f)
+      const d = toDate(f)
       return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
     })
-  )
+  ), [fechas])
 
   function tieneSesion(dia) {
     return fechasSet.has(`${año}-${mes}-${dia}`)
