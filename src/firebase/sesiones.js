@@ -1,5 +1,5 @@
 import { db, auth } from './config'
-import { collection, addDoc, updateDoc, doc, query, where, getDocs, writeBatch } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, doc, query, where, getDocs, writeBatch, orderBy, limit, startAfter } from 'firebase/firestore'
 import { toDate } from '../utils/fechas'
 import { calcularStreaks } from '../utils/stats'
 
@@ -76,6 +76,24 @@ export async function getSesionesConResumen(usuarioId) {
   return snap.docs
     .map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (b.fecha?.toMillis?.() ?? 0) - (a.fecha?.toMillis?.() ?? 0))
+}
+
+// Página del historial, ordenada por fecha desc (usa el índice compuesto
+// usuarioId+completada+fecha). `after` es el ultimoDoc de la página anterior.
+export async function getSesionesPaginadas(usuarioId, { after = null, pageSize = 20 } = {}) {
+  const restricciones = [
+    where('usuarioId', '==', usuarioId),
+    where('completada', '==', true),
+    orderBy('fecha', 'desc'),
+    ...(after ? [startAfter(after)] : []),
+    limit(pageSize),
+  ]
+  const snap = await getDocs(query(collection(db, 'sesiones'), ...restricciones))
+  return {
+    sesiones: snap.docs.map(d => ({ id: d.id, ...d.data() })),
+    ultimoDoc: snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null,
+    hayMas: snap.docs.length === pageSize,
+  }
 }
 
 // Dos ejercicios son "el mismo" si comparten catalogoId, o si a alguno le

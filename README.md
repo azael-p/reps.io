@@ -116,9 +116,22 @@ El plan gratuito tiene 50k lecturas/día. La arquitectura usa **denormalización
 
 Las sesiones antiguas (sin `resumen`) se ignoran en los gráficos. El fallback a queries individuales solo ocurre si se necesita explícitamente.
 
+### Agregados de paginación (`stats/global`, `statsEjercicios/{id}`)
+
+La denormalización de arriba evita queries por ejercicio, pero seguía descargando **todo** el historial en cada visita a Progreso/SesionActiva/Home. Dos agregados por usuario lo reemplazan:
+
+- **`usuarios/{uid}/stats/global`** — `diasEntrenados` (epochs) y `volumenPorSesion` (cap 200). Alimenta calendario, rachas, frecuencia semanal y el tab Volumen con **1 lectura**.
+- **`usuarios/{uid}/statsEjercicios/{catalogoId|slug}`** — `pr`, `ultimaVez` y `puntos` de gráfico (cap 150) por ejercicio. Reemplaza el recorrido del historial completo en SesionActiva (referencia última vez/PR) y en el gráfico de Progreso.
+
+Ambos se actualizan al completar una sesión (`src/firebase/statsGlobal.js`, `src/firebase/statsEjercicios.js`) y tienen **fallback self-healing**: si el doc no existe todavía, se reconstruye desde el historial y se persiste. El historial de la pantalla Historial usa `getSesionesPaginadas` (`limit` + `startAfter`, índice compuesto en `firestore.indexes.json`) en vez de descargar todo.
+
+Migración para usuarios existentes: `node scripts/backfillStats.js --aplicar` (dry-run sin el flag). Diseño completo en `docs/paginacion-diseno.md`.
+
+**Impacto** (usuario con ~200 sesiones): Progreso ~200 → ~21 lecturas, SesionActiva ~200 → ~6, Home (sin cache) ~200 → 1.
+
 ## Testing
 
-**283 tests** — unitarios, de componentes y de páginas, en 31 archivos colocados junto al código.
+**311 tests** — unitarios, de componentes y de páginas, en 33 archivos colocados junto al código.
 
 ```bash
 npm run test        # modo watch (re-corre al guardar)
@@ -130,10 +143,10 @@ npm run lint        # ESLint (también corre en CI)
 
 | Área | Tests |
 |---|---|
-| Capa Firebase (`sesiones` 25, `programas` 11, `registros` 10, `ejerciciosDia` 8, `dias` 7, `auth` 6, `timerPresets` 5, `peso` 4) | 76 |
+| Capa Firebase (`sesiones` 29, `programas` 11, `statsEjercicios` 12, `statsGlobal` 11, `registros` 10, `ejerciciosDia` 8, `dias` 7, `auth` 6, `timerPresets` 5, `peso` 4) | 103 |
 | Timer (`useTimer` 15, `TimerActivo` 11, `useWakeLock` 10, `TimerConfig` 7, `TimerFin` 4, página `Timer` 6) | 53 |
 | Componentes (`ui` 15, `SeleccionarEjercicio` 15, `SwipeToDelete` 11, `Toast` 9, `Calendario` 9, `BottomNav` 8, `ErrorBoundary` 5) | 72 |
-| Páginas (`Progreso` 16, `Home` 9, `Entrenar` 9, `Dias` 8, `Programas` 7, `EjerciciosDia` 7, `SesionActiva` 6, `Login` 6, `ResumenSesion` 2) | 70 |
+| Páginas (`Progreso` 16, `Home` 9, `Entrenar` 9, `Dias` 8, `Programas` 7, `EjerciciosDia` 7, `SesionActiva` 7, `Login` 6, `ResumenSesion` 2) | 71 |
 | Hooks (`useKeyboardShortcut`) | 12 |
 
 ### GitHub Actions

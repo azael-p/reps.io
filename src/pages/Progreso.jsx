@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { useUser } from '../context/UserContext'
-import { getSesionesConResumen, enrichSesionesConPrograma, eliminarSesion, esMismoEjercicio } from '../firebase/sesiones'
+import { getSesionesPaginadas, enrichSesionesConPrograma, eliminarSesion, esMismoEjercicio } from '../firebase/sesiones'
 import { getResumenGlobalConFallback, removerSesionDeResumenGlobal } from '../firebase/statsGlobal'
 import { getStatsEjerciciosConFallback, rebuildStatsEjercicios } from '../firebase/statsEjercicios'
 import { getHistorialPeso, agregarPeso } from '../firebase/peso'
@@ -15,6 +15,7 @@ import { frecuenciaSemanal, calcularStreaks } from '../utils/stats'
 import { toDate } from '../utils/fechas'
 
 const TABS = ['Historial', 'Gráfico', 'Volumen', 'Rachas', 'Peso']
+const PAGE_SIZE = 20
 
 function formatFecha(ts) {
   if (!ts) return ''
@@ -69,7 +70,6 @@ export default function Progreso() {
   const { show } = useToast()
   const [tab, setTab] = useState('Historial')
   const [sesiones, setSesiones] = useState([])
-  const [sesionesConResumen, setSesionesConResumen] = useState(null)
   const [resumenGlobal, setResumenGlobal] = useState(null)
   const [statsEjercicios, setStatsEjercicios] = useState(null)
   const [ejercicios, setEjercicios] = useState([])
@@ -78,7 +78,9 @@ export default function Progreso() {
   const [cargando, setCargando] = useState(true)
   const [errorCarga, setErrorCarga] = useState(false)
   const [confirmData, setConfirmData] = useState(null)
-  const [displayCount, setDisplayCount] = useState(20)
+  const [ultimoDoc, setUltimoDoc] = useState(null)
+  const [hayMas, setHayMas] = useState(false)
+  const [cargandoMas, setCargandoMas] = useState(false)
   const [filtroPrograma, setFiltroPrograma] = useState('todos')
   const [filtroMes, setFiltroMes] = useState('todos')
   const [modoGrafico, setModoGrafico] = useState('peso')
@@ -90,24 +92,30 @@ export default function Progreso() {
   const [errorPeso, setErrorPeso] = useState('')
   const [guardandoPeso, setGuardandoPeso] = useState(false)
 
+  // Enriquece una página con los nombres de día/programa (falla suave).
+  const enriquecer = useCallback(async (pagina) => {
+    try {
+      return await enrichSesionesConPrograma(usuario.id, pagina)
+    } catch (e) {
+      console.error('enrichSesionesConPrograma failed:', e)
+      return pagina.map(s => ({ ...s, diaNombre: s.resumen?.diaNombre ?? '–', programaNombre: '–' }))
+    }
+  }, [usuario])
+
   const cargar = useCallback(async () => {
     try {
-      const [sesResumen, rg, statsEj] = await Promise.all([
-        getSesionesConResumen(usuario.id),
+      // Primera página del historial + los dos agregados. Ya no se descarga
+      // el historial completo: los gráficos salen de statsEjercicios.
+      const [pagina, rg, statsEj] = await Promise.all([
+        getSesionesPaginadas(usuario.id, { pageSize: PAGE_SIZE }),
         getResumenGlobalConFallback(usuario.id),
         getStatsEjerciciosConFallback(usuario.id),
       ])
-      setSesionesConResumen(sesResumen)
       setResumenGlobal(rg)
       setStatsEjercicios(statsEj)
-      let enriched
-      try {
-        enriched = await enrichSesionesConPrograma(usuario.id, sesResumen)
-      } catch (e) {
-        console.error('enrichSesionesConPrograma failed:', e)
-        enriched = sesResumen.map(s => ({ ...s, diaNombre: s.resumen?.diaNombre ?? '–', programaNombre: '–' }))
-      }
-      setSesiones(enriched)
+      setUltimoDoc(pagina.ultimoDoc)
+      setHayMas(pagina.hayMas)
+      setSesiones(await enriquecer(pagina.sesiones))
       const ejs = statsEj
         .filter(e => e.puntos?.length > 0)
         .map(e => ({ nombre: e.nombre, grupoMuscular: e.grupoMuscular, catalogoId: e.catalogoId ?? null }))
@@ -121,9 +129,24 @@ export default function Progreso() {
     } catch (e) { console.error(e); setErrorCarga(true) }
     setHistorialPeso([])
     setPesoCargado(false)
-    setDisplayCount(20)
     setCargando(false)
-  }, [usuario])
+  }, [usuario, enriquecer])
+
+  const cargarMas = useCallback(async () => {
+    if (!ultimoDoc || cargandoMas) return
+    setCargandoMas(true)
+    try {
+      const pagina = await getSesionesPaginadas(usuario.id, { after: ultimoDoc, pageSize: PAGE_SIZE })
+      const enriched = await enriquecer(pagina.sesiones)
+      setSesiones(prev => [...prev, ...enriched])
+      setUltimoDoc(pagina.ultimoDoc)
+      setHayMas(pagina.hayMas)
+    } catch (e) {
+      console.error(e)
+      show({ message: 'No se pudieron cargar más sesiones.', variant: 'error' })
+    }
+    setCargandoMas(false)
+  }, [usuario, ultimoDoc, cargandoMas, enriquecer, show])
 
   const cargarPeso = useCallback(async () => {
     setCargandoPeso(true)
@@ -285,7 +308,7 @@ export default function Progreso() {
           {uniqueMeses.length > 2 && <ChipsFiltro values={uniqueMeses} selected={filtroMes} onChange={setFiltroMes} />}
           <div style={s.lista}>
             <AnimatePresence>
-              {sesionesFiltradas.slice(0, displayCount).map((sesion, i) => (
+              {sesionesFiltradas.map((sesion, i) => (
                 <motion.div
                   key={sesion.id}
                   style={s.sesionCard}
@@ -338,13 +361,14 @@ export default function Progreso() {
                 </motion.div>
               ))}
             </AnimatePresence>
-            {sesionesFiltradas.length > displayCount && (
+            {hayMas && (
               <motion.button
-                style={s.verMasBtn}
-                onClick={() => setDisplayCount(c => c + 20)}
+                style={{ ...s.verMasBtn, opacity: cargandoMas ? 0.6 : 1 }}
+                onClick={cargarMas}
+                disabled={cargandoMas}
                 whileTap={{ scale: 0.97 }}
               >
-                Ver más ({sesionesFiltradas.length - displayCount} restantes)
+                {cargandoMas ? <span className="spinner" /> : 'Ver más'}
               </motion.button>
             )}
           </div>
@@ -527,7 +551,7 @@ export default function Progreso() {
 
   const rachasContent = (
     <div style={s.rachasWrap}>
-      {!sesionesConResumen ? (
+      {!resumenGlobal ? (
         <div style={{ padding: '60px 0', display: 'flex', justifyContent: 'center' }}>
           <span className="spinner" style={{ color: 'var(--orange)' }} />
         </div>

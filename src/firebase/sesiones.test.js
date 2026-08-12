@@ -1,14 +1,18 @@
 vi.mock('./config', () => ({ db: {}, auth: { currentUser: { uid: 'test-uid' } } }))
+const mockGetDocs = vi.fn()
 vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
+  collection: vi.fn((_db, ...path) => ({ path: path.join('/') })),
   addDoc: vi.fn(),
   updateDoc: vi.fn(),
   deleteDoc: vi.fn(),
   doc: vi.fn(),
   getDoc: vi.fn(),
-  query: vi.fn(),
-  where: vi.fn(),
-  getDocs: vi.fn(),
+  query: vi.fn((col, ...restricciones) => ({ col, restricciones })),
+  where: vi.fn((...args) => ({ type: 'where', args })),
+  orderBy: vi.fn((...args) => ({ type: 'orderBy', args })),
+  limit: vi.fn((n) => ({ type: 'limit', n })),
+  startAfter: vi.fn((doc) => ({ type: 'startAfter', doc })),
+  getDocs: (...args) => mockGetDocs(...args),
 }))
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
@@ -18,6 +22,7 @@ import {
   getRegistrosPorEjercicioLocal,
   getStreaksLocal,
   esMismoEjercicio,
+  getSesionesPaginadas,
 } from './sesiones'
 
 // Use local dates (y, m, d) to avoid UTC vs local timezone mismatches.
@@ -298,5 +303,54 @@ describe('getStreaksLocal', () => {
       { fecha: ts(2026, 5, 25) },
     ]
     expect(getStreaksLocal(sesiones)).toEqual({ actual: 2, maxima: 2 })
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('getSesionesPaginadas', () => {
+  beforeEach(() => { mockGetDocs.mockReset() })
+
+  it('pide pageSize+where(usuarioId,completada)+orderBy(fecha desc) y arma la respuesta', async () => {
+    const docs = [
+      { id: 's1', data: () => ({ fecha: 'a' }) },
+      { id: 's2', data: () => ({ fecha: 'b' }) },
+    ]
+    mockGetDocs.mockResolvedValue({ docs })
+
+    const r = await getSesionesPaginadas('user1', { pageSize: 2 })
+
+    expect(r.sesiones).toEqual([{ id: 's1', fecha: 'a' }, { id: 's2', fecha: 'b' }])
+    expect(r.ultimoDoc).toBe(docs[1])
+    // pageSize=2 con 2 resultados ⇒ puede haber más
+    expect(r.hayMas).toBe(true)
+
+    const llamada = mockGetDocs.mock.calls[0][0]
+    const tipos = llamada.restricciones.map(r2 => r2.type ?? 'where')
+    expect(tipos).toContain('orderBy')
+    expect(tipos).toContain('limit')
+    expect(tipos).not.toContain('startAfter')
+  })
+
+  it('con menos resultados que pageSize, hayMas es false', async () => {
+    mockGetDocs.mockResolvedValue({ docs: [{ id: 's1', data: () => ({}) }] })
+    const r = await getSesionesPaginadas('user1', { pageSize: 20 })
+    expect(r.hayMas).toBe(false)
+    expect(r.ultimoDoc).not.toBeNull()
+  })
+
+  it('sin resultados, ultimoDoc es null', async () => {
+    mockGetDocs.mockResolvedValue({ docs: [] })
+    const r = await getSesionesPaginadas('user1')
+    expect(r).toEqual({ sesiones: [], ultimoDoc: null, hayMas: false })
+  })
+
+  it('con after, agrega startAfter a la query', async () => {
+    mockGetDocs.mockResolvedValue({ docs: [] })
+    const cursor = { id: 'cursor-doc' }
+    await getSesionesPaginadas('user1', { after: cursor, pageSize: 20 })
+    const llamada = mockGetDocs.mock.calls[0][0]
+    const startAfterCall = llamada.restricciones.find(r => r.type === 'startAfter')
+    expect(startAfterCall.doc).toBe(cursor)
   })
 })
