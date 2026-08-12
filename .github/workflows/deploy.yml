@@ -29,5 +29,5 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
 
-      - name: Deploy a Firebase Hosting y reglas de Firestore
-        run: npx firebase-tools deploy --only hosting,firestore:rules --token "${{ secrets.FIREBASE_TOKEN }}" --project reps-io --non-interactive
+      - name: Deploy a Firebase Hosting, reglas e índices de Firestore
+        run: npx firebase-tools deploy --only hosting,firestore --token "${{ secrets.FIREBASE_TOKEN }}" --project reps-io --non-interactive
