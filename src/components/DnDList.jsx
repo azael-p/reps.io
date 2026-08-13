@@ -3,7 +3,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import { motion, AnimatePresence } from 'motion/react'
 
-export default function DnDList({ items, onReorder, renderItem, idAccessor = 'id', style }) {
+export default function DnDList({ items, onReorder, renderItem, idAccessor = 'id', style, className }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   )
@@ -30,7 +30,7 @@ export default function DnDList({ items, onReorder, renderItem, idAccessor = 'id
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <SortableContext items={items.map(i => i[idAccessor])} strategy={verticalListSortingStrategy}>
-        <div style={style}>
+        <div style={style} className={className}>
           <AnimatePresence>
             {items.map((item, i) => (
               <SortableItem key={item[idAccessor]} id={item[idAccessor]} orden={i + 1}>

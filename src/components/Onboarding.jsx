@@ -32,33 +32,33 @@ export default function Onboarding({ onCompletar, usuarioId }) {
 
   return (
     <motion.div
-      style={s.card}
+      className="onboarding-card"
       initial={{ opacity: 0, y: 16, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.97 }}
       transition={{ type: 'spring', stiffness: 240, damping: 22 }}
     >
-      <div style={s.header}>
-        <span style={s.welcome}>👋</span>
-        <h2 style={s.titulo}>Bienvenido a Reps.io</h2>
-        <p style={s.sub}>En tres pasos simples</p>
+      <div className="onboarding-header">
+        <span className="onboarding-welcome">👋</span>
+        <h2 className="onboarding-titulo">Bienvenido a Reps.io</h2>
+        <p className="onboarding-sub">En tres pasos simples</p>
       </div>
 
-      <div style={s.steps}>
+      <div className="onboarding-steps">
         {STEPS.map((step, i) => (
           <motion.div
             key={step.label}
-            style={s.step}
+            className="onboarding-step"
             initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 + i * 0.08 }}
           >
-            <div style={s.stepNum}>{i + 1}</div>
-            <div style={s.stepContent}>
-              <span style={s.stepIcon}>{step.icon}</span>
+            <div className="onboarding-step-num">{i + 1}</div>
+            <div className="onboarding-step-content">
+              <span className="onboarding-step-icon">{step.icon}</span>
               <div>
-                <span style={s.stepLabel}>{step.label}</span>
-                <span style={s.stepDesc}>{step.desc}</span>
+                <span className="onboarding-step-label">{step.label}</span>
+                <span className="onboarding-step-desc">{step.desc}</span>
               </div>
             </div>
           </motion.div>
@@ -66,18 +66,18 @@ export default function Onboarding({ onCompletar, usuarioId }) {
       </div>
 
       <motion.div
-        style={s.pesoWrap}
+        className="onboarding-peso-wrap"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.45 }}
       >
-        <label style={s.pesoLabel}>
-          ⚖️ ¿Cuánto pesás? <span style={s.pesoOpcional}>(opcional)</span>
+        <label className="onboarding-peso-label">
+          ⚖️ ¿Cuánto pesás? <span className="onboarding-peso-opcional">(opcional)</span>
         </label>
-        <div style={s.pesoRow}>
+        <div className="onboarding-peso-row">
           <input
             type="number"
-            style={s.pesoInput}
+            className="onboarding-peso-input"
             placeholder="Ej: 78"
             value={peso}
             onChange={e => setPeso(e.target.value)}
@@ -85,13 +85,14 @@ export default function Onboarding({ onCompletar, usuarioId }) {
             min="20"
             max="300"
           />
-          <span style={s.pesoKg}>kg</span>
+          <span className="onboarding-peso-kg">kg</span>
         </div>
         {errorPeso && <p style={{ color: 'var(--danger)', fontSize: '0.82rem', margin: '8px 0 0' }} role="alert">{errorPeso}</p>}
       </motion.div>
 
       <motion.button
-        style={{ ...s.btn, opacity: guardando ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        className="onboarding-btn"
+        style={{ opacity: guardando ? 0.7 : 1 }}
         onClick={handleEmpezar}
         disabled={guardando}
         whileTap={{ scale: 0.97 }}
@@ -103,63 +104,4 @@ export default function Onboarding({ onCompletar, usuarioId }) {
       </motion.button>
     </motion.div>
   )
-}
-
-const s = {
-  card: {
-    margin: '0 0 8px',
-    padding: '24px 20px 20px',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-xl)',
-    boxShadow: 'var(--shadow-md)',
-    display: 'flex', flexDirection: 'column', gap: '18px',
-  },
-  header: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' },
-  welcome: { fontSize: '2rem', marginBottom: '4px' },
-  titulo: { fontSize: '1.2rem', fontWeight: 700, letterSpacing: '-0.02em' },
-  sub: { fontSize: '0.85rem', color: 'var(--text-mute)' },
-  steps: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  step: { display: 'flex', alignItems: 'flex-start', gap: '10px' },
-  stepNum: {
-    width: '22px', height: '22px',
-    borderRadius: '50%',
-    background: 'var(--orange-glow)',
-    border: '1px solid rgba(240, 153, 123, 0.3)',
-    color: 'var(--orange)',
-    fontSize: '0.72rem', fontWeight: 700,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0, marginTop: '2px',
-  },
-  stepContent: { display: 'flex', gap: '10px', alignItems: 'flex-start' },
-  stepIcon: { fontSize: '1.1rem', flexShrink: 0 },
-  stepLabel: { display: 'block', fontSize: '0.92rem', fontWeight: 600 },
-  stepDesc: { display: 'block', fontSize: '0.78rem', color: 'var(--text-mute)', marginTop: '2px' },
-  pesoWrap: {
-    display: 'flex', flexDirection: 'column', gap: '10px',
-    padding: '16px',
-    background: 'var(--bg-input)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-lg)',
-  },
-  pesoLabel: { fontSize: '0.92rem', fontWeight: 600, color: 'var(--text)' },
-  pesoOpcional: { fontSize: '0.78rem', color: 'var(--text-mute)', fontWeight: 400 },
-  pesoRow: { display: 'flex', alignItems: 'center', gap: '10px' },
-  pesoInput: {
-    flex: 1, padding: '12px 14px',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-md)',
-    color: 'var(--text)', fontSize: '1.05rem',
-    outline: 'none',
-  },
-  pesoKg: { fontSize: '0.95rem', color: 'var(--text-mute)', fontWeight: 600, flexShrink: 0 },
-  btn: {
-    width: '100%', padding: '16px',
-    background: 'var(--orange-grad)', color: '#fff',
-    border: 'none', borderRadius: 'var(--r-lg)',
-    fontSize: '1rem', fontWeight: 700,
-    boxShadow: '0 10px 28px rgba(199, 90, 48, 0.35)',
-    letterSpacing: '-0.01em',
-  },
 }

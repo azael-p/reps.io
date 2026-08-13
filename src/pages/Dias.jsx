@@ -97,29 +97,29 @@ export default function Dias() {
       ) : dias.length === 0 ? (
         <EmptyState mensaje="Este programa no tiene días" icon={CalendarDays} sub="Agregá los días de la semana que entrenás" action={{ label: 'Agregar día', onClick: abrirCrear }} />
       ) : isDesktop ? (
-        <div style={s.desktopGrid}>
+        <div className="crud-desktop-grid">
           {dias.map((d, i) => (
             <motion.div
               key={d.id}
-              style={s.card}
+              className="crud-card"
               onClick={() => navigate(`/programas/${programaId}/${d.id}`)}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05, type: 'spring', stiffness: 200, damping: 22 }}
               whileHover={{ y: -2, transition: { duration: 0.15 } }}
             >
-              <div style={s.cardMain}>
+              <div className="crud-card-main">
                 <div style={{ flex: 1 }}>
-                  <span style={s.cardOrden}>Día {i + 1}</span>
-                  <span style={s.cardNombre}>{d.nombre}</span>
+                  <span className="crud-card-eyebrow">Día {i + 1}</span>
+                  <span className="crud-card-nombre">{d.nombre}</span>
                 </div>
                 <ChevronRight size={16} color="var(--text-dim)" style={{ flexShrink: 0 }} />
               </div>
-              <div style={s.acciones} onClick={e => e.stopPropagation()}>
-                <motion.button style={s.accionBtn} onClick={() => abrirEditar(d)} whileTap={{ scale: 0.96 }}>
+              <div className="crud-acciones" onClick={e => e.stopPropagation()}>
+                <motion.button className="crud-accion-btn" onClick={() => abrirEditar(d)} whileTap={{ scale: 0.96 }}>
                   <Pencil size={14} /><span>Renombrar</span>
                 </motion.button>
-                <motion.button style={{ ...s.accionBtn, ...s.accionEliminar }} onClick={() => eliminar(d)} whileTap={{ scale: 0.96 }}>
+                <motion.button className="crud-accion-btn crud-accion-eliminar" onClick={() => eliminar(d)} whileTap={{ scale: 0.96 }}>
                   <Trash2 size={14} /><span>Eliminar</span>
                 </motion.button>
               </div>
@@ -135,50 +135,51 @@ export default function Dias() {
           }}
           renderItem={(d, i) => ({ dragHandleProps }) => (
             <motion.div
-              style={s.card}
+              className="crud-card"
               onClick={() => navigate(`/programas/${programaId}/${d.id}`)}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
               layout
             >
-              <div style={s.cardMain}>
-                <span style={s.dragHandle} {...dragHandleProps}><GripVertical size={16} /></span>
+              <div className="crud-card-main">
+                <span className="crud-drag-handle" {...dragHandleProps}><GripVertical size={16} /></span>
                 <div style={{ flex: 1 }}>
-                  <span style={s.cardOrden}>Día {i + 1}</span>
-                  <span style={s.cardNombre}>{d.nombre}</span>
+                  <span className="crud-card-eyebrow">Día {i + 1}</span>
+                  <span className="crud-card-nombre">{d.nombre}</span>
                 </div>
                 <ChevronRight size={16} color="var(--text-dim)" style={{ flexShrink: 0 }} />
               </div>
-              <div style={s.acciones} onClick={e => e.stopPropagation()}>
-                <motion.button style={s.accionBtn} onClick={() => abrirEditar(d)} whileTap={{ scale: 0.96 }}>
+              <div className="crud-acciones" onClick={e => e.stopPropagation()}>
+                <motion.button className="crud-accion-btn" onClick={() => abrirEditar(d)} whileTap={{ scale: 0.96 }}>
                   <Pencil size={14} /><span>Renombrar</span>
                 </motion.button>
-                <motion.button style={{ ...s.accionBtn, ...s.accionEliminar }} onClick={() => eliminar(d)} whileTap={{ scale: 0.96 }}>
+                <motion.button className="crud-accion-btn crud-accion-eliminar" onClick={() => eliminar(d)} whileTap={{ scale: 0.96 }}>
                   <Trash2 size={14} /><span>Eliminar</span>
                 </motion.button>
               </div>
             </motion.div>
           )}
-          style={s.lista}
+          className="crud-lista"
         />
       )}
 
       <Modal open={!!modal} onClose={() => setModal(null)}>
-        <h2 style={s.modalTitulo}>{modal === 'crear' ? 'Nuevo día' : 'Editar día'}</h2>
+        <h2 className="crud-modal-titulo">{modal === 'crear' ? 'Nuevo día' : 'Editar día'}</h2>
         <input
-          style={s.input}
+          className="crud-modal-input"
           placeholder='Ej: "Día 1 - Piernas"'
           value={nombre}
           onChange={e => setNombre(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && guardar()}
           autoFocus
         />
-        {errorMsg && <p style={{ color: 'var(--danger)', fontSize: '0.85rem', textAlign: 'center', margin: 0 }}>{errorMsg}</p>}
-        <div style={s.modalBtns}>
-          <motion.button style={s.cancelBtn} onClick={() => setModal(null)} whileTap={{ scale: 0.97 }}>Cancelar</motion.button>
+        {errorMsg && <p className="crud-error-msg">{errorMsg}</p>}
+        <div className="crud-modal-btns">
+          <motion.button className="crud-cancel-btn" onClick={() => setModal(null)} whileTap={{ scale: 0.97 }}>Cancelar</motion.button>
           <motion.button
-            style={{ ...s.saveBtn, opacity: !nombre.trim() || guardando ? 0.5 : 1 }}
+            className="crud-save-btn"
+            style={{ opacity: !nombre.trim() || guardando ? 0.5 : 1 }}
             onClick={guardar}
             disabled={!nombre.trim() || guardando}
             whileTap={{ scale: 0.97 }}
@@ -189,40 +190,4 @@ export default function Dias() {
       </Modal>
     </PageWrapper>
   )
-}
-
-const s = {
-  dragHandle: {
-    color: 'var(--text-dim)',
-    cursor: 'grab', padding: '4px', flexShrink: 0,
-    touchAction: 'none', display: 'flex', alignItems: 'center',
-  },
-  lista: { display: 'flex', flexDirection: 'column', gap: '10px', padding: '14px 14px 0' },
-  card: {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderTop: '1px solid var(--highlight)',
-    borderRadius: 'var(--r-lg)',
-    padding: '16px',
-    display: 'flex', flexDirection: 'column', gap: '12px',
-    boxShadow: 'var(--shadow-sm)',
-    cursor: 'pointer',
-  },
-  cardMain: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' },
-  cardOrden: { display: 'block', fontSize: '0.68rem', color: 'var(--green)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '4px' },
-  cardNombre: { fontSize: '1.05rem', fontWeight: 600, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  acciones: { display: 'flex', gap: '8px' },
-  accionBtn: { flex: 1, padding: '12px 14px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', fontSize: '0.88rem', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' },
-  accionEliminar: { color: 'var(--danger)', background: 'var(--danger-bg)', borderColor: 'rgba(255,107,107,0.18)' },
-  desktopGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: '14px',
-    padding: '20px',
-  },
-  modalTitulo: { margin: 0, fontSize: '1.15rem', fontWeight: 700, letterSpacing: '-0.01em' },
-  input: { padding: '14px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', color: 'var(--text)', fontSize: '1rem', outline: 'none' },
-  modalBtns: { display: 'flex', gap: '10px' },
-  cancelBtn: { flex: 1, padding: '14px', background: 'var(--bg-input)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', fontSize: '0.95rem' },
-  saveBtn: { flex: 1, padding: '14px', background: 'var(--green-grad)', color: '#fff', border: 'none', borderRadius: 'var(--r-md)', fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(12, 122, 95, 0.35)' },
 }

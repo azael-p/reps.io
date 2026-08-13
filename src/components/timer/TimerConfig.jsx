@@ -106,22 +106,22 @@ export default function TimerConfig({ onIniciar }) {
   }
 
   return (
-    <div style={s.page}>
-      <div style={s.header}>
+    <div className="timer-config-page">
+      <div className="timer-config-header">
         <Timer size={22} color="var(--orange)" />
-        <h1 style={s.titulo}>Timer HIIT</h1>
+        <h1 className="timer-config-titulo">Timer HIIT</h1>
       </div>
 
-      <div style={s.section}>
-        <p style={s.sectionLabel}>Configuración</p>
-        <div style={s.grid}>
+      <div className="timer-config-section">
+        <p className="timer-config-section-label">Configuración</p>
+        <div className="timer-config-grid">
           <Campo label="Calentamiento" {...campo('calentamiento')} />
           <Campo label="Trabajo" {...campo('trabajo')} />
           <Campo label="Descanso" {...campo('descanso')} />
           <Campo label="Enfriamiento" {...campo('enfriamiento')} />
         </div>
         <div style={{ marginTop: '10px' }}>
-          <label style={s.fieldLabel}>Sets</label>
+          <label className="timer-config-field-label">Sets</label>
           <input
             type="number"
             min={1}
@@ -134,11 +134,10 @@ export default function TimerConfig({ onIniciar }) {
         </div>
       </div>
 
-      {error && <p style={s.error}>{error}</p>}
+      {error && <p className="timer-config-error">{error}</p>}
 
       <motion.button
-        className="btn btn-primary"
-        style={s.btnIniciar}
+        className="btn btn-primary timer-config-btn-iniciar"
         onClick={handleIniciar}
         whileTap={{ scale: 0.97 }}
       >
@@ -146,30 +145,30 @@ export default function TimerConfig({ onIniciar }) {
       </motion.button>
 
       {/* Presets */}
-      <div style={s.section}>
-        <p style={s.sectionLabel}>Mis presets {presets.length > 0 && `(${presets.length}/5)`}</p>
+      <div className="timer-config-section">
+        <p className="timer-config-section-label">Mis presets {presets.length > 0 && `(${presets.length}/5)`}</p>
         <AnimatePresence>
           {presets.map(p => (
             <motion.div
               key={p.id}
-              style={s.presetRow}
+              className="timer-config-preset-row"
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, height: 0, marginBottom: 0 }}
               layout
             >
-              <button style={s.presetBtn} onClick={() => cargarPreset(p)}>
-                <span style={s.presetNombre}>{p.nombre}</span>
-                <span style={s.presetSub}>{resumenPreset(p)}</span>
+              <button className="timer-config-preset-btn" onClick={() => cargarPreset(p)}>
+                <span className="timer-config-preset-nombre">{p.nombre}</span>
+                <span className="timer-config-preset-sub">{resumenPreset(p)}</span>
               </button>
-              <button style={s.deleteBtn} onClick={() => handleEliminar(p.id)} aria-label="Eliminar preset">
+              <button className="timer-config-delete-btn" onClick={() => handleEliminar(p.id)} aria-label="Eliminar preset">
                 <Trash2 size={16} />
               </button>
             </motion.div>
           ))}
         </AnimatePresence>
 
-        <div style={s.guardarRow}>
+        <div className="timer-config-guardar-row">
           <input
             className="input"
             placeholder="Nombre del preset"
@@ -195,7 +194,7 @@ export default function TimerConfig({ onIniciar }) {
 function Campo({ label, value, onChange }) {
   return (
     <div>
-      <label style={s.fieldLabel}>{label}</label>
+      <label className="timer-config-field-label">{label}</label>
       <input
         className="input num"
         placeholder="0:00"
@@ -204,110 +203,4 @@ function Campo({ label, value, onChange }) {
       />
     </div>
   )
-}
-
-const s = {
-  page: {
-    minHeight: '100dvh',
-    padding: '20px 16px max(24px, env(safe-area-inset-bottom))',
-    paddingTop: 'max(20px, env(safe-area-inset-top))',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-    maxWidth: '540px',
-    boxSizing: 'border-box',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-  },
-  titulo: {
-    fontSize: '1.6rem',
-    fontWeight: 800,
-    letterSpacing: '-0.025em',
-  },
-  section: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-  },
-  sectionLabel: {
-    fontSize: '0.72rem',
-    fontWeight: 700,
-    textTransform: 'uppercase',
-    letterSpacing: '0.08em',
-    color: 'var(--text-mute)',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '10px',
-  },
-  fieldLabel: {
-    display: 'block',
-    fontSize: '0.76rem',
-    fontWeight: 600,
-    color: 'var(--text-mute)',
-    marginBottom: '5px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-  },
-  btnIniciar: {
-    width: '100%',
-    padding: '18px',
-    fontSize: '1.1rem',
-    borderRadius: 'var(--r-lg)',
-  },
-  presetRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    marginBottom: '8px',
-  },
-  presetBtn: {
-    flex: 1,
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-md)',
-    padding: '12px 14px',
-    textAlign: 'left',
-    color: 'var(--text)',
-    fontFamily: 'inherit',
-    cursor: 'pointer',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '3px',
-  },
-  presetNombre: {
-    fontSize: '0.95rem',
-    fontWeight: 600,
-  },
-  presetSub: {
-    fontSize: '0.78rem',
-    color: 'var(--text-mute)',
-  },
-  deleteBtn: {
-    background: 'var(--danger-bg)',
-    border: '1px solid rgba(255,107,107,0.3)',
-    borderRadius: 'var(--r-md)',
-    padding: '12px',
-    color: 'var(--danger)',
-    cursor: 'pointer',
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  guardarRow: {
-    display: 'flex',
-    gap: '8px',
-    alignItems: 'center',
-    marginTop: '4px',
-  },
-  error: {
-    color: 'var(--danger)',
-    fontSize: '0.85rem',
-    fontWeight: 500,
-  },
 }

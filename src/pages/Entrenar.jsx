@@ -57,9 +57,9 @@ export default function Entrenar() {
   }
 
   const programasList = (
-    <div style={s.seccion}>
-      <p style={s.label}>1. Elegí un programa</p>
-      <div style={s.lista}>
+    <div className="entrenar-seccion">
+      <p className="entrenar-label">1. Elegí un programa</p>
+      <div className="entrenar-lista">
         {programas.length === 0 ? (
           <EmptyState mensaje="Necesitás un programa primero" icon="📋" sub="Andá a Programas para crear tu primera rutina y empezar a entrenar" action={{ label: 'Crear programa', onClick: () => navigate('/programas') }} />
         ) : (
@@ -68,17 +68,17 @@ export default function Entrenar() {
             return (
               <motion.button
                 key={p.id}
-                style={{ ...s.opcionBtn, ...(activo ? s.opcionActiva : {}) }}
+                className={`entrenar-opcion-btn ${activo ? 'entrenar-opcion-activa' : ''}`}
                 onClick={() => seleccionarPrograma(p.id)}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05, type: 'spring', stiffness: 240, damping: 22 }}
                 whileTap={{ scale: 0.97 }}
               >
-                <span style={s.opcionNombre}>{p.nombre}</span>
+                <span className="entrenar-opcion-nombre">{p.nombre}</span>
                 {activo && (
                   <motion.span
-                    style={s.check}
+                    className="entrenar-check"
                     initial={{ scale: 0, rotate: -90 }}
                     animate={{ scale: 1, rotate: 0 }}
                     transition={{ type: 'spring', stiffness: 320, damping: 18 }}
@@ -95,28 +95,28 @@ export default function Entrenar() {
   )
 
   const diasList = dias.length > 0 ? (
-    <div style={s.seccion}>
-      <p style={s.label}>2. Elegí el día</p>
-      <div style={s.lista}>
+    <div className="entrenar-seccion">
+      <p className="entrenar-label">2. Elegí el día</p>
+      <div className="entrenar-lista">
         {dias.map((d, i) => {
           const activo = diaId === d.id
           return (
             <motion.button
               key={d.id}
-              style={{ ...s.opcionBtn, ...(activo ? s.opcionActiva : {}) }}
+              className={`entrenar-opcion-btn ${activo ? 'entrenar-opcion-activa' : ''}`}
               onClick={() => setDiaId(d.id)}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, type: 'spring', stiffness: 240, damping: 22 }}
               whileTap={{ scale: 0.97 }}
             >
-              <div style={s.opcionTextWrap}>
-                <span style={s.diaNum}>Día {i + 1}</span>
-                <span style={s.opcionNombre}>{d.nombre}</span>
+              <div className="entrenar-opcion-text-wrap">
+                <span className="entrenar-dia-num">Día {i + 1}</span>
+                <span className="entrenar-opcion-nombre">{d.nombre}</span>
               </div>
               {activo && (
                 <motion.span
-                  style={s.check}
+                  className="entrenar-check"
                   initial={{ scale: 0, rotate: -90 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: 'spring', stiffness: 320, damping: 18 }}
@@ -135,7 +135,8 @@ export default function Entrenar() {
 
   const empezarBtn = (
     <motion.button
-      style={{ ...s.empezarBtn, opacity: iniciando ? 0.7 : 1 }}
+      className="entrenar-empezar-btn"
+      style={{ opacity: iniciando ? 0.7 : 1 }}
       onClick={empezar}
       disabled={iniciando}
       whileTap={{ scale: 0.97 }}
@@ -143,7 +144,7 @@ export default function Entrenar() {
       {iniciando ? <span className="spinner" /> : (
         <>
           <span>Empezar entrenamiento</span>
-          <span style={s.fire}>🔥</span>
+          <span className="entrenar-fire">🔥</span>
         </>
       )}
     </motion.button>
@@ -163,11 +164,11 @@ export default function Entrenar() {
           <ListSkeleton count={3} height={60} />
         </div>
       ) : isDesktop ? (
-        <div style={s.desktopLayout}>
-          <div style={s.desktopCol}>
+        <div className="entrenar-desktop-layout">
+          <div className="entrenar-desktop-col">
             {programasList}
           </div>
-          <div style={s.desktopCol}>
+          <div className="entrenar-desktop-col">
             <AnimatePresence>
               {diasList && (
                 <motion.div
@@ -213,7 +214,7 @@ export default function Entrenar() {
         <AnimatePresence>
           {diaId && (
             <motion.div
-              style={s.footer}
+              className="entrenar-footer"
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
@@ -226,72 +227,4 @@ export default function Entrenar() {
       )}
     </PageWrapper>
   )
-}
-
-const s = {
-  seccion: { padding: '20px 16px 0' },
-  label: {
-    margin: '0 0 12px', color: 'var(--text-mute)',
-    fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em',
-    fontWeight: 700,
-  },
-  lista: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  opcionBtn: {
-    padding: '14px 16px',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderTopColor: 'var(--highlight)',
-    borderRadius: 'var(--r-md)',
-    color: 'var(--text)',
-    fontSize: '0.98rem',
-    textAlign: 'left',
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    gap: '12px',
-    boxShadow: 'var(--shadow-inner)',
-    transition: 'border-color var(--transition-base)',
-  },
-  opcionActiva: {
-    background: 'var(--orange-grad)',
-    border: '1px solid rgba(240, 153, 123, 0.45)',
-    boxShadow: '0 10px 28px rgba(199, 90, 48, 0.35)',
-    color: '#fff',
-  },
-  opcionTextWrap: { display: 'flex', flexDirection: 'column', gap: '2px' },
-  diaNum: { fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' },
-  opcionNombre: { fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  check: {
-    width: '26px', height: '26px',
-    borderRadius: '50%',
-    background: 'rgba(255,255,255,0.22)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '0.95rem', fontWeight: 800, color: '#fff',
-    flexShrink: 0,
-  },
-  footer: {
-    position: 'fixed', bottom: 0, left: 0, right: 0,
-    padding: '14px 16px',
-    paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
-    background: 'linear-gradient(180deg, transparent, var(--bg) 30%)',
-    zIndex: 51,
-  },
-  empezarBtn: {
-    width: '100%', padding: '18px',
-    background: 'var(--orange-grad)',
-    color: '#fff', border: 'none',
-    borderRadius: 'var(--r-lg)',
-    fontSize: '1.05rem', fontWeight: 700,
-    boxShadow: '0 14px 32px rgba(199, 90, 48, 0.45)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-    letterSpacing: '-0.01em',
-  },
-  fire: { fontSize: '1.2rem' },
-  desktopLayout: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '0',
-    alignItems: 'start',
-  },
-  desktopCol: {
-    borderRight: '1px solid var(--border)',
-  },
 }

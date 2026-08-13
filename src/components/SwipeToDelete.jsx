@@ -64,9 +64,9 @@ export default function SwipeToDelete({ onDelete, onClick, threshold = 60, child
   }, [onDelete, onClick, threshold])
 
   return (
-    <div style={s.wrap}>
-      <div style={s.bg}>
-        <span style={s.bgTxt}>Eliminar</span>
+    <div className="swipe-wrap">
+      <div className="swipe-bg">
+        <span className="swipe-bg-txt">Eliminar</span>
       </div>
       <div
         ref={wrapRef}
@@ -75,25 +75,10 @@ export default function SwipeToDelete({ onDelete, onClick, threshold = 60, child
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         onDragStart={e => e.preventDefault()}
-        style={s.item}
+        className="swipe-item"
       >
         {children}
       </div>
     </div>
   )
-}
-
-const s = {
-  wrap: { position: 'relative', overflow: 'hidden', borderRadius: 'var(--r-lg)' },
-  bg: {
-    position: 'absolute', inset: 0,
-    background: 'var(--danger)',
-    display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-    paddingRight: '20px', borderRadius: 'var(--r-lg)',
-  },
-  bgTxt: { color: '#fff', fontSize: '0.88rem', fontWeight: 700 },
-  item: {
-    position: 'relative', zIndex: 1, background: 'inherit',
-    touchAction: 'pan-y', userSelect: 'none',
-  },
 }

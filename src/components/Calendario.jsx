@@ -56,10 +56,10 @@ export default function Calendario({ fechas = [] }) {
   const sesionesEsteMes = celdas.filter(d => d && tieneSesion(d)).length
 
   return (
-    <div style={s.card}>
-      <div style={s.header}>
+    <div className="calendario-card">
+      <div className="calendario-header">
         <motion.button
-          style={s.navBtn}
+          className="calendario-nav-btn"
           onClick={irMesAnterior}
           whileTap={{ scale: 0.85 }}
           whileHover={{ background: 'rgba(255,255,255,0.06)' }}
@@ -67,11 +67,11 @@ export default function Calendario({ fechas = [] }) {
         >
           ‹
         </motion.button>
-        <div style={s.headerCenter}>
+        <div className="calendario-header-center">
           <AnimatePresence mode="wait" custom={direccion}>
             <motion.span
               key={`${año}-${mes}`}
-              style={s.mesLabel}
+              className="calendario-mes-label"
               custom={direccion}
               initial={{ opacity: 0, x: direccion * 15 }}
               animate={{ opacity: 1, x: 0 }}
@@ -84,7 +84,7 @@ export default function Calendario({ fechas = [] }) {
           {sesionesEsteMes > 0 && (
             <motion.span
               key={`count-${año}-${mes}`}
-              style={s.counter}
+              className="calendario-counter"
               initial={{ opacity: 0, scale: 0.6 }}
               animate={{ opacity: 1, scale: 1 }}
             >
@@ -93,7 +93,7 @@ export default function Calendario({ fechas = [] }) {
           )}
         </div>
         <motion.button
-          style={s.navBtn}
+          className="calendario-nav-btn"
           onClick={irMesSiguiente}
           whileTap={{ scale: 0.85 }}
           whileHover={{ background: 'rgba(255,255,255,0.06)' }}
@@ -103,14 +103,14 @@ export default function Calendario({ fechas = [] }) {
         </motion.button>
       </div>
 
-      <div style={s.grid}>
+      <div className="calendario-grid">
         {DIAS_SEMANA.map((d, i) => (
-          <div key={`h-${i}`} style={s.diaHeader}>{d}</div>
+          <div key={`h-${i}`} className="calendario-dia-header">{d}</div>
         ))}
         <AnimatePresence mode="wait" custom={direccion}>
           <motion.div
             key={`${año}-${mes}-cells`}
-            style={s.cellGrid}
+            className="calendario-cell-grid"
             custom={direccion}
             initial={{ opacity: 0, x: direccion * 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -118,21 +118,22 @@ export default function Calendario({ fechas = [] }) {
             transition={{ duration: 0.22 }}
           >
             {celdas.map((dia, i) => {
-              if (!dia) return <div key={i} style={s.diaEmpty} />
+              if (!dia) return <div key={i} className="calendario-dia-empty" />
               const sesion = tieneSesion(dia)
               const hoyFlag = esHoy(dia)
               const futuro = esFuturo(dia)
               const fechaLabel = `${dia} de ${MESES[mes]}, ${sesion ? 'sesión registrada' : 'sin sesión'}`
+              const claseDia = [
+                'calendario-dia',
+                sesion && 'calendario-dia--sesion',
+                hoyFlag && 'calendario-dia--hoy',
+                futuro && 'calendario-dia--futuro',
+                !sesion && !hoyFlag && 'calendario-dia--vacio',
+              ].filter(Boolean).join(' ')
               return (
                 <motion.div
                   key={i}
-                  style={{
-                    ...s.dia,
-                    ...(sesion ? s.diaSesion : {}),
-                    ...(hoyFlag ? s.diaHoy : {}),
-                    ...(futuro ? s.diaFuturo : {}),
-                    ...(!sesion && !hoyFlag ? { border: '1px solid var(--border)', borderRadius: 8 } : {}),
-                  }}
+                  className={claseDia}
                   whileHover={!sesion && !futuro ? { scale: 1.05, borderColor: 'var(--border-strong)' } : {}}
                   aria-label={fechaLabel}
                   initial={sesion ? { scale: 0.5, opacity: 0 } : false}
@@ -166,87 +167,4 @@ export default function Calendario({ fechas = [] }) {
       </div>
     </div>
   )
-}
-
-const s = {
-  card: {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderTop: '1px solid var(--highlight)',
-    borderRadius: 'var(--r-lg)',
-    padding: '14px 14px 12px',
-    boxShadow: 'var(--shadow-sm)',
-    width: '100%',
-    boxSizing: 'border-box',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '10px',
-  },
-  headerCenter: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' },
-  mesLabel: {
-    fontSize: '0.9rem',
-    fontWeight: 700,
-    color: 'var(--text)',
-    letterSpacing: '-0.01em',
-  },
-  counter: {
-    fontSize: '0.65rem',
-    color: 'var(--orange)',
-    fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-  },
-  navBtn: {
-    background: 'transparent',
-    border: 'none',
-    color: 'var(--text-mute)',
-    fontSize: '1.6rem',
-    width: '44px', height: '44px',
-    borderRadius: '10px',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    lineHeight: 1,
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(7, 1fr)',
-    gap: '2px',
-  },
-  cellGrid: {
-    gridColumn: '1 / -1',
-    display: 'grid',
-    gridTemplateColumns: 'repeat(7, 1fr)',
-    gap: '3px',
-  },
-  diaHeader: {
-    textAlign: 'center',
-    fontSize: '0.62rem',
-    color: 'var(--text-dim)',
-    fontWeight: 700,
-    paddingBottom: '6px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-  },
-  diaEmpty: { aspectRatio: '1' },
-  dia: {
-    position: 'relative',
-    aspectRatio: '1',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '10px',
-    fontSize: '0.85rem',
-  },
-  diaSesion: {
-    background: 'linear-gradient(135deg, #8e3618 0%, #c75a30 100%)',
-    boxShadow: '0 4px 12px rgba(240, 153, 123, 0.25)',
-  },
-  diaHoy: {
-    border: '1.5px solid var(--text)',
-  },
-  diaFuturo: {
-    opacity: 0.5,
-  },
 }

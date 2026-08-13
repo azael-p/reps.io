@@ -27,10 +27,9 @@ export default function BottomNav() {
 
   return (
     <>
-      <div className="bottom-nav-spacer" style={{ height: `calc(${NAV_H}px + env(safe-area-inset-bottom))` }} />
+      <div className="bottom-nav-spacer" />
       <motion.nav
-        className="mobile-only"
-        style={s.nav}
+        className="mobile-only bottom-nav"
         initial={{ y: NAV_H }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 280, damping: 28 }}
@@ -40,7 +39,7 @@ export default function BottomNav() {
           return (
             <motion.button
               key={t.ruta}
-              style={s.tab}
+              className="bottom-nav-tab"
               onClick={() => navigate(t.ruta)}
               whileTap={{ scale: 0.92 }}
             >
@@ -64,7 +63,7 @@ export default function BottomNav() {
                 color={active ? 'var(--orange)' : 'var(--text-mute)'}
                 style={{ position: 'relative', zIndex: 1, transition: 'color var(--transition-base)' }}
               />
-              <span style={{ ...s.label, color: active ? 'var(--orange)' : 'var(--text-dim)', position: 'relative', zIndex: 1 }}>
+              <span className="bottom-nav-label" style={{ color: active ? 'var(--orange)' : 'var(--text-dim)', position: 'relative', zIndex: 1 }}>
                 {t.label}
               </span>
             </motion.button>
@@ -76,37 +75,3 @@ export default function BottomNav() {
 }
 
 const NAV_H = 64
-
-const s = {
-  nav: {
-    position: 'fixed', bottom: 0, left: 0, right: 0,
-    display: 'flex', alignItems: 'flex-start',
-    height: `calc(${NAV_H}px + env(safe-area-inset-bottom))`,
-    paddingTop: '0',
-    paddingBottom: 'env(safe-area-inset-bottom)',
-    background: 'var(--bg-elev)',
-    borderTop: '1px solid var(--border-strong)',
-    boxShadow: '0 -8px 24px rgba(0,0,0,0.4)',
-    zIndex: 50,
-  },
-  tab: {
-    flex: 1,
-    height: NAV_H,
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    gap: '3px',
-    padding: '10px 0 8px',
-    background: 'none', border: 'none',
-    position: 'relative',
-  },
-  pill: {
-    position: 'absolute',
-    inset: '6px 10px',
-    borderRadius: '12px',
-    background: 'rgba(240, 153, 123, 0.14)',
-    border: '1px solid rgba(240, 153, 123, 0.3)',
-  },
-  label: {
-    fontSize: '0.68rem', fontWeight: 600,
-    letterSpacing: '0.02em',
-  },
-}

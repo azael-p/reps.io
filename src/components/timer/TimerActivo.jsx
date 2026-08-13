@@ -64,12 +64,12 @@ export default function TimerActivo({ fase, segundosRestantes, setActual, config
   }, [])
 
   return (
-    <div style={{ ...s.page, background: fondo }}>
+    <div className="timer-activo-page" style={{ '--fondo': fondo, '--acento': acento }}>
       {/* Fase label */}
       <AnimatePresence mode="sync">
         <motion.div
           key={fase}
-          style={{ ...s.faseLabel, color: acento }}
+          className="timer-activo-fase-label"
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 8 }}
@@ -80,11 +80,11 @@ export default function TimerActivo({ fase, segundosRestantes, setActual, config
       </AnimatePresence>
 
       {/* Countdown */}
-      <div style={s.centroWrap}>
+      <div className="timer-activo-centro-wrap">
         <AnimatePresence mode="wait">
           <motion.div
             key={`${fase}-${segundosRestantes > 0 ? 'tick' : 'zero'}`}
-            style={{ ...s.countdown, color: acento }}
+            className="timer-activo-countdown"
             initial={{ opacity: 0.6, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.15 }}
@@ -94,34 +94,34 @@ export default function TimerActivo({ fase, segundosRestantes, setActual, config
         </AnimatePresence>
 
         {(fase === 'trabajo' || fase === 'descanso') && (
-          <div style={s.setsInfo}>
-            Set <span style={{ color: acento, fontWeight: 700 }}>{setActual}</span> de {config.sets}
+          <div className="timer-activo-sets-info">
+            Set <span className="timer-activo-sets-info-num">{setActual}</span> de {config.sets}
           </div>
         )}
       </div>
 
       {/* Buttons */}
-      <div style={s.botones}>
+      <div className="timer-activo-botones">
         <motion.button
-          style={{ ...s.btnPrincipal, background: acento, color: '#0a0a0c' }}
+          className="timer-activo-btn-principal"
           onClick={pausado ? onReanudar : onPausar}
           whileTap={{ scale: 0.97 }}
         >
           {pausado ? 'REANUDAR' : 'PAUSAR'}
         </motion.button>
 
-        <div style={s.botonesFila}>
+        <div className="timer-activo-botones-fila">
           <motion.button
-            style={s.btnSecundario}
+            className="timer-activo-btn-secundario"
             onClick={onSaltar}
             whileTap={{ scale: 0.97 }}
           >
             SALTAR →
           </motion.button>
 
-          <div style={s.terminarWrap}>
+          <div className="timer-activo-terminar-wrap">
             <motion.button
-              style={{ ...s.btnSecundario, ...s.btnTerminar }}
+              className="timer-activo-btn-secundario timer-activo-btn-terminar"
               onPointerDown={iniciarLongPress}
               onPointerUp={cancelarLongPress}
               onPointerLeave={cancelarLongPress}
@@ -132,11 +132,8 @@ export default function TimerActivo({ fase, segundosRestantes, setActual, config
               {presionando ? 'Soltar...' : 'TERMINAR'}
               {presionando && (
                 <div
-                  style={{
-                    ...s.progressBar,
-                    width: `${progresoTerminar * 100}%`,
-                    background: 'rgba(255,107,107,0.6)',
-                  }}
+                  className="timer-activo-progress-bar"
+                  style={{ width: `${progresoTerminar * 100}%` }}
                 />
               )}
             </motion.button>
@@ -145,102 +142,4 @@ export default function TimerActivo({ fase, segundosRestantes, setActual, config
       </div>
     </div>
   )
-}
-
-const s = {
-  page: {
-    minHeight: '100dvh',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    // 64px = BottomNav height; keeps SALTAR/TERMINAR above the nav on mobile
-    padding: '0 0 calc(64px + max(12px, env(safe-area-inset-bottom)))',
-    paddingTop: 'max(48px, env(safe-area-inset-top))',
-    transition: 'background 0.4s ease',
-    userSelect: 'none',
-  },
-  faseLabel: {
-    textAlign: 'center',
-    fontSize: '1rem',
-    fontWeight: 800,
-    letterSpacing: '0.18em',
-    paddingTop: '8px',
-  },
-  centroWrap: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '16px',
-  },
-  countdown: {
-    fontSize: 'clamp(80px, 22vw, 140px)',
-    fontWeight: 800,
-    letterSpacing: '-0.04em',
-    lineHeight: 1,
-    fontVariantNumeric: 'tabular-nums',
-    fontFeatureSettings: '"tnum"',
-  },
-  setsInfo: {
-    fontSize: '1.3rem',
-    fontWeight: 600,
-    color: 'rgba(255,255,255,0.55)',
-    letterSpacing: '-0.01em',
-  },
-  botones: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-    padding: '0 16px',
-  },
-  btnPrincipal: {
-    width: '100%',
-    minHeight: '80px',
-    borderRadius: 'var(--r-lg)',
-    border: 'none',
-    fontSize: '1.2rem',
-    fontWeight: 800,
-    letterSpacing: '0.08em',
-    fontFamily: 'inherit',
-    cursor: 'pointer',
-  },
-  botonesFila: {
-    display: 'flex',
-    gap: '10px',
-  },
-  btnSecundario: {
-    flex: 1,
-    minHeight: '80px',
-    borderRadius: 'var(--r-lg)',
-    border: '1px solid rgba(255,255,255,0.15)',
-    background: 'rgba(255,255,255,0.07)',
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: '0.95rem',
-    fontWeight: 700,
-    letterSpacing: '0.06em',
-    fontFamily: 'inherit',
-    cursor: 'pointer',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  btnTerminar: {
-    color: 'rgba(255,107,107,0.85)',
-    WebkitTouchCallout: 'none',
-    WebkitUserSelect: 'none',
-    userSelect: 'none',
-    touchAction: 'none',
-  },
-  terminarWrap: {
-    flex: 1,
-    display: 'flex',
-  },
-  progressBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    height: '4px',
-    borderRadius: '2px',
-    transition: 'width 0.05s linear',
-  },
 }
