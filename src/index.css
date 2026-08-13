@@ -3,6 +3,7 @@
 html, body, #root { height: 100%; }
 
 /* ============== Sidebar tooltips ============== */
+.sidebar-item-wrap { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; }
 .sidebar-item-wrap:hover .sidebar-tooltip,
 .sidebar-item-wrap:hover > div:last-child { opacity: 1 !important; }
 
@@ -790,6 +791,208 @@ select:focus-visible {
 }
 .timer-config-guardar-row { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
 .timer-config-error { color: var(--danger); font-size: 0.85rem; font-weight: 500; }
+
+/* ============== DesktopSidebar ============== */
+/* display:flex real lo aporta .desktop-only (arriba, con !important por media query) */
+.desktop-sidebar {
+  position: fixed;
+  left: 0; top: 0;
+  width: 60px;
+  height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-elev);
+  border-right: 1px solid var(--border);
+  z-index: 100;
+  padding-top: 12px;
+  padding-bottom: 16px;
+  gap: 0;
+}
+.desktop-sidebar-logo {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.desktop-sidebar-logo-circle {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f0997b 0%, #c75a30 100%);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(240,153,123,0.3);
+}
+.desktop-sidebar-nav-items {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px; width: 100%;
+  padding-top: 4px;
+}
+.desktop-sidebar-item {
+  width: 100%; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 0;
+  position: relative; cursor: pointer;
+}
+.desktop-sidebar-item--active { background: rgba(240,153,123,0.08); }
+.desktop-sidebar-active-line {
+  position: absolute; left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 24px;
+  border-radius: 0 2px 2px 0;
+  background: var(--orange-grad);
+}
+.sidebar-tooltip {
+  position: absolute;
+  left: 68px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 200;
+  box-shadow: var(--shadow-md);
+}
+.desktop-sidebar-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.9rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.desktop-sidebar-avatar-initial { display: flex; align-items: center; justify-content: center; transition: opacity 0.15s; }
+.desktop-sidebar-avatar-logout {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  background: rgba(255,107,107,0.15);
+  color: var(--danger);
+  transition: opacity 0.15s;
+}
+
+/* ============== SeleccionarEjercicio ============== */
+.picker-page {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  color: var(--text);
+  display: flex; flex-direction: column;
+  z-index: 200;
+  overflow-y: auto;
+}
+.picker-header {
+  display: flex; align-items: center;
+  padding: 20px 16px 16px;
+  padding-top: max(20px, env(safe-area-inset-top));
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.picker-back {
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text-mute);
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.picker-header-info { flex: 1; }
+.picker-header-sub { margin: 0; font-size: 0.7rem; color: var(--green); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+.picker-titulo { margin: 2px 0 0; font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; }
+.picker-search-wrap { padding: 14px 16px 8px; flex-shrink: 0; }
+.picker-search-inner { position: relative; display: flex; align-items: center; }
+.picker-search-icon { position: absolute; left: 14px; font-size: 0.9rem; opacity: 0.5; pointer-events: none; }
+.picker-search {
+  width: 100%; padding: 13px 36px 13px 38px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--text); font-size: 1rem;
+  outline: none;
+  box-sizing: border-box;
+}
+.picker-clear-btn {
+  position: absolute; right: 8px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--bg-input);
+  border: none;
+  color: var(--text-mute);
+  font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.picker-grupos {
+  display: flex; gap: 8px;
+  padding: 4px 16px 14px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.picker-grupo-btn {
+  padding: 12px 18px;
+  background: var(--bg-card);
+  color: var(--text-mute);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.88rem; font-weight: 500;
+  white-space: nowrap; flex-shrink: 0;
+}
+.picker-grupo-btn--activo {
+  background: var(--green-grad);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(12, 122, 95, 0.35);
+  font-weight: 600;
+}
+.picker-lista { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 0 16px; }
+.picker-ejercicio-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-top: 1px solid var(--highlight);
+  color: var(--text);
+  padding: 14px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  text-align: left;
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  gap: 12px;
+}
+.picker-ejercicio-nombre { font-size: 0.98rem; font-weight: 500; }
+.picker-muted { color: var(--text-dim); text-align: center; padding: 32px 16px; }
+.picker-skel { height: 54px; border-radius: var(--r-md); }
+.picker-body-config { padding: 20px 16px; display: flex; flex-direction: column; gap: 20px; }
+.picker-field { display: flex; flex-direction: column; gap: 10px; }
+.picker-label { font-size: 0.72rem; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+.picker-input-num {
+  padding: 14px; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  color: var(--text); font-size: 1.6rem; font-weight: 800;
+  outline: none; text-align: center;
+  width: 100%; box-sizing: border-box; letter-spacing: -0.03em;
+}
+.picker-row { display: flex; gap: 10px; }
+.picker-confirmar-btn {
+  margin-top: 8px;
+  padding: 17px;
+  background: var(--green-grad);
+  color: #fff; border: none;
+  border-radius: var(--r-lg);
+  font-size: 1rem; font-weight: 700;
+  box-shadow: 0 12px 30px rgba(12, 122, 95, 0.4);
+  letter-spacing: -0.01em;
+}
 
 /* ============== SwipeToDelete ============== */
 .swipe-wrap { position: relative; overflow: hidden; border-radius: var(--r-lg); }

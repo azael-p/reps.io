@@ -109,39 +109,39 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
   if (ejercicioElegido) {
     return createPortal(
       <motion.div
-        style={s.page}
+        className="picker-page"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
       >
-        <div style={s.header}>
+        <div className="picker-header">
           <motion.button
-            style={s.back}
+            className="picker-back"
             onClick={() => window.history.back()}
             whileTap={{ scale: 0.9, x: -2 }}
           >
             <ChevronLeft size={20} strokeWidth={2} />
           </motion.button>
-          <div style={s.headerInfo}>
-            <p style={s.headerSub}>Configurar</p>
-            <h2 style={s.titulo}>{ejercicioElegido.nombre}</h2>
+          <div className="picker-header-info">
+            <p className="picker-header-sub">Configurar</p>
+            <h2 className="picker-titulo">{ejercicioElegido.nombre}</h2>
           </div>
         </div>
 
-        <div style={s.bodyConfig}>
-          <div style={s.row}>
-            <div style={s.field}>
-              <label style={s.label}>Series</label>
-              <input style={s.inputNum} type="number" inputMode="numeric" min="1" max="20" value={series} onChange={e => setSeries(e.target.value)} />
+        <div className="picker-body-config">
+          <div className="picker-row">
+            <div className="picker-field">
+              <label className="picker-label">Series</label>
+              <input className="picker-input-num" type="number" inputMode="numeric" min="1" max="20" value={series} onChange={e => setSeries(e.target.value)} />
             </div>
-            <div style={s.field}>
-              <label style={s.label}>Reps</label>
-              <input style={s.inputNum} type="number" inputMode="numeric" min="1" max="100" value={reps} onChange={e => setReps(e.target.value)} />
+            <div className="picker-field">
+              <label className="picker-label">Reps</label>
+              <input className="picker-input-num" type="number" inputMode="numeric" min="1" max="100" value={reps} onChange={e => setReps(e.target.value)} />
             </div>
           </div>
 
           <motion.button
-            style={s.confirmarBtn}
+            className="picker-confirmar-btn"
             onClick={confirmar}
             whileTap={{ scale: 0.97 }}
           >
@@ -155,27 +155,27 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
 
   return createPortal(
     <motion.div
-      style={s.page}
+      className="picker-page"
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.25 }}
     >
-      <div style={s.header}>
-        <motion.button style={s.back} onClick={() => window.history.back()} whileTap={{ scale: 0.9 }}>
+      <div className="picker-header">
+        <motion.button className="picker-back" onClick={() => window.history.back()} whileTap={{ scale: 0.9 }}>
           <ChevronLeft size={20} strokeWidth={2} />
         </motion.button>
-        <div style={s.headerInfo}>
-          <p style={s.headerSub}>Catálogo</p>
-          <h2 style={s.titulo}>Elegir ejercicio</h2>
+        <div className="picker-header-info">
+          <p className="picker-header-sub">Catálogo</p>
+          <h2 className="picker-titulo">Elegir ejercicio</h2>
         </div>
       </div>
 
-      <div style={s.searchWrap}>
-        <div style={s.searchInner}>
-          <span style={s.searchIcon}><Search size={16} /></span>
+      <div className="picker-search-wrap">
+        <div className="picker-search-inner">
+          <span className="picker-search-icon"><Search size={16} /></span>
           <input
-            style={s.search}
+            className="picker-search"
             placeholder="Buscar..."
             inputMode="search"
             autoFocus={isDesktop}
@@ -185,7 +185,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
           {busqueda && (
             <motion.button
               aria-label="Limpiar búsqueda"
-              style={s.clearBtn}
+              className="picker-clear-btn"
               onClick={() => setBusqueda('')}
               initial={{ opacity: 0, scale: 0.6 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -197,9 +197,9 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
         </div>
       </div>
 
-      <div style={s.grupos}>
+      <div className="picker-grupos">
         <motion.button
-          style={{ ...s.grupoBtn, ...(grupoActivo === null && !busqueda ? s.grupoBtnActivo : {}) }}
+          className={`picker-grupo-btn ${grupoActivo === null && !busqueda ? 'picker-grupo-btn--activo' : ''}`}
           onClick={() => { setGrupoActivo(null); setBusqueda('') }}
           whileTap={{ scale: 0.94 }}
         >
@@ -208,7 +208,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
         {GRUPOS.map(g => (
           <motion.button
             key={g}
-            style={{ ...s.grupoBtn, ...(grupoActivo === g ? s.grupoBtnActivo : {}) }}
+            className={`picker-grupo-btn ${grupoActivo === g ? 'picker-grupo-btn--activo' : ''}`}
             onClick={() => { setGrupoActivo(g); setBusqueda('') }}
             whileTap={{ scale: 0.94 }}
           >
@@ -217,16 +217,16 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
         ))}
       </div>
 
-      <div style={s.lista}>
+      <div className="picker-lista">
         {cargando ? (
           Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="skeleton" style={s.skel} />
+            <div key={i} className="skeleton picker-skel" />
           ))
         ) : (
           <AnimatePresence mode="popLayout">
             {filtrados.length === 0 ? (
               <motion.p
-                style={s.muted}
+                className="picker-muted"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
@@ -237,7 +237,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
                 <motion.button
                   key={e.id}
                   layout
-                  style={s.ejercicioItem}
+                  className="picker-ejercicio-item"
                   onClick={() => setEjercicioElegido(e)}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -245,7 +245,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
                   transition={{ delay: Math.min(i, 12) * 0.015 }}
                   whileTap={{ scale: 0.98, backgroundColor: 'var(--bg-card-hover)' }}
                 >
-                  <span style={s.ejercicioNombre}>{e.nombre}</span>
+                  <span className="picker-ejercicio-nombre">{e.nombre}</span>
                   <Badge color="green">{e.grupoMuscular}</Badge>
                 </motion.button>
               ))
@@ -256,130 +256,4 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
     </motion.div>,
     document.body
   )
-}
-
-const s = {
-  page: {
-    position: 'fixed', inset: 0,
-    background: 'var(--bg)',
-    color: 'var(--text)',
-    display: 'flex', flexDirection: 'column',
-    zIndex: 200,
-    overflowY: 'auto',
-  },
-  header: {
-    display: 'flex', alignItems: 'center',
-    padding: '20px 16px 16px',
-    paddingTop: 'max(20px, env(safe-area-inset-top))',
-    gap: '12px',
-    borderBottom: '1px solid var(--border)',
-    flexShrink: 0,
-  },
-  back: {
-    background: 'var(--bg-card)', border: '1px solid var(--border)',
-    color: 'var(--text-mute)',
-    width: '44px', height: '44px',
-    borderRadius: '12px',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  },
-  headerInfo: { flex: 1 },
-  headerSub: { margin: 0, fontSize: '0.7rem', color: 'var(--green)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' },
-  titulo: { margin: '2px 0 0', fontSize: '1.15rem', fontWeight: 700, letterSpacing: '-0.02em' },
-  searchWrap: { padding: '14px 16px 8px', flexShrink: 0 },
-  searchInner: {
-    position: 'relative',
-    display: 'flex', alignItems: 'center',
-  },
-  searchIcon: {
-    position: 'absolute',
-    left: '14px',
-    fontSize: '0.9rem',
-    opacity: 0.5,
-    pointerEvents: 'none',
-  },
-  search: {
-    width: '100%', padding: '13px 36px 13px 38px',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-md)',
-    color: 'var(--text)', fontSize: '1rem',
-    outline: 'none',
-    boxSizing: 'border-box',
-  },
-  clearBtn: {
-    position: 'absolute', right: '8px',
-    width: '36px', height: '36px',
-    borderRadius: '50%',
-    background: 'var(--bg-input)',
-    border: 'none',
-    color: 'var(--text-mute)',
-    fontSize: '0.85rem',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
-  grupos: {
-    display: 'flex', gap: '8px',
-    padding: '4px 16px 14px',
-    overflowX: 'auto',
-    flexShrink: 0,
-    scrollbarWidth: 'none',
-  },
-  grupoBtn: {
-    padding: '12px 18px',
-    background: 'var(--bg-card)',
-    color: 'var(--text-mute)',
-    border: '1px solid var(--border)',
-    borderRadius: '20px',
-    fontSize: '0.88rem',
-    fontWeight: 500,
-    whiteSpace: 'nowrap',
-    flexShrink: 0,
-  },
-  grupoBtnActivo: {
-    background: 'var(--green-grad)',
-    color: '#fff',
-    borderColor: 'transparent',
-    boxShadow: '0 4px 14px rgba(12, 122, 95, 0.35)',
-    fontWeight: 600,
-  },
-  lista: { flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 16px' },
-  ejercicioItem: {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderTop: '1px solid var(--highlight)',
-    color: 'var(--text)',
-    padding: '14px 16px',
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    textAlign: 'left',
-    borderRadius: 'var(--r-md)',
-    boxShadow: 'var(--shadow-sm)',
-    gap: '12px',
-  },
-  ejercicioNombre: { fontSize: '0.98rem', fontWeight: 500 },
-  ejercicioGrupo: {
-    fontSize: '0.72rem',
-    color: 'var(--green)',
-    background: 'var(--green-glow)',
-    padding: '4px 10px', borderRadius: '12px',
-    border: '1px solid rgba(93, 202, 165, 0.25)',
-    fontWeight: 600,
-  },
-  muted: { color: 'var(--text-dim)', textAlign: 'center', padding: '32px 16px' },
-  skel: { height: '54px', borderRadius: 'var(--r-md)' },
-  bodyConfig: { padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '20px' },
-  field: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  label: { fontSize: '0.72rem', color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 },
-  inputNum: { padding: '14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', color: 'var(--text)', fontSize: '1.6rem', fontWeight: 800, outline: 'none', textAlign: 'center', width: '100%', boxSizing: 'border-box', letterSpacing: '-0.03em' },
-  row: { display: 'flex', gap: '10px' },
-  confirmarBtn: {
-    marginTop: '8px',
-    padding: '17px',
-    background: 'var(--green-grad)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 'var(--r-lg)',
-    fontSize: '1rem', fontWeight: 700,
-    boxShadow: '0 12px 30px rgba(12, 122, 95, 0.4)',
-    letterSpacing: '-0.01em',
-  },
 }
