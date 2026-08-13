@@ -1092,6 +1092,18 @@ select:focus-visible {
 .resumen-row { display: flex; gap: 10px; }
 .resumen-field { flex: 1; display: flex; flex-direction: column; gap: 8px; }
 .resumen-label { font-size: 0.72rem; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+/* ---- Resumen (edición) — stepper ---- */
+.resumen-stepper { display: flex; align-items: center; gap: 6px; }
+.resumen-stepper-btn {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--bg-input); border: 1px solid var(--border);
+  color: var(--text-mute);
+  font-size: 1.2rem; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  -webkit-touch-callout: none; -webkit-user-select: none;
+  user-select: none; touch-action: none;
+}
 .resumen-input-num {
   padding: 16px; background: var(--bg-input);
   border: 1px solid var(--border); border-radius: var(--r-md);
@@ -1599,6 +1611,8 @@ select:focus-visible {
   font-size: 1.2rem; font-weight: 600;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  -webkit-touch-callout: none; -webkit-user-select: none;
+  user-select: none; touch-action: none;
 }
 .sa-input-label { font-size: 0.72rem; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
 .sa-hint-tocable { font-size: 0.78rem; color: var(--orange); cursor: pointer; font-weight: 500; margin: 0; }

@@ -11,6 +11,7 @@ import { Modal, PageWrapper } from '../components/ui'
 import { useUser } from '../context/UserContext'
 import { logEvento } from '../firebase/analytics'
 import { useDesktop } from '../hooks/useDesktop'
+import { useLongPress } from '../hooks/useLongPress'
 
 function buildResumen(regs, diaNombre) {
   const ejerciciosMap = {}
@@ -178,6 +179,11 @@ export default function ResumenSesion() {
 
   const totalVolumen = registros.reduce((acc, r) => acc + r.pesoUsado * r.repsHechas, 0)
 
+  const restarEditPesoPress = useLongPress(() => setEditPeso(p => String(Math.round(Math.max(0, (Number(p) || 0) - 2.5) * 10) / 10)))
+  const sumarEditPesoPress = useLongPress(() => setEditPeso(p => String(Math.round(((Number(p) || 0) + 2.5) * 10) / 10)))
+  const restarEditRepsPress = useLongPress(() => setEditReps(r => String(Math.max(1, (Number(r) || 1) - 1))))
+  const sumarEditRepsPress = useLongPress(() => setEditReps(r => String((Number(r) || 1) + 1)))
+
   if (error) return (
     <div className="resumen-page">
       <div style={{ padding: '80px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
@@ -335,20 +341,28 @@ export default function ResumenSesion() {
         <div className="resumen-row">
           <div className="resumen-field">
             <label className="resumen-label">Peso (kg)</label>
-            <input
-              className="resumen-input-num"
-              type="number" inputMode="decimal" placeholder="0"
-              value={editPeso} onChange={e => setEditPeso(e.target.value)}
-              autoFocus
-            />
+            <div className="resumen-stepper">
+              <motion.button className="resumen-stepper-btn" aria-label="Restar 2,5 kg" {...restarEditPesoPress} whileTap={{ scale: 0.92 }}>−</motion.button>
+              <input
+                className="resumen-input-num"
+                type="number" inputMode="decimal" placeholder="0"
+                value={editPeso} onChange={e => setEditPeso(e.target.value)}
+                autoFocus
+              />
+              <motion.button className="resumen-stepper-btn" aria-label="Sumar 2,5 kg" {...sumarEditPesoPress} whileTap={{ scale: 0.92 }}>+</motion.button>
+            </div>
           </div>
           <div className="resumen-field">
             <label className="resumen-label">Reps</label>
-            <input
-              className="resumen-input-num"
-              type="number" inputMode="numeric"
-              value={editReps} onChange={e => setEditReps(e.target.value)}
-            />
+            <div className="resumen-stepper">
+              <motion.button className="resumen-stepper-btn" aria-label="Restar una repetición" {...restarEditRepsPress} whileTap={{ scale: 0.92 }}>−</motion.button>
+              <input
+                className="resumen-input-num"
+                type="number" inputMode="numeric"
+                value={editReps} onChange={e => setEditReps(e.target.value)}
+              />
+              <motion.button className="resumen-stepper-btn" aria-label="Sumar una repetición" {...sumarEditRepsPress} whileTap={{ scale: 0.92 }}>+</motion.button>
+            </div>
           </div>
         </div>
         <div className="resumen-modal-btns">

@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react'
+import { useLongPress } from '../../hooks/useLongPress'
 
 const INPUT_FOCUS = { borderColor: 'var(--orange)', boxShadow: '0 0 0 4px var(--orange-glow)' }
 const BTN_TAP_SMALL = { scale: 0.92 }
@@ -12,15 +13,20 @@ export default function SerieForm({
     ? refPR?.series?.find(s => s.numeroSerie === serieActual)
     : refAnterior?.series?.find(s => s.numeroSerie === serieActual)
 
+  const restarPesoPress = useLongPress(() => setPesoUsado(p => String(Math.round(Math.max(0, (Number(p) || 0) - 2.5) * 10) / 10)))
+  const sumarPesoPress = useLongPress(() => setPesoUsado(p => String(Math.round(((Number(p) || 0) + 2.5) * 10) / 10)))
+  const restarRepsPress = useLongPress(() => setRepsHechas(r => String(Math.max(1, (Number(r) || ejercicio.repsEsperadas) - 1))))
+  const sumarRepsPress = useLongPress(() => setRepsHechas(r => String((Number(r) || ejercicio.repsEsperadas) + 1)))
+
   return (
     <>
       <div className="sa-inputs">
         <div className="sa-input-group">
           <label className="sa-input-label">Peso (kg)</label>
           <div className="sa-stepper">
-            <motion.button className="sa-stepper-btn" aria-label="Restar 2,5 kg" onClick={() => setPesoUsado(p => String(Math.round(Math.max(0, (Number(p) || 0) - 2.5) * 10) / 10))} whileTap={BTN_TAP_SMALL}>−</motion.button>
+            <motion.button className="sa-stepper-btn" aria-label="Restar 2,5 kg" {...restarPesoPress} whileTap={BTN_TAP_SMALL}>−</motion.button>
             <motion.input className="sa-input-big" type="number" inputMode="decimal" placeholder={ultimoPeso[ejercicio.id] ? String(ultimoPeso[ejercicio.id]) : ''} value={pesoUsado} onChange={e => setPesoUsado(e.target.value)} aria-label="Peso (kg)" whileFocus={INPUT_FOCUS} />
-            <motion.button className="sa-stepper-btn" aria-label="Sumar 2,5 kg" onClick={() => setPesoUsado(p => String(Math.round(((Number(p) || 0) + 2.5) * 10) / 10))} whileTap={BTN_TAP_SMALL}>+</motion.button>
+            <motion.button className="sa-stepper-btn" aria-label="Sumar 2,5 kg" {...sumarPesoPress} whileTap={BTN_TAP_SMALL}>+</motion.button>
           </div>
           {ultimoPeso[ejercicio.id] && !pesoUsado && (
             <p className="sa-hint-tocable" onClick={() => setPesoUsado(String(ultimoPeso[ejercicio.id]))}>↳ Última vez: {ultimoPeso[ejercicio.id]}kg</p>
@@ -29,9 +35,9 @@ export default function SerieForm({
         <div className="sa-input-group">
           <label className="sa-input-label">Reps</label>
           <div className="sa-stepper">
-            <motion.button className="sa-stepper-btn" aria-label="Restar una repetición" onClick={() => setRepsHechas(r => String(Math.max(1, (Number(r) || ejercicio.repsEsperadas) - 1)))} whileTap={BTN_TAP_SMALL}>−</motion.button>
+            <motion.button className="sa-stepper-btn" aria-label="Restar una repetición" {...restarRepsPress} whileTap={BTN_TAP_SMALL}>−</motion.button>
             <motion.input className="sa-input-big" type="number" inputMode="numeric" placeholder={String(ejercicio.repsEsperadas)} value={repsHechas} onChange={e => setRepsHechas(e.target.value)} aria-label="Repeticiones" whileFocus={INPUT_FOCUS} />
-            <motion.button className="sa-stepper-btn" aria-label="Sumar una repetición" onClick={() => setRepsHechas(r => String((Number(r) || ejercicio.repsEsperadas) + 1))} whileTap={BTN_TAP_SMALL}>+</motion.button>
+            <motion.button className="sa-stepper-btn" aria-label="Sumar una repetición" {...sumarRepsPress} whileTap={BTN_TAP_SMALL}>+</motion.button>
           </div>
         </div>
       </div>
