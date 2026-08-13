@@ -14,7 +14,7 @@ export default function PesoTab({ cargandoPeso, historialPeso, onRegistrarPeso }
   )
 
   return (
-    <div style={s.graficoWrap}>
+    <div className="progreso-grafico-wrap">
       {cargandoPeso ? (
         <div style={{ padding: '60px 0', display: 'flex', justifyContent: 'center' }}>
           <span className="spinner" style={{ color: 'var(--blue)' }} />
@@ -29,12 +29,12 @@ export default function PesoTab({ cargandoPeso, historialPeso, onRegistrarPeso }
       ) : (
         <>
           <motion.div
-            style={s.chartCard}
+            className="progreso-chart-card"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <p style={s.chartTitulo}>Evolución de peso corporal</p>
-            <p style={s.chartSub}>en kilogramos</p>
+            <p className="progreso-chart-titulo">Evolución de peso corporal</p>
+            <p className="progreso-chart-sub">en kilogramos</p>
             <div style={{ width: '100%', height: 240, marginTop: '12px' }}>
               <ResponsiveContainer>
                 <LineChart data={pesoChartData} margin={{ top: 12, right: 18, left: -18, bottom: 0 }} key={`p${pesoChartData.length}`}>
@@ -77,7 +77,7 @@ export default function PesoTab({ cargandoPeso, historialPeso, onRegistrarPeso }
           </motion.div>
           <div style={{ padding: '0 16px 24px' }}>
             <motion.button
-              style={s.registrarPesoBtn}
+              className="progreso-registrar-peso-btn"
               onClick={onRegistrarPeso}
               whileTap={{ scale: 0.97 }}
             >
@@ -88,27 +88,4 @@ export default function PesoTab({ cargandoPeso, historialPeso, onRegistrarPeso }
       )}
     </div>
   )
-}
-
-const s = {
-  graficoWrap: { padding: 0 },
-  chartCard: {
-    margin: '8px 16px 24px',
-    padding: '18px 16px',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-lg)',
-    boxShadow: 'var(--shadow-md)',
-  },
-  chartTitulo: { margin: 0, fontSize: '1rem', color: 'var(--text)', fontWeight: 700, letterSpacing: '-0.01em' },
-  chartSub: { margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--text-mute)' },
-  registrarPesoBtn: {
-    width: '100%', padding: '14px',
-    background: 'var(--bg-card)',
-    color: 'var(--blue)',
-    border: '1px solid rgba(133, 183, 235, 0.3)',
-    borderRadius: 'var(--r-lg)',
-    fontSize: '0.95rem', fontWeight: 600,
-    boxShadow: 'var(--shadow-sm)',
-  },
 }

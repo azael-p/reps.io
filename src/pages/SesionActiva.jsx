@@ -293,17 +293,17 @@ export default function SesionActiva() {
   }
 
   if (cargando) return (
-    <div style={s.page}>
-      <div style={s.progressBar}><div style={{ ...s.progressFill, width: '0%' }} /></div>
-      <div style={{ ...s.body, justifyContent: 'center' }}>
+    <div className="sa-page">
+      <div className="sa-progress-bar"><div className="sa-progress-fill" style={{ width: '0%' }} /></div>
+      <div className="sa-body" style={{ justifyContent: 'center' }}>
         <span className="spinner" style={{ color: 'var(--orange)' }} />
       </div>
     </div>
   )
 
   if (ejercicios.length === 0) return (
-    <div style={s.page}>
-      <div style={s.body}>
+    <div className="sa-page">
+      <div className="sa-body">
         <EmptyState mensaje="Este día no tiene ejercicios" icon="🏋️" sub="Agregá ejercicios desde la app web" />
       </div>
     </div>
@@ -323,55 +323,55 @@ export default function SesionActiva() {
 
   return (
     <motion.div
-      style={isDesktop ? s.pageDesktop : s.page}
+      className={isDesktop ? 'sa-page-desktop' : 'sa-page'}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      <div style={isDesktop ? s.headerDesktop : s.header}>
-        <div style={s.progressBar}>
+      <div className={isDesktop ? 'sa-header-desktop' : 'sa-header'}>
+        <div className="sa-progress-bar">
           <motion.div
-            style={s.progressFill}
+            className="sa-progress-fill"
             animate={{ width: `${progresoPct}%` }}
             transition={{ type: 'spring', stiffness: 180, damping: 28 }}
           />
         </div>
-        <div style={s.headerRow}>
+        <div className="sa-header-row">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <span style={s.ejercicioCounter}>
+            <span className="sa-ejercicio-counter">
               Ejercicio <strong style={{ color: 'var(--text)' }}>{ejIdx + 1}</strong> / {ejercicios.length}
               <span style={{ color: 'var(--text-mute)', fontWeight: 400 }}> · </span>
               <span className="num" style={{ color: 'var(--orange)', fontWeight: 700 }}>{seriesCompletadas}</span>
               <span style={{ color: 'var(--text-mute)', fontWeight: 400 }}>/{seriesTotales} series</span>
             </span>
-            <motion.button style={s.cancelarBtn} onClick={cancelarSesion} whileTap={BTN_TAP}>
+            <motion.button className="sa-cancelar-btn" onClick={cancelarSesion} whileTap={BTN_TAP}>
               Cancelar sesión
             </motion.button>
           </div>
-          <motion.button style={s.terminarBtn} onClick={terminarAntes} whileTap={BTN_TAP_FIRM}>
+          <motion.button className="sa-terminar-btn" onClick={terminarAntes} whileTap={BTN_TAP_FIRM}>
             Terminar
           </motion.button>
         </div>
       </div>
 
       {isDesktop ? (
-        <div style={s.desktopCols}>
-          <div style={s.desktopLeft}>
+        <div className="sa-desktop-cols">
+          <div className="sa-desktop-left">
             <ListaEjerciciosDesktop ejercicios={ejercicios} ejIdx={ejIdx} historial={historial} />
           </div>
-          <div style={s.desktopRight}>
+          <div className="sa-desktop-right">
             <EjercicioInfo
               ejIdx={ejIdx} serieIdx={serieIdx} ejercicio={ejercicio}
               serieActual={serieActual} totalSeries={totalSeries}
               tabRef={tabRef} setTabRef={setTabRef} refAnterior={refAnterior} refPR={refPR}
             />
             <SerieForm {...serieFormProps} />
-            <SerieFooter {...footerProps} footerStyle={s.footerDesktop} />
+            <SerieFooter {...footerProps} footerClassName="sa-footer-desktop" />
           </div>
         </div>
       ) : (
         <>
-          <div style={s.body}>
+          <div className="sa-body">
             <EjercicioInfo
               ejIdx={ejIdx} serieIdx={serieIdx} ejercicio={ejercicio}
               serieActual={serieActual} totalSeries={totalSeries}
@@ -379,7 +379,7 @@ export default function SesionActiva() {
             />
             <SerieForm {...serieFormProps} />
           </div>
-          <SerieFooter {...footerProps} footerStyle={s.footer} />
+          <SerieFooter {...footerProps} footerClassName="sa-footer" />
         </>
       )}
 
@@ -388,78 +388,4 @@ export default function SesionActiva() {
       <AnimatePresence>{celebrar && <Confetti />}</AnimatePresence>
     </motion.div>
   )
-}
-
-const s = {
-  page: { minHeight: '100dvh', color: 'var(--text)', display: 'flex', flexDirection: 'column', position: 'relative' },
-  header: { flexShrink: 0, paddingTop: 'env(safe-area-inset-top)' },
-  progressBar: { height: '4px', background: 'var(--bg-elev)', overflow: 'hidden' },
-  progressFill: {
-    height: '100%',
-    background: 'var(--orange-grad)',
-    boxShadow: '0 0 12px rgba(240, 153, 123, 0.6)',
-  },
-  headerRow: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '14px 16px',
-  },
-  ejercicioCounter: { fontSize: '0.85rem', color: 'var(--text-mute)' },
-  terminarBtn: {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    color: 'var(--text-mute)',
-    padding: '10px 18px',
-    borderRadius: '20px',
-    fontSize: '0.88rem',
-  },
-  cancelarBtn: {
-    background: 'transparent',
-    border: 'none',
-    color: 'var(--danger)',
-    fontSize: '0.72rem',
-    padding: 0,
-    opacity: 0.7,
-    textAlign: 'left',
-  },
-  body: {
-    flex: 1, display: 'flex', flexDirection: 'column',
-    padding: '8px 16px 0', gap: '12px',
-  },
-  footer: {
-    padding: '16px',
-    paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
-    borderTop: '1px solid var(--border)',
-    flexShrink: 0,
-  },
-  pageDesktop: {
-    minHeight: '100dvh', color: 'var(--text)',
-    display: 'flex', flexDirection: 'column', position: 'relative',
-  },
-  headerDesktop: {
-    flexShrink: 0,
-    borderBottom: '1px solid var(--border)',
-  },
-  desktopCols: {
-    display: 'grid',
-    gridTemplateColumns: '300px 1fr',
-    flex: 1,
-    minHeight: 0,
-  },
-  desktopLeft: {
-    borderRight: '1px solid var(--border)',
-    overflowY: 'auto',
-  },
-  desktopRight: {
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '24px 32px',
-    gap: '20px',
-    overflowY: 'auto',
-  },
-  footerDesktop: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-    paddingTop: '8px',
-  },
 }

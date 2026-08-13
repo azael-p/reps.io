@@ -297,28 +297,28 @@ export default function Progreso() {
             <span className="spinner" style={{ color: 'var(--blue)' }} />
           </div>
         ) : (
-          <div style={s.desktopGrid}>
-            <div style={s.desktopCol}>
-              <div style={s.desktopPanel}>
-                <p style={s.desktopPanelTitle}>Evolución de ejercicios</p>
+          <div className="progreso-desktop-grid">
+            <div className="progreso-desktop-col">
+              <div className="progreso-desktop-panel">
+                <p className="progreso-desktop-panel-titulo">Evolución de ejercicios</p>
                 <LazyPanel minHeight={320}>{graficoContent}</LazyPanel>
               </div>
-              <div style={s.desktopPanel}>
-                <p style={s.desktopPanelTitle}>Volumen total</p>
+              <div className="progreso-desktop-panel">
+                <p className="progreso-desktop-panel-titulo">Volumen total</p>
                 <LazyPanel minHeight={280}>{volumenContent}</LazyPanel>
               </div>
-              <div style={s.desktopPanel}>
-                <p style={s.desktopPanelTitle}>Peso corporal</p>
+              <div className="progreso-desktop-panel">
+                <p className="progreso-desktop-panel-titulo">Peso corporal</p>
                 {pesoContent}
               </div>
             </div>
-            <div style={s.desktopColNarrow}>
-              <div style={s.desktopPanel}>
-                <p style={s.desktopPanelTitle}>Rachas</p>
+            <div className="progreso-desktop-col-narrow">
+              <div className="progreso-desktop-panel">
+                <p className="progreso-desktop-panel-titulo">Rachas</p>
                 <LazyPanel minHeight={200}>{rachasContent}</LazyPanel>
               </div>
-              <div style={s.desktopPanel}>
-                <p style={s.desktopPanelTitle}>Historial de sesiones</p>
+              <div className="progreso-desktop-panel">
+                <p className="progreso-desktop-panel-titulo">Historial de sesiones</p>
                 {historialContent}
               </div>
             </div>
@@ -326,22 +326,22 @@ export default function Progreso() {
         )
       ) : (
         <>
-          <div style={s.tabs}>
+          <div className="progreso-tabs">
             {TABS.map(t => {
               const activo = tab === t
               return (
                 <motion.button
                   key={t}
-                  style={{ ...s.tab, position: 'relative' }}
+                  className="progreso-tab"
                   onClick={() => setTab(t)}
                   whileTap={{ scale: 0.97 }}
                   aria-pressed={activo}
                 >
-                  <span style={{ ...s.tabLabel, color: activo ? 'var(--orange)' : 'var(--text-mute)' }}>{t}</span>
+                  <span className="progreso-tab-label" style={{ color: activo ? 'var(--orange)' : 'var(--text-mute)' }}>{t}</span>
                   {activo && (
                     <motion.div
                       layoutId="progresoTabUnderline"
-                      style={s.tabIndicator}
+                      className="progreso-tab-indicator"
                       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                     />
                   )}
@@ -388,54 +388,3 @@ export default function Progreso() {
   )
 }
 
-const s = {
-  tabs: { display: 'flex', borderBottom: '1px solid var(--border)', overflowX: 'auto' },
-  tab: {
-    flex: 1, padding: '14px',
-    background: 'none', border: 'none',
-    position: 'relative',
-    cursor: 'pointer',
-    minWidth: '60px',
-  },
-  tabLabel: { fontSize: '0.88rem', fontWeight: 600 },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: -1, left: 0, right: 0,
-    height: '2px',
-    background: 'var(--orange-grad)',
-    borderRadius: '2px',
-    boxShadow: '0 0 8px rgba(240,153,123,0.5)',
-  },
-  desktopGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 420px',
-    gap: '24px',
-    padding: '24px 40px 40px',
-    alignItems: 'start',
-  },
-  desktopCol: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
-  },
-  desktopColNarrow: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
-  },
-  desktopPanel: {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-xl)',
-    padding: '20px',
-    boxShadow: 'var(--shadow-sm)',
-  },
-  desktopPanelTitle: {
-    margin: '0 0 16px',
-    fontSize: '0.85rem',
-    fontWeight: 700,
-    color: 'var(--text-mute)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-  },
-}

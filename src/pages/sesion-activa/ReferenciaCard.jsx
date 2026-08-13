@@ -14,12 +14,12 @@ function tiempoRelativo(timestamp) {
 
 export default function ReferenciaCard({ tabRef, setTabRef, refAnterior, refPR }) {
   return (
-    <div style={s.refTabsWrap}>
-      <div style={s.refTabs}>
+    <div className="sa-ref-tabs-wrap">
+      <div className="sa-ref-tabs">
         {['ultima', 'pr'].map(tab => (
           <button
             key={tab}
-            style={{ ...s.refTab, ...(tabRef === tab ? s.refTabActivo : {}) }}
+            className={`sa-ref-tab ${tabRef === tab ? 'sa-ref-tab--activo' : ''}`}
             onClick={() => setTabRef(tab)}
             aria-pressed={tabRef === tab}
           >
@@ -30,14 +30,14 @@ export default function ReferenciaCard({ tabRef, setTabRef, refAnterior, refPR }
       <AnimatePresence mode="wait">
         {tabRef === 'ultima' ? (
           refAnterior === undefined ? (
-            <motion.div key="ref-loading" style={s.refCardCompact} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <span style={s.refLabelCompact}>Última vez</span>
-              <span style={{ ...s.refValorCompact, color: 'transparent', background: 'var(--bg-elev)', borderRadius: '4px' }}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+            <motion.div key="ref-loading" className="sa-ref-card-compact" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <span className="sa-ref-label-compact">Última vez</span>
+              <span className="sa-ref-valor-compact sa-ref-skeleton">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
             </motion.div>
           ) : refAnterior ? (
-            <motion.div key="ref-data" style={s.refCardCompact} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-              <span style={s.refLabelCompact}>Última vez {tiempoRelativo(refAnterior.fecha)}:</span>
-              <span style={s.refValorCompact}>
+            <motion.div key="ref-data" className="sa-ref-card-compact" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+              <span className="sa-ref-label-compact">Última vez {tiempoRelativo(refAnterior.fecha)}:</span>
+              <span className="sa-ref-valor-compact">
                 {refAnterior.series.map((serie, i) => (
                   <span key={serie.numeroSerie}>
                     {i > 0 && <span style={{ color: 'var(--border-strong)' }}> · </span>}
@@ -47,20 +47,20 @@ export default function ReferenciaCard({ tabRef, setTabRef, refAnterior, refPR }
               </span>
             </motion.div>
           ) : (
-            <motion.div key="ref-empty" style={s.refCardCompact} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <span style={s.refLabelCompact}>Primera vez con este ejercicio 🎉</span>
+            <motion.div key="ref-empty" className="sa-ref-card-compact" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <span className="sa-ref-label-compact">Primera vez con este ejercicio 🎉</span>
             </motion.div>
           )
         ) : (
           refPR === undefined ? (
-            <motion.div key="pr-loading" style={s.refCardCompact} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <span style={s.refLabelCompact}>PR personal</span>
-              <span style={{ ...s.refValorCompact, color: 'transparent', background: 'var(--bg-elev)', borderRadius: '4px' }}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+            <motion.div key="pr-loading" className="sa-ref-card-compact" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <span className="sa-ref-label-compact">PR personal</span>
+              <span className="sa-ref-valor-compact sa-ref-skeleton">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
             </motion.div>
           ) : refPR ? (
-            <motion.div key="pr-data" style={s.refCardCompact} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-              <span style={{ ...s.refLabelCompact, color: 'var(--blue)' }}>🏆 Tu marca: {refPR.maxPeso}kg</span>
-              <span style={s.refValorCompact}>
+            <motion.div key="pr-data" className="sa-ref-card-compact" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+              <span className="sa-ref-label-compact" style={{ color: 'var(--blue)' }}>🏆 Tu marca: {refPR.maxPeso}kg</span>
+              <span className="sa-ref-valor-compact">
                 {refPR.series.map((serie, i) => (
                   <span key={serie.numeroSerie}>
                     {i > 0 && <span style={{ color: 'var(--border-strong)' }}> · </span>}
@@ -70,48 +70,12 @@ export default function ReferenciaCard({ tabRef, setTabRef, refAnterior, refPR }
               </span>
             </motion.div>
           ) : (
-            <motion.div key="pr-empty" style={s.refCardCompact} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <span style={s.refLabelCompact}>Sin marca todavía</span>
+            <motion.div key="pr-empty" className="sa-ref-card-compact" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <span className="sa-ref-label-compact">Sin marca todavía</span>
             </motion.div>
           )
         )}
       </AnimatePresence>
     </div>
   )
-}
-
-const s = {
-  refTabsWrap: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  refTabs: { display: 'flex', gap: '4px' },
-  refTab: {
-    padding: '3px 10px',
-    borderRadius: '20px',
-    fontSize: '0.65rem', fontWeight: 700,
-    textTransform: 'uppercase', letterSpacing: '0.05em',
-    background: 'transparent',
-    border: '1px solid var(--border)',
-    color: 'var(--text-dim)',
-    cursor: 'pointer',
-  },
-  refTabActivo: {
-    background: 'var(--bg-card)',
-    color: 'var(--text)',
-    borderColor: 'var(--border-strong)',
-  },
-  refCardCompact: {
-    display: 'flex', gap: '4px',
-    padding: '4px 0',
-    alignItems: 'baseline',
-    flexWrap: 'wrap',
-  },
-  refLabelCompact: {
-    fontSize: '0.68rem', fontWeight: 700,
-    color: 'var(--text-dim)',
-    textTransform: 'uppercase', letterSpacing: '0.05em',
-    whiteSpace: 'nowrap',
-  },
-  refValorCompact: {
-    fontSize: '0.85rem', fontWeight: 600,
-    color: 'var(--text-mute)',
-  },
 }

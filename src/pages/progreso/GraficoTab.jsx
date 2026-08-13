@@ -7,20 +7,20 @@ export default function GraficoTab({
   modoGrafico, setModoGrafico, datosGrafico,
 }) {
   return (
-    <div style={s.graficoWrap}>
+    <div className="progreso-grafico-wrap">
       {ejercicios.length === 0 ? (
         <EmptyState mensaje="Todavía no hay datos de ejercicios." icon="📈" />
       ) : (
         <>
-          <div style={s.selector}>
-            <p style={s.secLabel}>Grupo muscular</p>
-            <div style={s.chips}>
+          <div className="progreso-selector">
+            <p className="progreso-sec-label">Grupo muscular</p>
+            <div className="progreso-chips">
               {grupos.map(g => {
                 const activo = grupoSel === g
                 return (
                   <motion.button
                     key={g}
-                    style={{ ...s.chip, ...(activo ? s.chipActivo : {}) }}
+                    className={`progreso-chip ${activo ? 'progreso-chip--activo' : ''}`}
                     onClick={() => {
                       setGrupoSel(g)
                       const primero = ejercicios.find(e => e.grupoMuscular === g)
@@ -35,9 +35,9 @@ export default function GraficoTab({
             </div>
           </div>
 
-          <div style={s.selector}>
-            <p style={s.secLabel}>Ejercicio</p>
-            <div style={s.chips}>
+          <div className="progreso-selector">
+            <p className="progreso-sec-label">Ejercicio</p>
+            <div className="progreso-chips">
               {ejercicios
                 .filter(e => e.grupoMuscular === grupoSel)
                 .map(e => {
@@ -45,7 +45,7 @@ export default function GraficoTab({
                   return (
                     <motion.button
                       key={e.nombre}
-                      style={{ ...s.chip, ...(activo ? s.chipActivo : {}) }}
+                      className={`progreso-chip ${activo ? 'progreso-chip--activo' : ''}`}
                       onClick={() => setEjercicioSel(e.nombre)}
                       whileTap={{ scale: 0.94 }}
                     >
@@ -56,12 +56,12 @@ export default function GraficoTab({
             </div>
           </div>
 
-          <div style={s.selector}>
-            <div style={s.toggleRow}>
+          <div className="progreso-selector">
+            <div className="progreso-toggle-row">
               {['peso', '1rm', 'volumen'].map(m => (
                 <motion.button
                   key={m}
-                  style={{ ...s.toggleChip, ...(modoGrafico === m ? s.toggleChipActivo : {}) }}
+                  className={`progreso-toggle-chip ${modoGrafico === m ? 'progreso-toggle-chip--activo' : ''}`}
                   onClick={() => setModoGrafico(m)}
                   whileTap={{ scale: 0.94 }}
                 >
@@ -75,14 +75,14 @@ export default function GraficoTab({
             <EmptyState mensaje="No hay registros para este ejercicio." icon="📉" />
           ) : (
             <motion.div
-              style={s.chartCard}
+              className="progreso-chart-card"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <p style={s.chartTitulo}>
+              <p className="progreso-chart-titulo">
                 {{ peso: 'Peso máximo por sesión', '1rm': 'Tu mejor marca personal por sesión', volumen: 'Mejor serie por volumen' }[modoGrafico]}
               </p>
-              <p style={s.chartSub}>{modoGrafico === 'volumen' ? 'en kg × reps' : 'en kilogramos'}</p>
+              <p className="progreso-chart-sub">{modoGrafico === 'volumen' ? 'en kg × reps' : 'en kilogramos'}</p>
               <div style={{ width: '100%', height: 240, marginTop: '12px' }}>
                 <ResponsiveContainer>
                   <LineChart data={datosGrafico} margin={{ top: 12, right: 18, left: -18, bottom: 0 }} key={`g${ejercicioSel}-${modoGrafico}-${datosGrafico.length}`}>
@@ -130,53 +130,4 @@ export default function GraficoTab({
       )}
     </div>
   )
-}
-
-const s = {
-  graficoWrap: { padding: 0 },
-  selector: { padding: '16px 16px 0' },
-  secLabel: {
-    margin: '0 0 12px',
-    fontSize: '0.7rem', color: 'var(--text-mute)',
-    textTransform: 'uppercase', letterSpacing: '0.07em',
-    fontWeight: 700,
-  },
-  chips: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
-  chip: {
-    padding: '12px 18px',
-    background: 'var(--bg-card)',
-    color: 'var(--text-mute)',
-    border: '1px solid var(--border)',
-    borderRadius: '20px',
-    fontSize: '0.88rem', fontWeight: 500,
-  },
-  chipActivo: {
-    background: 'var(--blue-grad)',
-    color: '#fff',
-    borderColor: 'transparent',
-    boxShadow: '0 4px 14px rgba(13, 83, 150, 0.35)',
-    fontWeight: 600,
-  },
-  chartCard: {
-    margin: '8px 16px 24px',
-    padding: '18px 16px',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-lg)',
-    boxShadow: 'var(--shadow-md)',
-  },
-  chartTitulo: { margin: 0, fontSize: '1rem', color: 'var(--text)', fontWeight: 700, letterSpacing: '-0.01em' },
-  chartSub: { margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--text-mute)' },
-  toggleRow: { display: 'flex', gap: '8px' },
-  toggleChip: {
-    flex: 1, padding: '12px 16px', textAlign: 'center',
-    background: 'var(--bg-card)', color: 'var(--text-mute)',
-    border: '1px solid var(--border)', borderRadius: '20px',
-    fontSize: '0.88rem', fontWeight: 500,
-  },
-  toggleChipActivo: {
-    background: 'var(--blue-grad)', color: '#fff',
-    borderColor: 'transparent', fontWeight: 600,
-    boxShadow: '0 4px 14px rgba(13, 83, 150, 0.35)',
-  },
 }
