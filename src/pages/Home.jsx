@@ -105,7 +105,7 @@ export default function Home() {
 
   return (
     <motion.div
-      style={{ ...s.page, ...(isDesktop ? s.pageDesktop : {}) }}
+      className={`home-page ${isDesktop ? 'home-page--desktop' : ''}`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -113,17 +113,17 @@ export default function Home() {
     >
       <PullToRefresh onRefresh={() => { localStorage.removeItem(`calendario_${usuario.id}`); return recargar() }}>
         <motion.div
-          style={s.header}
+          className="home-header"
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
       >
         <div>
-          <p style={s.saludo}>{getGreeting(usuario?.nombre)}</p>
-          <p style={s.sub}>¿Qué hacemos hoy?</p>
+          <p className="home-saludo">{getGreeting(usuario?.nombre)}</p>
+          <p className="home-sub">¿Qué hacemos hoy?</p>
         </div>
         <motion.button
-          style={s.logoutBtn}
+          className="home-logout-btn"
           onClick={async () => {
             try {
               await logout()
@@ -154,14 +154,15 @@ export default function Home() {
       </AnimatePresence>
 
       {isDesktop ? (
-        <div style={s.desktopGrid}>
+        <div className="home-desktop-grid">
           {/* Left column: section cards */}
-          <div style={s.desktopLeft}>
-            <div style={s.secciones}>
+          <div className="home-desktop-left">
+            <div className="home-secciones">
               {SECCIONES.map((sec, i) => (
                 <motion.button
                   key={sec.ruta}
-                  style={{ ...s.seccionCard, borderColor: sec.borderToken }}
+                  className="home-seccion-card"
+                  style={{ '--sec-border': sec.borderToken, '--sec-gradient': sec.gradient, '--sec-glow': `radial-gradient(circle at 50% 0%, ${sec.glow}, transparent 70%)` }}
                   onClick={() => navigate(sec.ruta)}
                   initial={{ opacity: 0, y: 24, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -169,15 +170,15 @@ export default function Home() {
                   whileTap={{ scale: 0.97 }}
                   whileHover={{ y: -3, transition: { duration: 0.2 } }}
                 >
-                  <div style={{ ...s.seccionBg, background: sec.gradient }} />
-                  <div style={{ ...s.seccionGlow, background: `radial-gradient(circle at 50% 0%, ${sec.glow}, transparent 70%)` }} />
-                  <div style={s.seccionNoise} />
-                  <div style={s.seccionIcon}>
+                  <div className="home-seccion-bg" />
+                  <div className="home-seccion-glow" />
+                  <div className="home-seccion-noise" />
+                  <div className="home-seccion-icon">
                     {sec.icon}
                   </div>
-                  <div style={s.seccionTexto}>
-                    <span style={s.seccionLabel}>{sec.label}</span>
-                    <span style={s.seccionSub}>{sec.sub}</span>
+                  <div className="home-seccion-texto">
+                    <span className="home-seccion-label">{sec.label}</span>
+                    <span className="home-seccion-sub">{sec.sub}</span>
                   </div>
                   <ChevronRight size={18} color="rgba(255,255,255,0.7)" style={{ zIndex: 1, flexShrink: 0 }} />
                 </motion.button>
@@ -186,11 +187,11 @@ export default function Home() {
           </div>
 
           {/* Right column: session banner + calendar */}
-          <div style={s.desktopRight}>
+          <div className="home-desktop-right">
             <AnimatePresence>
               {sesionPendiente && (
                 <motion.button
-                  style={s.bannerSesion}
+                  className="home-banner-sesion"
                   onClick={() => navigate(`/sesion/${sesionPendiente.sesionId}`)}
                   initial={{ opacity: 0, y: -10, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -203,10 +204,10 @@ export default function Home() {
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   />
-                  <div style={s.bannerDot} className="pulse" />
-                  <div style={s.bannerTexto}>
-                    <span style={s.bannerLabel}>Entrenamiento en curso</span>
-                    <span style={s.bannerDia}>{sesionPendiente.diaNombre}</span>
+                  <div className="home-banner-dot pulse" />
+                  <div className="home-banner-texto">
+                    <span className="home-banner-label">Entrenamiento en curso</span>
+                    <span className="home-banner-dia">{sesionPendiente.diaNombre}</span>
                   </div>
                   <ChevronRight size={16} color="var(--text-mute)" style={{ flexShrink: 0 }} />
                 </motion.button>
@@ -218,7 +219,7 @@ export default function Home() {
               transition={{ delay: 0.3, duration: 0.4 }}
             >
               {cargandoCal ? (
-                <div style={s.calSkeleton} className="skeleton" />
+                <div className="home-cal-skeleton skeleton" />
               ) : (
                 <Calendario fechas={fechas} />
               )}
@@ -230,7 +231,7 @@ export default function Home() {
           <AnimatePresence>
             {sesionPendiente && (
               <motion.button
-                style={s.bannerSesion}
+                className="home-banner-sesion"
                 onClick={() => navigate(`/sesion/${sesionPendiente.sesionId}`)}
                 initial={{ opacity: 0, y: -10, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -243,21 +244,22 @@ export default function Home() {
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 />
-                <div style={s.bannerDot} className="pulse" />
-                <div style={s.bannerTexto}>
-                  <span style={s.bannerLabel}>Entrenamiento en curso</span>
-                  <span style={s.bannerDia}>{sesionPendiente.diaNombre}</span>
+                <div className="home-banner-dot pulse" />
+                <div className="home-banner-texto">
+                  <span className="home-banner-label">Entrenamiento en curso</span>
+                  <span className="home-banner-dia">{sesionPendiente.diaNombre}</span>
                 </div>
-                <span style={s.bannerFlecha}>→</span>
+                <span className="home-banner-flecha">→</span>
               </motion.button>
             )}
           </AnimatePresence>
 
-          <div style={s.secciones}>
+          <div className="home-secciones">
             {SECCIONES.map((sec, i) => (
               <motion.button
                 key={sec.ruta}
-                style={{ ...s.seccionCard, borderColor: sec.borderToken }}
+                className="home-seccion-card"
+                style={{ '--sec-border': sec.borderToken, '--sec-gradient': sec.gradient, '--sec-glow': `radial-gradient(circle at 50% 0%, ${sec.glow}, transparent 70%)` }}
                 onClick={() => navigate(sec.ruta)}
                 initial={{ opacity: 0, y: 24, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -265,14 +267,14 @@ export default function Home() {
                 whileTap={{ scale: 0.97 }}
                 whileHover={{ y: -3, transition: { duration: 0.2 } }}
               >
-                <div style={{ ...s.seccionBg, background: sec.gradient }} />
-                <div style={{ ...s.seccionGlow, background: `radial-gradient(circle at 50% 0%, ${sec.glow}, transparent 70%)` }} />
-                <div style={s.seccionIcon}>{sec.icon}</div>
-                <div style={s.seccionTexto}>
-                  <span style={s.seccionLabel}>{sec.label}</span>
-                  <span style={s.seccionSub}>{sec.sub}</span>
+                <div className="home-seccion-bg" />
+                <div className="home-seccion-glow" />
+                <div className="home-seccion-icon">{sec.icon}</div>
+                <div className="home-seccion-texto">
+                  <span className="home-seccion-label">{sec.label}</span>
+                  <span className="home-seccion-sub">{sec.sub}</span>
                 </div>
-                <span style={s.seccionFlecha}>→</span>
+                <span className="home-seccion-flecha">→</span>
               </motion.button>
             ))}
           </div>
@@ -283,7 +285,7 @@ export default function Home() {
             transition={{ delay: 0.45, duration: 0.4 }}
           >
             {cargandoCal ? (
-              <div style={s.calSkeleton} className="skeleton" />
+              <div className="home-cal-skeleton skeleton" />
             ) : (
               <Calendario fechas={fechas} />
             )}
@@ -299,135 +301,4 @@ export default function Home() {
       </div>
     </motion.div>
   )
-}
-
-const s = {
-  page: {
-    minHeight: '100dvh',
-    color: 'var(--text)',
-    padding: '20px 16px max(24px, env(safe-area-inset-bottom))',
-    paddingTop: 'max(20px, env(safe-area-inset-top))',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-    boxSizing: 'border-box',
-  },
-  pageDesktop: {
-    padding: '32px 40px 40px',
-    maxWidth: '960px',
-    margin: '0 auto',
-    width: '100%',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    flexShrink: 0,
-  },
-  saludo: { fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1 },
-  nombreAccent: { color: 'var(--orange)' },
-  sub: { marginTop: '6px', color: 'var(--text-mute)', fontSize: '0.9rem' },
-  logoutBtn: {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderTop: '1px solid var(--highlight)',
-    color: 'var(--text-mute)',
-    padding: '10px 12px',
-    borderRadius: 'var(--r-md)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  },
-  bannerSesion: {
-    position: 'relative',
-    overflow: 'hidden',
-    display: 'flex', alignItems: 'center', gap: '12px',
-    padding: '14px 16px',
-    background: 'var(--bg-card)',
-    border: '1px solid rgba(240, 153, 123, 0.45)',
-    borderTop: '1px solid rgba(240, 153, 123, 0.6)',
-    borderRadius: 'var(--r-lg)',
-    color: 'var(--text)',
-    textAlign: 'left',
-    boxShadow: '0 0 0 1px rgba(240,153,123,0.18), 0 8px 32px rgba(199,90,48,0.32)',
-    flexShrink: 0,
-    width: '100%',
-    boxSizing: 'border-box',
-  },
-  bannerDot: {
-    width: '10px', height: '10px',
-    borderRadius: '50%',
-    background: 'var(--orange)',
-    boxShadow: '0 0 8px var(--orange)',
-    flexShrink: 0,
-  },
-  bannerTexto: { display: 'flex', flexDirection: 'column', flex: 1, gap: '2px' },
-  bannerLabel: { fontSize: '0.7rem', fontWeight: 700, color: 'var(--orange)', textTransform: 'uppercase', letterSpacing: '0.06em' },
-  bannerDia: { fontSize: '0.97rem', fontWeight: 600 },
-  bannerFlecha: { fontSize: '1.1rem', color: 'var(--text-mute)' },
-  secciones: { display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 },
-  seccionCard: {
-    position: 'relative',
-    border: '1px solid var(--border-orange)',
-    borderTop: '1px solid rgba(255,255,255,0.36)',
-    borderRadius: 'var(--r-lg)',
-    padding: '18px 18px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-    background: 'transparent',
-    overflow: 'hidden',
-    textAlign: 'left',
-    color: '#fff',
-    boxShadow: '0 12px 40px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35)',
-  },
-  seccionBg: {
-    position: 'absolute', inset: 0,
-    opacity: 0.95,
-    zIndex: 0,
-  },
-  seccionGlow: {
-    position: 'absolute', inset: 0,
-    zIndex: 0,
-    pointerEvents: 'none',
-  },
-  seccionNoise: {
-    position: 'absolute', inset: 0,
-    zIndex: 0,
-    pointerEvents: 'none',
-    backgroundImage: 'var(--noise)',
-    backgroundSize: '200px 200px',
-    opacity: 0.04,
-    mixBlendMode: 'overlay',
-  },
-  seccionIcon: {
-    width: '44px', height: '44px',
-    borderRadius: '14px',
-    background: 'rgba(255,255,255,0.18)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
-    border: '1px solid rgba(255,255,255,0.15)',
-    position: 'relative',
-    zIndex: 1, flexShrink: 0,
-  },
-  seccionTexto: { display: 'flex', flexDirection: 'column', flex: 1, position: 'relative', zIndex: 1 },
-  seccionLabel: { fontSize: '1.05rem', fontWeight: 700, letterSpacing: '-0.02em' },
-  seccionSub: { color: 'rgba(255,255,255,0.65)', fontSize: '0.83rem', marginTop: '3px' },
-  seccionFlecha: { zIndex: 1 },
-  calSkeleton: { width: '100%', height: '280px', borderRadius: 'var(--r-lg)' },
-  desktopGrid: {
-    display: 'grid',
-    gridTemplateColumns: '380px 1fr',
-    gap: '24px',
-    alignItems: 'start',
-  },
-  desktopLeft: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-  },
-  desktopRight: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-  },
 }

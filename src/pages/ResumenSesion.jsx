@@ -179,7 +179,7 @@ export default function ResumenSesion() {
   const totalVolumen = registros.reduce((acc, r) => acc + r.pesoUsado * r.repsHechas, 0)
 
   if (error) return (
-    <div style={s.page}>
+    <div className="resumen-page">
       <div style={{ padding: '80px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
         <p style={{ color: 'var(--danger)', fontSize: '1rem', textAlign: 'center' }}>{error}</p>
         <motion.button
@@ -194,7 +194,7 @@ export default function ResumenSesion() {
   )
 
   if (cargando) return (
-    <div style={s.page}>
+    <div className="resumen-page">
       <div style={{ padding: '80px 0', display: 'flex', justifyContent: 'center' }}>
         <span className="spinner" style={{ color: 'var(--orange)' }} />
       </div>
@@ -204,75 +204,75 @@ export default function ResumenSesion() {
   return (
     <PageWrapper>
       <motion.div
-        style={s.header}
+        className="resumen-header"
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <motion.button
-          style={s.back}
+          className="resumen-back"
           onClick={() => navigate('/home')}
           whileTap={{ scale: 0.9 }}
           aria-label="Volver al inicio"
         >
           ←
         </motion.button>
-        <div style={s.headerInfo}>
-          <p style={s.headerSub}>✓ Sesión completada</p>
-          <h1 style={s.titulo}>{diaNombre}</h1>
+        <div className="resumen-header-info">
+          <p className="resumen-header-sub">✓ Sesión completada</p>
+          <h1 className="resumen-titulo">{diaNombre}</h1>
         </div>
       </motion.div>
 
       <motion.div
-        style={s.stats}
+        className="resumen-stats"
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.15, type: 'spring', stiffness: 220, damping: 22 }}
       >
-        <div style={s.stat}>
-          <span style={s.statNum}><Counter value={Object.keys(porEjercicio).length} /></span>
-          <span style={s.statLabel}>Ejercicios</span>
+        <div className="resumen-stat">
+          <span className="resumen-stat-num"><Counter value={Object.keys(porEjercicio).length} /></span>
+          <span className="resumen-stat-label">Ejercicios</span>
         </div>
-        <div style={s.statDivider} />
-        <div style={s.stat}>
-          <span style={s.statNum}><Counter value={registros.length} /></span>
-          <span style={s.statLabel}>Series</span>
+        <div className="resumen-stat-divider" />
+        <div className="resumen-stat">
+          <span className="resumen-stat-num"><Counter value={registros.length} /></span>
+          <span className="resumen-stat-label">Series</span>
         </div>
-        <div style={s.statDivider} />
-        <div style={s.stat}>
-          <span style={s.statNum}>
+        <div className="resumen-stat-divider" />
+        <div className="resumen-stat">
+          <span className="resumen-stat-num">
             {totalVolumen > 0 ? <Counter value={totalVolumen} suffix="kg" /> : '—'}
           </span>
-          <span style={s.statLabel}>Volumen</span>
+          <span className="resumen-stat-label">Volumen</span>
         </div>
       </motion.div>
 
-      <div style={isDesktop ? s.desktopGrid : undefined}>
-        <div style={s.ejercicios}>
+      <div className={isDesktop ? 'resumen-desktop-grid' : undefined}>
+        <div className="resumen-ejercicios">
           {Object.entries(porEjercicio).map(([nombre, series], i) => (
             <motion.div
               key={nombre}
-              style={s.ejercicioCard}
+              className="resumen-ejercicio-card"
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 + i * 0.06, type: 'spring', stiffness: 220, damping: 22 }}
             >
-              <p style={s.ejercicioNombre}>{nombre}</p>
-              <div style={s.seriesWrap}>
+              <p className="resumen-ejercicio-nombre">{nombre}</p>
+              <div className="resumen-series-wrap">
                 {series.map((r, j) => (
                   <motion.div
                     key={r.id}
-                    style={s.serieRow}
+                    className="resumen-serie-row"
                     onClick={() => abrirEditar(r)}
                     whileTap={{ scale: 0.98, backgroundColor: 'rgba(255,255,255,0.04)' }}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.25 + i * 0.06 + j * 0.03 }}
                   >
-                    <span style={s.serieNum}>{r.numeroSerie}</span>
-                    <span style={s.serieDetalle}>
+                    <span className="resumen-serie-num">{r.numeroSerie}</span>
+                    <span className="resumen-serie-detalle">
                       {r.pesoUsado > 0 ? <><strong>{r.pesoUsado}</strong> kg × <strong>{r.repsHechas}</strong> reps</> : <><strong>{r.repsHechas}</strong> reps</>}
                     </span>
-                    <span style={s.editarHint}>✎</span>
+                    <span className="resumen-editar-hint">✎</span>
                   </motion.div>
                 ))}
               </div>
@@ -280,23 +280,23 @@ export default function ResumenSesion() {
           ))}
         </div>
 
-        <div style={isDesktop ? s.desktopSide : undefined}>
+        <div className={isDesktop ? 'resumen-desktop-side' : undefined}>
           <motion.div
-            style={s.notaSeccion}
+            className="resumen-nota-seccion"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <p style={s.notaLabel}>Nota de la sesión</p>
+            <p className="resumen-nota-label">Nota de la sesión</p>
             <textarea
-              style={s.notaInput}
+              className="resumen-nota-input"
               placeholder="¿Cómo te sentiste? ¿Algo a tener en cuenta?"
               value={nota}
               onChange={e => setNota(e.target.value)}
               rows={3}
             />
             <motion.button
-              style={s.notaGuardar}
+              className="resumen-nota-guardar"
               onClick={guardarNota}
               disabled={guardandoNota}
               whileTap={{ scale: 0.97 }}
@@ -306,20 +306,20 @@ export default function ResumenSesion() {
           </motion.div>
 
           <motion.div
-            style={s.footer}
+            className="resumen-footer"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
             <motion.button
-              style={s.homeBtn}
+              className="resumen-home-btn"
               onClick={() => navigate('/progreso')}
               whileTap={{ scale: 0.97 }}
             >
               Ver mi progreso →
             </motion.button>
             <motion.button
-              style={s.secondaryBtn}
+              className="resumen-secondary-btn"
               onClick={() => navigate('/home')}
               whileTap={{ scale: 0.97 }}
             >
@@ -330,31 +330,32 @@ export default function ResumenSesion() {
       </div>
 
       <Modal open={!!editando} onClose={() => setEditando(null)}>
-        <p style={s.modalEjercicio}>{editando?.nombreEjercicio}</p>
-        <h2 style={s.modalTitulo}>Serie {editando?.numeroSerie}</h2>
-        <div style={s.row}>
-          <div style={s.field}>
-            <label style={s.label}>Peso (kg)</label>
+        <p className="resumen-modal-ejercicio">{editando?.nombreEjercicio}</p>
+        <h2 className="resumen-modal-titulo">Serie {editando?.numeroSerie}</h2>
+        <div className="resumen-row">
+          <div className="resumen-field">
+            <label className="resumen-label">Peso (kg)</label>
             <input
-              style={s.inputNum}
+              className="resumen-input-num"
               type="number" inputMode="decimal" placeholder="0"
               value={editPeso} onChange={e => setEditPeso(e.target.value)}
               autoFocus
             />
           </div>
-          <div style={s.field}>
-            <label style={s.label}>Reps</label>
+          <div className="resumen-field">
+            <label className="resumen-label">Reps</label>
             <input
-              style={s.inputNum}
+              className="resumen-input-num"
               type="number" inputMode="numeric"
               value={editReps} onChange={e => setEditReps(e.target.value)}
             />
           </div>
         </div>
-        <div style={s.modalBtns}>
-          <motion.button style={s.cancelBtn} onClick={() => setEditando(null)} whileTap={{ scale: 0.97 }}>Cancelar</motion.button>
+        <div className="resumen-modal-btns">
+          <motion.button className="resumen-cancel-btn" onClick={() => setEditando(null)} whileTap={{ scale: 0.97 }}>Cancelar</motion.button>
           <motion.button
-            style={{ ...s.saveBtn, opacity: !editReps || guardando ? 0.5 : 1 }}
+            className="resumen-save-btn"
+            style={{ opacity: !editReps || guardando ? 0.5 : 1 }}
             onClick={guardarEdicion}
             disabled={!editReps || guardando}
             whileTap={{ scale: 0.97 }}
@@ -365,132 +366,4 @@ export default function ResumenSesion() {
       </Modal>
     </PageWrapper>
   )
-}
-
-const s = {
-  page: { minHeight: '100dvh', color: 'var(--text)' },
-  header: {
-    display: 'flex', alignItems: 'center',
-    padding: '20px 16px 16px',
-    paddingTop: 'max(20px, env(safe-area-inset-top))',
-    gap: '12px',
-    borderBottom: '1px solid var(--border)',
-  },
-  back: {
-    background: 'var(--bg-card)', border: '1px solid var(--border)',
-    color: 'var(--text-mute)', width: '44px', height: '44px',
-    borderRadius: '12px', fontSize: '1.2rem',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
-  headerInfo: { flex: 1 },
-  headerSub: { margin: 0, fontSize: '0.7rem', color: 'var(--orange)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' },
-  titulo: { margin: '2px 0 0', fontSize: '1.2rem', fontWeight: 700, letterSpacing: '-0.02em' },
-  stats: {
-    display: 'flex', margin: '16px',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-lg)',
-    padding: '22px 0',
-    boxShadow: 'var(--shadow-md)',
-  },
-  stat: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' },
-  statNum: { fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.03em' },
-  statLabel: { fontSize: '0.68rem', color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700 },
-  statDivider: { width: '1px', background: 'var(--border)', alignSelf: 'stretch' },
-  ejercicios: { display: 'flex', flexDirection: 'column', gap: '10px', padding: '0 16px' },
-  ejercicioCard: {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-lg)',
-    padding: '16px',
-    boxShadow: 'var(--shadow-sm)',
-  },
-  ejercicioNombre: { margin: '0 0 12px', fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.01em' },
-  seriesWrap: { display: 'flex', flexDirection: 'column', gap: '2px' },
-  serieRow: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '10px 12px',
-    margin: '0 -8px',
-    borderRadius: 'var(--r-sm)',
-    cursor: 'pointer',
-    gap: '12px',
-  },
-  serieNum: {
-    fontSize: '0.72rem', color: 'var(--text-dim)',
-    fontWeight: 700, letterSpacing: '0.06em',
-    minWidth: '20px',
-  },
-  serieDetalle: { flex: 1, fontSize: '0.95rem', color: 'var(--text)' },
-  editarHint: { fontSize: '0.95rem', color: 'var(--text-dim)' },
-  notaSeccion: { padding: '20px 16px 8px', display: 'flex', flexDirection: 'column', gap: '10px' },
-  notaLabel: { margin: 0, fontSize: '0.72rem', color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 },
-  notaInput: {
-    padding: '14px',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-md)',
-    color: 'var(--text)',
-    fontSize: '0.95rem',
-    outline: 'none', resize: 'none',
-    fontFamily: 'inherit',
-  },
-  notaGuardar: {
-    padding: '12px',
-    background: 'var(--bg-card)',
-    color: 'var(--text-mute)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-md)',
-    fontSize: '0.9rem',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
-  footer: { padding: '16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: '8px' },
-  homeBtn: {
-    width: '100%', padding: '18px',
-    background: 'var(--orange-grad)',
-    color: '#fff', border: 'none',
-    borderRadius: 'var(--r-lg)',
-    fontSize: '1.05rem', fontWeight: 700,
-    boxShadow: '0 12px 32px rgba(199, 90, 48, 0.4)',
-    letterSpacing: '-0.01em',
-  },
-  secondaryBtn: {
-    width: '100%', padding: '14px',
-    background: 'transparent',
-    color: 'var(--text-mute)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--r-lg)',
-    fontSize: '0.92rem', fontWeight: 600,
-  },
-  modalEjercicio: {
-    margin: 0, fontSize: '0.72rem', color: 'var(--text-mute)',
-    textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700,
-  },
-  modalTitulo: { margin: 0, fontSize: '1.15rem', fontWeight: 700 },
-  row: { display: 'flex', gap: '10px' },
-  field: { flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' },
-  label: { fontSize: '0.72rem', color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 },
-  inputNum: {
-    padding: '16px', background: 'var(--bg-input)',
-    border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
-    color: 'var(--text)', fontSize: '1.8rem', fontWeight: 800,
-    outline: 'none', textAlign: 'center', width: '100%', boxSizing: 'border-box',
-    letterSpacing: '-0.03em',
-  },
-  modalBtns: { display: 'flex', gap: '10px' },
-  cancelBtn: { flex: 1, padding: '14px', background: 'var(--bg-input)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', fontSize: '0.95rem' },
-  saveBtn: { flex: 1, padding: '14px', background: 'var(--orange-grad)', color: '#fff', border: 'none', borderRadius: 'var(--r-md)', fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(199, 90, 48, 0.35)' },
-  desktopGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 360px',
-    gap: '24px',
-    padding: '0 24px',
-    alignItems: 'start',
-  },
-  desktopSide: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-    position: 'sticky',
-    top: '24px',
-  },
 }

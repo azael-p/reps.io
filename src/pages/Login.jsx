@@ -64,35 +64,35 @@ export default function Login() {
   if (isDesktop) {
     return (
       <motion.div
-        style={s.desktopContainer}
+        className="login-desktop-container"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
       >
         {/* Left — marketing */}
-        <div style={s.desktopLeft}>
+        <div className="login-desktop-left">
           <motion.div
-            style={s.desktopHero}
+            className="login-desktop-hero"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 180, damping: 22 }}
           >
-            <div style={s.logoCircleLg}>
-              <span style={s.logoTextLg}>R</span>
+            <div className="login-logo-circle-lg">
+              <span className="login-logo-text-lg">R</span>
             </div>
-            <h1 style={s.brandLg}>Reps<span style={s.brandDot}>.</span>io</h1>
-            <p style={s.taglineLg}>Tu gym tracker personal</p>
+            <h1 className="login-brand-lg">Reps<span className="login-brand-dot">.</span>io</h1>
+            <p className="login-tagline-lg">Tu gym tracker personal</p>
           </motion.div>
 
           <motion.section
-            style={s.desktopSection}
+            className="login-desktop-section"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15, duration: 0.4 }}
           >
-            <h2 style={s.sectionTitle}>¿Qué es Reps.io?</h2>
-            <p style={s.sectionDesc}>
+            <h2 className="login-section-title">¿Qué es Reps.io?</h2>
+            <p className="login-section-desc">
               Una app para registrar tus entrenamientos, llevar el control de pesos y repeticiones,
               y ver tu progreso a lo largo del tiempo. Sin distracciones, pensada para usarla
               con el celular en la mano entre series.
@@ -100,17 +100,17 @@ export default function Login() {
           </motion.section>
 
           <motion.div
-            style={s.features}
+            className="login-features"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25, duration: 0.4 }}
           >
             {FEATURES.map((f) => (
-              <div key={f.titulo} style={s.featureCard}>
-                <span style={s.featureIcon}>{f.icon}</span>
+              <div key={f.titulo} className="login-feature-card">
+                <span className="login-feature-icon">{f.icon}</span>
                 <div>
-                  <p style={s.featureTitulo}>{f.titulo}</p>
-                  <p style={s.featureDesc}>{f.desc}</p>
+                  <p className="login-feature-titulo">{f.titulo}</p>
+                  <p className="login-feature-desc">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -118,20 +118,20 @@ export default function Login() {
         </div>
 
         {/* Right — login panel */}
-        <div style={s.desktopRight}>
-          <div style={s.glow} />
-          <div style={s.desktopPanel}>
+        <div className="login-desktop-right">
+          <div className="login-glow" />
+          <div className="login-desktop-panel">
             <motion.div
-              style={s.logoWrap}
+              className="login-logo-wrap"
               initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: 'spring', stiffness: 200, damping: 18 }}
             >
-              <div style={s.logoCircle}>
-                <span style={s.logoText}>R</span>
+              <div className="login-logo-circle">
+                <span className="login-logo-text">R</span>
               </div>
-              <h1 style={s.brand}>Reps<span style={s.brandDot}>.</span>io</h1>
-              <p style={s.tagline}>Tu gym tracker personal</p>
+              <h1 className="login-brand">Reps<span className="login-brand-dot">.</span>io</h1>
+              <p className="login-tagline">Tu gym tracker personal</p>
             </motion.div>
 
             <motion.div
@@ -141,46 +141,47 @@ export default function Login() {
               transition={{ delay: 0.15, duration: 0.3 }}
             >
               {error && (
-                <motion.p style={s.error} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}>
+                <motion.p className="login-error" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}>
                   {error}
                 </motion.p>
               )}
               <motion.button
-                style={{ ...s.googleBtn, opacity: procesando ? 0.6 : 1 }}
+                className="login-google-btn"
+                style={{ opacity: procesando ? 0.6 : 1 }}
                 onClick={handleGoogle}
                 disabled={procesando}
                 whileTap={{ scale: procesando ? 1 : 0.97 }}
                 whileHover={{ y: procesando ? 0 : -2 }}
               >
-                {procesando ? <span style={s.spinner} /> : <GoogleIcon />}
+                {procesando ? <span className="login-spinner" /> : <GoogleIcon />}
                 <span>{procesando ? 'Ingresando…' : 'Continuar con Google'}</span>
               </motion.button>
             </motion.div>
 
             <motion.div
-              style={s.divider}
+              className="login-divider"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             />
 
             <motion.section
-              style={s.section}
+              className="login-section"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35, duration: 0.4 }}
             >
-              <h2 style={s.sectionTitle}>Cómo instalarla</h2>
-              <p style={s.sectionDesc}>
+              <h2 className="login-section-title">Cómo instalarla</h2>
+              <p className="login-section-desc">
                 Reps.io es una PWA — podés instalarla en tu celular como una app nativa,
                 sin pasar por el App Store ni Google Play.
               </p>
 
-              <div style={s.tabs}>
+              <div className="login-tabs">
                 {['ios', 'android'].map((t) => (
                   <button
                     key={t}
-                    style={{ ...s.tab, ...(tabInstall === t ? s.tabActive : {}) }}
+                    className={`login-tab ${tabInstall === t ? 'login-tab--active' : ''}`}
                     onClick={() => setTabInstall(t)}
                   >
                     {t === 'ios' ? '🍎 iOS' : '🤖 Android'}
@@ -188,11 +189,11 @@ export default function Login() {
                 ))}
               </div>
 
-              <div style={s.pasos}>
+              <div className="login-pasos">
                 {(tabInstall === 'ios' ? INSTALL_IOS : INSTALL_ANDROID).map((p) => (
-                  <div key={p.paso} style={s.paso}>
-                    <span style={s.pasoBadge}>{p.paso}</span>
-                    <span style={s.pasoTexto}>{p.texto}</span>
+                  <div key={p.paso} className="login-paso">
+                    <span className="login-paso-badge">{p.paso}</span>
+                    <span className="login-paso-texto">{p.texto}</span>
                   </div>
                 ))}
               </div>
@@ -205,28 +206,28 @@ export default function Login() {
 
   return (
     <motion.div
-      style={s.container}
+      className="login-container"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div style={s.glow} />
+      <div className="login-glow" />
 
-      <div style={s.inner}>
+      <div className="login-inner">
 
         {/* — Hero — */}
         <motion.div
-          style={s.logoWrap}
+          className="login-logo-wrap"
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 18 }}
         >
-          <div style={s.logoCircle}>
-            <span style={s.logoText}>R</span>
+          <div className="login-logo-circle">
+            <span className="login-logo-text">R</span>
           </div>
-          <h1 style={s.brand}>Reps<span style={s.brandDot}>.</span>io</h1>
-          <p style={s.tagline}>Tu gym tracker personal</p>
+          <h1 className="login-brand">Reps<span className="login-brand-dot">.</span>io</h1>
+          <p className="login-tagline">Tu gym tracker personal</p>
         </motion.div>
 
         {/* — Login — */}
@@ -237,25 +238,26 @@ export default function Login() {
           transition={{ delay: 0.15, duration: 0.3 }}
         >
           {error && (
-            <motion.p style={s.error} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.p className="login-error" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}>
               {error}
             </motion.p>
           )}
           <motion.button
-            style={{ ...s.googleBtn, opacity: procesando ? 0.6 : 1 }}
+            className="login-google-btn"
+            style={{ opacity: procesando ? 0.6 : 1 }}
             onClick={handleGoogle}
             disabled={procesando}
             whileTap={{ scale: procesando ? 1 : 0.97 }}
             whileHover={{ y: procesando ? 0 : -2 }}
           >
-            {procesando ? <span style={s.spinner} /> : <GoogleIcon />}
+            {procesando ? <span className="login-spinner" /> : <GoogleIcon />}
             <span>{procesando ? 'Ingresando…' : 'Continuar con Google'}</span>
           </motion.button>
         </motion.div>
 
         {/* — Divider — */}
         <motion.div
-          style={s.divider}
+          className="login-divider"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
@@ -263,13 +265,13 @@ export default function Login() {
 
         {/* — Qué es — */}
         <motion.section
-          style={s.section}
+          className="login-section"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35, duration: 0.4 }}
         >
-          <h2 style={s.sectionTitle}>¿Qué es Reps.io?</h2>
-          <p style={s.sectionDesc}>
+          <h2 className="login-section-title">¿Qué es Reps.io?</h2>
+          <p className="login-section-desc">
             Una app para registrar tus entrenamientos, llevar el control de pesos y repeticiones,
             y ver tu progreso a lo largo del tiempo. Sin distracciones, pensada para usarla
             con el celular en la mano entre series.
@@ -278,17 +280,17 @@ export default function Login() {
 
         {/* — Features — */}
         <motion.div
-          style={s.features}
+          className="login-features"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45, duration: 0.4 }}
         >
           {FEATURES.map((f) => (
-            <div key={f.titulo} style={s.featureCard}>
-              <span style={s.featureIcon}>{f.icon}</span>
+            <div key={f.titulo} className="login-feature-card">
+              <span className="login-feature-icon">{f.icon}</span>
               <div>
-                <p style={s.featureTitulo}>{f.titulo}</p>
-                <p style={s.featureDesc}>{f.desc}</p>
+                <p className="login-feature-titulo">{f.titulo}</p>
+                <p className="login-feature-desc">{f.desc}</p>
               </div>
             </div>
           ))}
@@ -296,22 +298,22 @@ export default function Login() {
 
         {/* — Instalación — */}
         <motion.section
-          style={s.section}
+          className="login-section"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.55, duration: 0.4 }}
         >
-          <h2 style={s.sectionTitle}>Cómo instalarla</h2>
-          <p style={s.sectionDesc}>
+          <h2 className="login-section-title">Cómo instalarla</h2>
+          <p className="login-section-desc">
             Reps.io es una PWA — podés instalarla en tu celular como una app nativa,
             sin pasar por el App Store ni Google Play.
           </p>
 
-          <div style={s.tabs}>
+          <div className="login-tabs">
             {['ios', 'android'].map((t) => (
               <button
                 key={t}
-                style={{ ...s.tab, ...(tabInstall === t ? s.tabActive : {}) }}
+                className={`login-tab ${tabInstall === t ? 'login-tab--active' : ''}`}
                 onClick={() => setTabInstall(t)}
               >
                 {t === 'ios' ? '🍎 iOS' : '🤖 Android'}
@@ -319,11 +321,11 @@ export default function Login() {
             ))}
           </div>
 
-          <div style={s.pasos}>
+          <div className="login-pasos">
             {(tabInstall === 'ios' ? INSTALL_IOS : INSTALL_ANDROID).map((p) => (
-              <div key={p.paso} style={s.paso}>
-                <span style={s.pasoBadge}>{p.paso}</span>
-                <span style={s.pasoTexto}>{p.texto}</span>
+              <div key={p.paso} className="login-paso">
+                <span className="login-paso-badge">{p.paso}</span>
+                <span className="login-paso-texto">{p.texto}</span>
               </div>
             ))}
           </div>
@@ -346,171 +348,3 @@ function GoogleIcon() {
   )
 }
 
-const s = {
-  /* ── Mobile layout ── */
-  container: {
-    minHeight: '100dvh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: 'max(40px, env(safe-area-inset-top)) 20px 0',
-    position: 'relative',
-    overflowX: 'hidden',
-  },
-  glow: {
-    position: 'fixed',
-    top: '-200px', left: '50%',
-    transform: 'translateX(-50%)',
-    width: '600px', height: '600px',
-    background: 'radial-gradient(circle, rgba(133,183,235,0.12), transparent 60%)',
-    pointerEvents: 'none', zIndex: 0,
-  },
-  inner: {
-    width: '100%', maxWidth: '380px',
-    display: 'flex', flexDirection: 'column',
-    alignItems: 'center', gap: '20px',
-    position: 'relative', zIndex: 1,
-  },
-
-  /* ── Desktop layout ── */
-  desktopContainer: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    minHeight: '100dvh',
-  },
-  desktopLeft: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '32px',
-    padding: '64px 56px',
-    overflowY: 'auto',
-  },
-  desktopHero: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '14px',
-  },
-  desktopSection: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-  },
-  desktopRight: {
-    background: 'var(--bg-elev)',
-    borderLeft: '1px solid var(--border)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '64px 48px',
-    position: 'relative',
-    overflowY: 'auto',
-  },
-  desktopPanel: {
-    width: '100%',
-    maxWidth: '400px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '20px',
-    position: 'sticky',
-    top: '40px',
-    zIndex: 1,
-  },
-
-  /* ── Shared branding ── */
-  logoWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' },
-  logoCircle: {
-    width: '64px', height: '64px', borderRadius: '20px',
-    background: 'linear-gradient(135deg, #f0997b 0%, #c75a30 100%)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 10px 30px rgba(240,153,123,0.35), inset 0 1px 0 rgba(255,255,255,0.2)',
-  },
-  logoText: { fontSize: '2rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.04em' },
-  brand: { fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', margin: 0 },
-  brandDot: { color: 'var(--orange)' },
-  tagline: { color: 'var(--text-mute)', fontSize: '0.9rem', margin: 0 },
-
-  /* ── Desktop large hero branding ── */
-  logoCircleLg: {
-    width: '80px', height: '80px', borderRadius: '24px',
-    background: 'linear-gradient(135deg, #f0997b 0%, #c75a30 100%)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 14px 40px rgba(240,153,123,0.35), inset 0 1px 0 rgba(255,255,255,0.2)',
-  },
-  logoTextLg: { fontSize: '2.6rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.04em' },
-  brandLg: { fontSize: '3rem', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', margin: 0 },
-  taglineLg: { color: 'var(--text-mute)', fontSize: '1rem', margin: 0 },
-
-  /* ── Google button ── */
-  googleBtn: {
-    width: '100%', padding: '15px 20px',
-    background: 'var(--bg-card)', color: 'var(--text)',
-    border: '1px solid var(--border)', borderRadius: 'var(--r-lg)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
-    fontSize: '1rem', fontWeight: 600,
-    boxShadow: 'var(--shadow-sm)', cursor: 'pointer',
-  },
-  error: { color: 'var(--danger)', fontSize: '0.88rem', textAlign: 'center', marginBottom: '10px' },
-  spinner: {
-    width: '18px', height: '18px',
-    border: '2px solid var(--border)', borderTopColor: 'var(--text)',
-    borderRadius: '50%', display: 'inline-block',
-    animation: 'spin 0.7s linear infinite', flexShrink: 0,
-  },
-
-  /* ── Divider ── */
-  divider: {
-    width: '100%', height: '1px',
-    background: 'var(--border)', margin: '4px 0',
-  },
-
-  /* ── Sections ── */
-  section: { width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' },
-  sectionTitle: {
-    fontSize: '1.1rem', fontWeight: 700,
-    color: 'var(--text)', margin: 0, letterSpacing: '-0.02em',
-  },
-  sectionDesc: {
-    fontSize: '0.9rem', color: 'var(--text-mute)',
-    lineHeight: 1.6, margin: 0,
-  },
-
-  /* ── Features ── */
-  features: { width: '100%', display: 'flex', flexDirection: 'column', gap: '10px' },
-  featureCard: {
-    display: 'flex', gap: '14px', alignItems: 'flex-start',
-    padding: '14px 16px',
-    background: 'var(--bg-card)', border: '1px solid var(--border)',
-    borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-sm)',
-  },
-  featureIcon: { fontSize: '1.5rem', lineHeight: 1, flexShrink: 0, marginTop: '2px' },
-  featureTitulo: { fontSize: '0.95rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 3px' },
-  featureDesc: { fontSize: '0.85rem', color: 'var(--text-mute)', margin: 0, lineHeight: 1.5 },
-
-  /* ── Install tabs ── */
-  tabs: { display: 'flex', gap: '8px', width: '100%' },
-  tab: {
-    flex: 1, padding: '10px',
-    background: 'var(--bg-card)', color: 'var(--text-mute)',
-    border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
-    fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer',
-  },
-  tabActive: {
-    background: 'var(--bg-elev)', color: 'var(--text)',
-    borderColor: 'var(--border-strong)', fontWeight: 600,
-  },
-  pasos: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  paso: {
-    display: 'flex', alignItems: 'center', gap: '12px',
-    padding: '12px 14px',
-    background: 'var(--bg-card)', border: '1px solid var(--border)',
-    borderRadius: 'var(--r-md)',
-  },
-  pasoBadge: {
-    width: '24px', height: '24px', borderRadius: '50%',
-    background: 'var(--orange-grad)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '0.8rem', fontWeight: 700, color: '#fff', flexShrink: 0,
-  },
-  pasoTexto: { fontSize: '0.88rem', color: 'var(--text)', lineHeight: 1.4 },
-}
