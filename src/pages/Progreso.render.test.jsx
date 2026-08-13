@@ -14,6 +14,7 @@ vi.mock('../context/UserContext', () => ({ useUser: () => ({ usuario: USUARIO })
 const showMock = vi.hoisted(() => vi.fn())
 vi.mock('../components/Toast', () => ({ useToast: () => ({ show: showMock }) }))
 
+vi.mock('../firebase/config', () => ({ db: {}, auth: {} }))
 vi.mock('../firebase/sesiones', async (importOriginal) => {
   const actual = await importOriginal()
   return {
