@@ -1,4 +1,6 @@
 import { Component } from 'react'
+import { logEvento } from '../firebase/analytics'
+import { truncar } from '../firebase/errores'
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -12,6 +14,11 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('[ErrorBoundary]', error, info)
+    logEvento('error_react', {
+      message: truncar(error.message),
+      stack: truncar(error.stack),
+      pathname: window.location.pathname,
+    })
   }
 
   handleRetry = () => {

@@ -5,6 +5,7 @@ dist/
 .firebase/
 *.log
 scripts/serviceAccount.json
+scripts/reportes/
 .DS_Store
 **/.DS_Store
 .claude/

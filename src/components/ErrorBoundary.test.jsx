@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import ErrorBoundary from './ErrorBoundary'
+import { logEvento } from '../firebase/analytics'
+
+vi.mock('../firebase/analytics', () => ({ logEvento: vi.fn() }))
 
 function Bomb({ shouldThrowBox }) {
   if (shouldThrowBox.value) throw new Error('boom')
@@ -59,6 +62,18 @@ describe('ErrorBoundary — con error', () => {
     expect(console.error).toHaveBeenCalledWith(
       '[ErrorBoundary]', expect.any(Error), expect.anything(),
     )
+  })
+
+  it('registra el error en analytics', () => {
+    const shouldThrowBox = { value: true }
+    render(
+      <ErrorBoundary>
+        <Bomb shouldThrowBox={shouldThrowBox} />
+      </ErrorBoundary>
+    )
+    expect(logEvento).toHaveBeenCalledWith('error_react', expect.objectContaining({
+      message: 'boom',
+    }))
   })
 
   it('"Reintentar" limpia el error y vuelve a renderizar los children', async () => {

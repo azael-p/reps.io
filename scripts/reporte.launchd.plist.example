@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Plantilla de LaunchAgent para correr `npm run reporte` automáticamente,
+    sin depender de acordarse de ejecutarlo a mano y sin exponer datos de
+    usuarios en CI (el repo es público — ver plan de observabilidad).
+
+    Setup (una sola vez, no se commitea el archivo resultante: tiene rutas
+    absolutas de tu máquina):
+
+    1. Resolvé la ruta a node:
+        which node
+    2. Copiá este archivo reemplazando los placeholders:
+        cp scripts/reporte.launchd.plist.example \
+            ~/Library/LaunchAgents/io.repsio.reporteActividad.plist
+        # reemplazar <RUTA_AL_REPO> y <RUTA_A_NODE> en la copia
+    3. Cargalo:
+        launchctl load -w ~/Library/LaunchAgents/io.repsio.reporteActividad.plist
+    4. (Opcional) Forzar una corrida inmediata para probar:
+        launchctl start io.repsio.reporteActividad
+
+Corre por defecto los lunes a las 9:00 AM (hora local). launchd no
+reintenta corridas perdidas si la Mac estaba apagada/dormida en ese
+horario exacto — se entera recién en la próxima ventana programada.
+
+Para desactivarlo:
+    launchctl unload ~/Library/LaunchAgents/io.repsio.reporteActividad.plist
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>io.repsio.reporteActividad</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string><RUTA_A_NODE></string>
+        <string><RUTA_AL_REPO>/scripts/reporteActividad.js</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string><RUTA_AL_REPO></string>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>1</integer>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string><RUTA_AL_REPO>/scripts/reportes/launchd.log</string>
+
+    <key>StandardErrorPath</key>
+    <string><RUTA_AL_REPO>/scripts/reportes/launchd.log</string>
+</dict>
+</plist>
