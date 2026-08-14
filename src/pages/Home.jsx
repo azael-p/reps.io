@@ -8,6 +8,7 @@ import { db } from '../firebase/config'
 import Calendario from '../components/Calendario'
 import Onboarding from '../components/Onboarding'
 import PullToRefresh from '../components/PullToRefresh'
+import Credit from '../components/Credit'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
 import { Layers, Zap, TrendingUp, ChevronRight, LogOut } from 'lucide-react'
@@ -293,12 +294,7 @@ export default function Home() {
         </div>
       )}
       </PullToRefresh>
-      <div style={{ textAlign: 'center', padding: '24px 0 8px', color: 'var(--text-dim)', fontSize: '0.72rem' }}>
-        Diseñado por{' '}
-        <a href="https://azael-p.github.io/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--orange)', textDecoration: 'none' }}>
-          Azael Pignanessi
-        </a>
-      </div>
+      <Credit />
     </motion.div>
   )
 }

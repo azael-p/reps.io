@@ -369,6 +369,10 @@ select:focus-visible {
 }
 .bottom-nav-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.02em; }
 
+/* ============== Credit ============== */
+.app-credit { text-align: center; padding: 24px 0 8px; color: var(--text-dim); font-size: 0.72rem; }
+.app-credit-link { color: var(--orange); text-decoration: none; }
+
 /* ============== ErrorBoundary ============== */
 .error-boundary-page {
   min-height: 100dvh;
@@ -748,7 +752,8 @@ select:focus-visible {
 /* ============== TimerConfig ============== */
 .timer-config-page {
   min-height: 100dvh;
-  padding: 20px 16px max(24px, env(safe-area-inset-bottom));
+  /* 64px = altura de BottomNav; evita que el crédito quede tapado en mobile */
+  padding: 20px 16px calc(64px + max(24px, env(safe-area-inset-bottom)));
   padding-top: max(20px, env(safe-area-inset-top));
   display: flex; flex-direction: column; gap: 20px;
   max-width: 540px; box-sizing: border-box;
@@ -1127,7 +1132,8 @@ select:focus-visible {
 .home-page {
   min-height: 100dvh;
   color: var(--text);
-  padding: 20px 16px max(24px, env(safe-area-inset-bottom));
+  /* 64px = altura de BottomNav; evita que el crédito quede tapado en mobile */
+  padding: 20px 16px calc(64px + max(24px, env(safe-area-inset-bottom)));
   padding-top: max(20px, env(safe-area-inset-top));
   display: flex; flex-direction: column; gap: 16px;
   box-sizing: border-box;

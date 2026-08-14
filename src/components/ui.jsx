@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, Plus, AlertTriangle, AlertCircle } from 'lucide-react'
+import Credit from './Credit'
 
 const ACCENT_GRAD = {
   'var(--green)':  'var(--green-grad)',
@@ -252,12 +253,7 @@ export function PageWrapper({ children, style }) {
       dragSnapToOrigin
     >
       {children}
-      <div style={{ textAlign: 'center', padding: '24px 0 8px', color: 'var(--text-dim)', fontSize: '0.72rem' }}>
-        Diseñado por{' '}
-        <a href="https://azael-p.github.io/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--orange)', textDecoration: 'none' }}>
-          Azael Pignanessi
-        </a>
-      </div>
+      <Credit />
     </motion.div>
   )
 }

@@ -93,4 +93,9 @@ describe('TimerConfig', () => {
     await act(async () => { fireEvent.click(screen.getByText('Guardar')) })
     expect(savePreset).toHaveBeenCalledWith('uid1', expect.objectContaining({ nombre: 'Mi preset' }))
   })
+
+  it('muestra el crédito de diseño', async () => {
+    render(<TimerConfig onIniciar={onIniciar} />)
+    await waitFor(() => expect(screen.getByText('Azael Pignanessi')).toBeDefined())
+  })
 })

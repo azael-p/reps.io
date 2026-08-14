@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Trash2, Timer } from 'lucide-react'
 import { useUser } from '../../context/UserContext'
 import { getPresets, savePreset, deletePreset } from '../../firebase/timerPresets'
+import Credit from '../Credit'
 
 function segsToMinSeg(segs) {
   const m = Math.floor(segs / 60)
@@ -187,6 +188,8 @@ export default function TimerConfig({ onIniciar }) {
           </motion.button>
         </div>
       </div>
+
+      <Credit />
     </div>
   )
 }
