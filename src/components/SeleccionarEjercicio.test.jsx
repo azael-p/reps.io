@@ -147,6 +147,57 @@ describe('SeleccionarEjercicio — flujo de confirmación', () => {
       esCustom: false,
     }))
   })
+
+  it('no confirma con series vacío (evita seriesEsperadas: 0) y muestra un error', async () => {
+    const onSeleccionar = vi.fn()
+    const user = userEvent.setup()
+    render(<SeleccionarEjercicio onSeleccionar={onSeleccionar} onCerrar={vi.fn()} />)
+    await waitFor(() => screen.getByText('Sentadilla'))
+    await user.click(screen.getByRole('button', { name: /sentadilla/i }))
+
+    const [seriesInput] = screen.getAllByRole('spinbutton')
+    await user.clear(seriesInput)
+
+    await user.click(screen.getByRole('button', { name: /agregar ejercicio/i }))
+
+    expect(onSeleccionar).not.toHaveBeenCalled()
+    expect(screen.getByText('Series y reps deben ser mayores a 0')).toBeInTheDocument()
+  })
+
+  it('no confirma con reps vacío', async () => {
+    const onSeleccionar = vi.fn()
+    const user = userEvent.setup()
+    render(<SeleccionarEjercicio onSeleccionar={onSeleccionar} onCerrar={vi.fn()} />)
+    await waitFor(() => screen.getByText('Sentadilla'))
+    await user.click(screen.getByRole('button', { name: /sentadilla/i }))
+
+    const [, repsInput] = screen.getAllByRole('spinbutton')
+    await user.clear(repsInput)
+
+    await user.click(screen.getByRole('button', { name: /agregar ejercicio/i }))
+
+    expect(onSeleccionar).not.toHaveBeenCalled()
+    expect(screen.getByText('Series y reps deben ser mayores a 0')).toBeInTheDocument()
+  })
+
+  it('el error desaparece al corregir el valor y confirmar de nuevo', async () => {
+    const onSeleccionar = vi.fn()
+    const user = userEvent.setup()
+    render(<SeleccionarEjercicio onSeleccionar={onSeleccionar} onCerrar={vi.fn()} />)
+    await waitFor(() => screen.getByText('Sentadilla'))
+    await user.click(screen.getByRole('button', { name: /sentadilla/i }))
+
+    const [seriesInput] = screen.getAllByRole('spinbutton')
+    await user.clear(seriesInput)
+    await user.click(screen.getByRole('button', { name: /agregar ejercicio/i }))
+    expect(screen.getByText('Series y reps deben ser mayores a 0')).toBeInTheDocument()
+
+    await user.type(seriesInput, '3')
+    expect(screen.queryByText('Series y reps deben ser mayores a 0')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /agregar ejercicio/i }))
+    expect(onSeleccionar).toHaveBeenCalledOnce()
+  })
 })
 
 // ---------------------------------------------------------------------------

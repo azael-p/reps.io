@@ -40,6 +40,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
   const [ejercicioElegido, setEjercicioElegido] = useState(null)
   const [series, setSeries] = useState('3')
   const [reps, setReps] = useState('10')
+  const [errorConfig, setErrorConfig] = useState('')
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
@@ -103,6 +104,10 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
   }, [busqueda, grupoActivo, catalogo, fuse])
 
   function confirmar() {
+    if (!series || !reps || Number(series) < 1 || Number(reps) < 1) {
+      setErrorConfig('Series y reps deben ser mayores a 0')
+      return
+    }
     onSeleccionar({ nombre: ejercicioElegido.nombre, grupoMuscular: ejercicioElegido.grupoMuscular, esCustom: false, catalogoId: ejercicioElegido.id, seriesEsperadas: Number(series), repsEsperadas: Number(reps) })
   }
 
@@ -132,13 +137,15 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
           <div className="picker-row">
             <div className="picker-field">
               <label className="picker-label">Series</label>
-              <input className="picker-input-num" type="number" inputMode="numeric" min="1" max="20" value={series} onChange={e => setSeries(e.target.value)} />
+              <input className="picker-input-num" type="number" inputMode="numeric" min="1" max="20" value={series} onChange={e => { setSeries(e.target.value); setErrorConfig('') }} />
             </div>
             <div className="picker-field">
               <label className="picker-label">Reps</label>
-              <input className="picker-input-num" type="number" inputMode="numeric" min="1" max="100" value={reps} onChange={e => setReps(e.target.value)} />
+              <input className="picker-input-num" type="number" inputMode="numeric" min="1" max="100" value={reps} onChange={e => { setReps(e.target.value); setErrorConfig('') }} />
             </div>
           </div>
+
+          {errorConfig && <p className="picker-error-msg">{errorConfig}</p>}
 
           <motion.button
             className="picker-confirmar-btn"
