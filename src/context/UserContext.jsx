@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '../firebase/config'
 import { handleFirstLogin, signOutUser } from '../firebase/auth'
+import { limpiarEliminadosDefinitivamente } from '../firebase/limpieza'
 
 const UserContext = createContext(null)
 
@@ -20,6 +21,7 @@ export function UserProvider({ children }) {
       try {
         const { usuario } = await handleFirstLogin(firebaseUser)
         setUsuario(usuario)
+        limpiarEliminadosDefinitivamente(usuario.id).catch(e => console.error('limpieza de eliminados falló:', e))
       } catch (e) {
         console.error('handleFirstLogin falló:', e)
         setUsuario(null)
