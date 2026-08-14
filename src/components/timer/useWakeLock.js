@@ -1,10 +1,13 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useEffect } from 'react'
 
 export function useWakeLock() {
   const wakeLockRef = useRef(null)
   const audioRef = useRef(null)
+  const activoRef = useRef(false) // true mientras el caller quiere la pantalla encendida
 
   const activar = useCallback(async () => {
+    activoRef.current = true
+
     // Strategy 1: WakeLock API (Chrome/Android)
     if ('wakeLock' in navigator) {
       try {
@@ -27,6 +30,7 @@ export function useWakeLock() {
   }, [])
 
   const liberar = useCallback(() => {
+    activoRef.current = false
     if (wakeLockRef.current) {
       wakeLockRef.current.release().catch(() => {})
       wakeLockRef.current = null
@@ -36,6 +40,23 @@ export function useWakeLock() {
       audioRef.current = null
     }
   }, [])
+
+  // La Wake Lock API se libera sola cuando la página pasa a hidden y no se
+  // reactiva sola al volver: sin esto, la pantalla se apaga sola después del
+  // primer cambio de app durante el timer.
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (document.visibilityState === 'visible' && activoRef.current) activar()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [activar])
+
+  // Si el componente que llamó a activar() se desmonta sin llamar a liberar()
+  // (ej. el usuario navega con la BottomNav a mitad del timer), el wake lock
+  // y el audio de respaldo quedan vivos indefinidamente. liberar() es
+  // idempotente, así que no importa si el caller ya lo había llamado.
+  useEffect(() => liberar, [liberar])
 
   return { activar, liberar }
 }

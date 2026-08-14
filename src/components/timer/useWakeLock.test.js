@@ -21,6 +21,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks()
   stubWakeLock(() => Promise.resolve({ release: vi.fn().mockResolvedValue(undefined) }))
+  Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true })
 })
 
 // ---------------------------------------------------------------------------
@@ -127,5 +128,90 @@ describe('useWakeLock — liberar()', () => {
     await act(async () => { await result.current.activar() })
 
     expect(navigator.wakeLock.request).toHaveBeenCalledTimes(2)
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+function dispatchVisibilityChange(state) {
+  Object.defineProperty(document, 'visibilityState', { value: state, configurable: true })
+  document.dispatchEvent(new Event('visibilitychange'))
+}
+
+describe('useWakeLock — cleanup al desmontar', () => {
+  it('libera el wake lock al desmontar aunque el caller nunca haya llamado a liberar()', async () => {
+    const release = vi.fn().mockResolvedValue(undefined)
+    stubWakeLock(() => Promise.resolve({ release }))
+    const { result, unmount } = renderHook(() => useWakeLock())
+    await act(async () => { await result.current.activar() })
+
+    unmount()
+
+    expect(release).toHaveBeenCalledTimes(1)
+  })
+
+  it('pausa el audio de respaldo al desmontar', async () => {
+    removeWakeLockApi()
+    const { result, unmount } = renderHook(() => useWakeLock())
+    await act(async () => { await result.current.activar() })
+
+    unmount()
+
+    expect(HTMLMediaElement.prototype.pause).toHaveBeenCalledTimes(1)
+  })
+
+  it('desmontar sin haber activado nada no lanza error', () => {
+    const { unmount } = renderHook(() => useWakeLock())
+    expect(() => unmount()).not.toThrow()
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('useWakeLock — re-adquisición en visibilitychange', () => {
+  it('vuelve a pedir el wake lock al volver a visible si seguía activo', async () => {
+    const release = vi.fn().mockResolvedValue(undefined)
+    stubWakeLock(() => Promise.resolve({ release }))
+    const { result } = renderHook(() => useWakeLock())
+    await act(async () => { await result.current.activar() })
+    expect(navigator.wakeLock.request).toHaveBeenCalledTimes(1)
+
+    await act(async () => { dispatchVisibilityChange('visible') })
+
+    expect(navigator.wakeLock.request).toHaveBeenCalledTimes(2)
+  })
+
+  it('no vuelve a pedir el wake lock si ya se había liberado', async () => {
+    const release = vi.fn().mockResolvedValue(undefined)
+    stubWakeLock(() => Promise.resolve({ release }))
+    const { result } = renderHook(() => useWakeLock())
+    await act(async () => { await result.current.activar() })
+    act(() => { result.current.liberar() })
+
+    await act(async () => { dispatchVisibilityChange('visible') })
+
+    expect(navigator.wakeLock.request).toHaveBeenCalledTimes(1)
+  })
+
+  it('no hace nada cuando la página pasa a hidden', async () => {
+    const release = vi.fn().mockResolvedValue(undefined)
+    stubWakeLock(() => Promise.resolve({ release }))
+    const { result } = renderHook(() => useWakeLock())
+    await act(async () => { await result.current.activar() })
+
+    await act(async () => { dispatchVisibilityChange('hidden') })
+
+    expect(navigator.wakeLock.request).toHaveBeenCalledTimes(1)
+  })
+
+  it('resume el audio de respaldo al volver a visible (estrategia iOS)', async () => {
+    removeWakeLockApi()
+    const { result } = renderHook(() => useWakeLock())
+    await act(async () => { await result.current.activar() })
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1)
+
+    await act(async () => { dispatchVisibilityChange('visible') })
+
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(2)
   })
 })
