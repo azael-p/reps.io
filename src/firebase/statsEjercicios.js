@@ -71,21 +71,26 @@ export async function getStatsEjercicios(uid) {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-// Aplica una sesión completada a los docs de stats de sus ejercicios.
-export async function aplicarSesionAStats(uid, { sesionId, fecha, resumen }) {
+// Aplica una sesión completada a los docs de stats de sus ejercicios. Si se
+// pasa un `batch` externo, agrega a ese batch sin comitear (el caller es
+// responsable del commit — así se puede unir con otras escrituras en una
+// sola operación atómica). Sin `batch`, arma y comitea uno propio.
+export async function aplicarSesionAStats(uid, { sesionId, fecha, resumen }, batch = null) {
   const ejercicios = resumen?.ejercicios ?? []
   if (ejercicios.length === 0) return
   const fechaMs = toDate(fecha)?.getTime() ?? 0
 
-  const batch = writeBatch(db)
-  for (const ej of ejercicios) {
-    const id = statsDocId(ej)
-    const ref = doc(db, 'usuarios', uid, 'statsEjercicios', id)
-    const snap = await getDoc(ref)
-    const merged = mergeSesionEnStats(snap.exists() ? snap.data() : null, ej, fechaMs, sesionId)
-    batch.set(ref, merged)
-  }
-  await batch.commit()
+  const own = !batch
+  const b = batch ?? writeBatch(db)
+
+  const refs = ejercicios.map(ej => doc(db, 'usuarios', uid, 'statsEjercicios', statsDocId(ej)))
+  const snaps = await Promise.all(refs.map(ref => getDoc(ref))) // lecturas en paralelo, no secuenciales
+  ejercicios.forEach((ej, i) => {
+    const merged = mergeSesionEnStats(snaps[i].exists() ? snaps[i].data() : null, ej, fechaMs, sesionId)
+    b.set(refs[i], merged)
+  })
+
+  if (own) await b.commit()
 }
 
 // Reconstruye los docs de stats de VARIOS ejercicios con un solo scan del

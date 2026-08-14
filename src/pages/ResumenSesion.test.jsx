@@ -10,16 +10,15 @@ vi.mock('../context/UserContext', () => ({
 }))
 vi.mock('../firebase/sesiones', () => ({
   backfillResumen: vi.fn(),
-  completarSesion: vi.fn(),
   actualizarNotaSesion: vi.fn(),
 }))
+vi.mock('../firebase/completarSesion', () => ({ completarSesionConAgregados: vi.fn() }))
 vi.mock('../firebase/registros', () => ({
   getRegistrosSesion: vi.fn(),
   editarRegistro: vi.fn(),
 }))
 vi.mock('../firebase/statsGlobal', () => ({ aplicarSesionAResumenGlobal: vi.fn() }))
 vi.mock('../firebase/statsEjercicios', () => ({
-  aplicarSesionAStats: vi.fn(),
   rebuildStatsEjercicios: vi.fn(),
 }))
 vi.mock('firebase/firestore', () => ({
@@ -30,9 +29,14 @@ vi.mock('../components/ui', () => ({
   Modal: ({ children, open }) => (open ? <div data-testid="modal">{children}</div> : null),
   PageWrapper: ({ children }) => <div>{children}</div>,
 }))
+const mockShow = vi.fn()
+vi.mock('../components/Toast', () => ({
+  useToast: () => ({ show: mockShow }),
+}))
 
 import { getDoc } from 'firebase/firestore'
-import { backfillResumen, completarSesion } from '../firebase/sesiones'
+import { backfillResumen } from '../firebase/sesiones'
+import { completarSesionConAgregados } from '../firebase/completarSesion'
 import { getRegistrosSesion } from '../firebase/registros'
 import ResumenSesion from './ResumenSesion'
 
@@ -48,7 +52,7 @@ function renderResumen(sesionId = 'ses1') {
 
 // ---------------------------------------------------------------------------
 
-describe('ResumenSesion — orden de escrituras', () => {
+describe('ResumenSesion — completar sesión sin bloquear la UI (bug offline)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
@@ -57,10 +61,8 @@ describe('ResumenSesion — orden de escrituras', () => {
     ])
   })
 
-  it('llama a backfillResumen ANTES que completarSesion cuando la sesión no está completada', async () => {
-    const callOrder = []
-    backfillResumen.mockImplementation(async () => { callOrder.push('backfill') })
-    completarSesion.mockImplementation(async () => { callOrder.push('completar') })
+  it('destraba el spinner y renderiza la página aunque completarSesionConAgregados nunca resuelva (sin red)', async () => {
+    completarSesionConAgregados.mockReturnValue(new Promise(() => {})) // simula ACK que nunca llega
 
     getDoc
       .mockResolvedValueOnce({ exists: () => true, data: () => ({ diaId: 'dia1', nota: '', completada: false }) })
@@ -68,14 +70,27 @@ describe('ResumenSesion — orden de escrituras', () => {
 
     renderResumen()
 
+    expect(await screen.findByText('Press Banca')).toBeTruthy()
+    expect(completarSesionConAgregados).toHaveBeenCalledWith('ses1', expect.objectContaining({ usuarioId: 'user1' }))
+  })
+
+  it('si completarSesionConAgregados rechaza, avisa por toast no bloqueante en vez de mostrar un error que tape la página', async () => {
+    completarSesionConAgregados.mockRejectedValue(new Error('offline'))
+
+    getDoc
+      .mockResolvedValueOnce({ exists: () => true, data: () => ({ diaId: 'dia1', nota: '', completada: false }) })
+      .mockResolvedValueOnce({ exists: () => true, data: () => ({ nombre: 'Push' }) })
+
+    renderResumen()
+
+    await screen.findByText('Press Banca')
     await waitFor(() => {
-      expect(callOrder).toEqual(['backfill', 'completar'])
+      expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({ variant: 'warning' }))
     })
   })
 
-  it('no llama a completarSesion si la sesión ya está completada', async () => {
+  it('no llama a completarSesionConAgregados si la sesión ya está completada', async () => {
     backfillResumen.mockResolvedValue(undefined)
-    completarSesion.mockResolvedValue(undefined)
 
     getDoc
       .mockResolvedValueOnce({
@@ -90,7 +105,7 @@ describe('ResumenSesion — orden de escrituras', () => {
     renderResumen()
 
     await waitFor(() => {
-      expect(completarSesion).not.toHaveBeenCalled()
+      expect(completarSesionConAgregados).not.toHaveBeenCalled()
     })
   })
 })

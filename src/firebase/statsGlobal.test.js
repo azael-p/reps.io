@@ -3,6 +3,8 @@ vi.mock('./config', () => ({ db: {} }))
 const mockGetDoc = vi.fn()
 const mockSetDoc = vi.fn()
 const mockGetDocs = vi.fn()
+const mockBatchSet = vi.fn()
+const mockBatchCommit = vi.fn()
 
 vi.mock('firebase/firestore', () => ({
   doc: vi.fn((_db, ...path) => ({ path: path.join('/') })),
@@ -13,6 +15,9 @@ vi.mock('firebase/firestore', () => ({
   query: vi.fn((col) => col),
   where: vi.fn(),
   orderBy: vi.fn(),
+  arrayUnion: (...v) => ({ __arrayUnion: v }),
+  writeBatch: () => ({ set: mockBatchSet, commit: mockBatchCommit }),
+  serverTimestamp: () => '__serverTimestamp__',
 }))
 
 vi.mock('./sesiones', () => ({ getSesionesConResumen: vi.fn() }))
@@ -20,7 +25,7 @@ vi.mock('./sesiones', () => ({ getSesionesConResumen: vi.fn() }))
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   epochDia, buildResumenGlobal, getResumenGlobalConFallback,
-  aplicarSesionAResumenGlobal, removerSesionDeResumenGlobal,
+  agregarSesionAResumenGlobalBlind, aplicarSesionAResumenGlobal, removerSesionDeResumenGlobal,
 } from './statsGlobal'
 import { getSesionesConResumen } from './sesiones'
 
@@ -157,5 +162,50 @@ describe('removerSesionDeResumenGlobal', () => {
     mockGetDoc.mockResolvedValue({ exists: () => false })
     await removerSesionDeResumenGlobal('user1', { sesionId: 's1', fecha: DIA(2026, 6, 10) })
     expect(mockSetDoc).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('agregarSesionAResumenGlobalBlind', () => {
+  it('escribe con arrayUnion y merge, sin leer el doc antes (no puede pisar historial)', () => {
+    const batch = { set: mockBatchSet }
+    agregarSesionAResumenGlobalBlind(batch, 'user1', {
+      sesionId: 's2', fecha: DIA(2026, 6, 12), resumen: { volumenTotal: 500, diaNombre: 'Pull' },
+    })
+    expect(mockGetDoc).not.toHaveBeenCalled()
+    expect(mockBatchSet).toHaveBeenCalledOnce()
+    const [ref, campos, opts] = mockBatchSet.mock.calls[0]
+    expect(ref.path).toBe('usuarios/user1/stats/global')
+    expect(campos.diasEntrenados).toEqual({ __arrayUnion: [E(2026, 6, 12)] })
+    expect(campos.volumenPorSesion).toEqual({ __arrayUnion: [{ sesionId: 's2', fecha: E(2026, 6, 12), volumen: 500, diaNombre: 'Pull' }] })
+    expect(campos.ultimaSesionId).toBe('s2')
+    expect(opts).toEqual({ merge: true })
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('aplicarSesionAResumenGlobal — guard de lectura desde cache', () => {
+  it('si el doc no existe y la lectura vino del cache (sin red), hace alta ciega en vez de asumir historial vacío', async () => {
+    mockGetDoc.mockResolvedValue({ exists: () => false, metadata: { fromCache: true } })
+    await aplicarSesionAResumenGlobal('user1', {
+      sesionId: 's1', fecha: DIA(2026, 6, 10), resumen: { volumenTotal: 300, diaNombre: 'Push' },
+    })
+    // No debe haber reemplazado el doc entero vía setDoc — solo la escritura ciega por batch.
+    expect(mockSetDoc).not.toHaveBeenCalled()
+    expect(mockBatchSet).toHaveBeenCalledOnce()
+    expect(mockBatchCommit).toHaveBeenCalledOnce()
+  })
+
+  it('si el doc no existe pero la lectura fue confirmada por el servidor (usuario nuevo real), sigue el camino normal', async () => {
+    mockGetDoc.mockResolvedValue({ exists: () => false, metadata: { fromCache: false } })
+    await aplicarSesionAResumenGlobal('user1', {
+      sesionId: 's1', fecha: DIA(2026, 6, 10), resumen: { volumenTotal: 300, diaNombre: 'Push' },
+    })
+    expect(mockBatchSet).not.toHaveBeenCalled()
+    const escrito = mockSetDoc.mock.calls[0][1]
+    expect(escrito.diasEntrenados).toEqual([E(2026, 6, 10)])
+    expect(escrito.volumenPorSesion.map(v => v.sesionId)).toEqual(['s1'])
   })
 })

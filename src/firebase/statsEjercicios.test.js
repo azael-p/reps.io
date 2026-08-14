@@ -105,6 +105,17 @@ describe('aplicarSesionAStats', () => {
     await aplicarSesionAStats('user1', { sesionId: 's1', fecha: new Date(), resumen: { ejercicios: [] } })
     expect(mockBatchCommit).not.toHaveBeenCalled()
   })
+
+  it('si recibe un batch externo, agrega al batch pero no comitea (el caller es responsable)', async () => {
+    mockGetDoc.mockResolvedValue({ exists: () => false })
+    const resumen = {
+      ejercicios: [{ ejercicioId: 'a', catalogoId: 'press', nombre: 'Press', grupoMuscular: 'Pecho', series: [{ numeroSerie: 1, pesoUsado: 80, repsHechas: 8 }] }],
+    }
+    const batchExterno = { set: mockBatchSet, commit: mockBatchCommit }
+    await aplicarSesionAStats('user1', { sesionId: 's1', fecha: new Date(FECHA1), resumen }, batchExterno)
+    expect(mockBatchSet).toHaveBeenCalledTimes(1)
+    expect(mockBatchCommit).not.toHaveBeenCalled()
+  })
 })
 
 // ---------------------------------------------------------------------------

@@ -9,10 +9,12 @@ import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { Header, EmptyState, ListSkeleton, PageWrapper } from '../components/ui'
 import { useDesktop } from '../hooks/useDesktop'
+import { useToast } from '../components/Toast'
 
 export default function Entrenar() {
   const isDesktop = useDesktop()
   const { usuario } = useUser()
+  const { show } = useToast()
   const navigate = useNavigate()
   const [programas, setProgramas] = useState([])
   const [dias, setDias] = useState([])
@@ -50,8 +52,15 @@ export default function Entrenar() {
     }
 
     try {
-      const sesionId = await crearSesion(usuario.id, diaId)
+      const { id: sesionId, listo } = crearSesion(usuario.id, diaId)
       localStorage.setItem(`sesion_activa_${usuario.id}`, sesionId)
+      // No se espera el ACK del servidor para navegar: el id ya es válido
+      // en el cache local. Un fallo eventual se avisa por toast, sin volver
+      // a esta pantalla.
+      listo.catch(e => {
+        console.error(e)
+        show({ message: 'La sesión se guardará cuando vuelva la conexión.', variant: 'warning' })
+      })
       navigate(`/sesion/${sesionId}`)
     } catch (e) { console.error(e); setErrorMsg('Error al crear la sesión'); setIniciando(false) }
   }

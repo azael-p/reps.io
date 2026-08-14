@@ -2,7 +2,7 @@ import { motion } from 'motion/react'
 import { Modal } from '../../components/ui'
 
 export default function PesoModal({
-  open, onClose, pesoInput, setPesoInput, errorPeso, guardandoPeso, onGuardar,
+  open, onClose, pesoInput, setPesoInput, errorPeso, onGuardar,
 }) {
   return (
     <Modal open={open} onClose={onClose}>
@@ -28,12 +28,12 @@ export default function PesoModal({
         </motion.button>
         <motion.button
           className="progreso-save-btn"
-          style={{ opacity: !pesoInput.trim() || guardandoPeso ? 0.5 : 1 }}
+          style={{ opacity: !pesoInput.trim() ? 0.5 : 1 }}
           onClick={onGuardar}
-          disabled={!pesoInput.trim() || guardandoPeso}
+          disabled={!pesoInput.trim()}
           whileTap={{ scale: 0.97 }}
         >
-          {guardandoPeso ? <span className="spinner" /> : 'Guardar'}
+          Guardar
         </motion.button>
       </div>
     </Modal>

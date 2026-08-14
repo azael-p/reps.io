@@ -1,5 +1,5 @@
 import { db, auth } from './config'
-import { collection, addDoc, updateDoc, doc, query, where, getDocs, writeBatch, orderBy, limit, startAfter } from 'firebase/firestore'
+import { collection, updateDoc, setDoc, doc, query, where, getDocs, writeBatch, orderBy, limit, startAfter } from 'firebase/firestore'
 import { toDate } from '../utils/fechas'
 import { calcularStreaks } from '../utils/stats'
 
@@ -41,21 +41,28 @@ export async function enrichSesionesConPrograma(usuarioId, sesiones) {
   }))
 }
 
-export async function crearSesion(usuarioId, diaId) {
-  const ref = await addDoc(collection(db, 'sesiones'), {
+// No await-ea el ACK del servidor: con persistentLocalCache la escritura ya
+// se aplicó al cache local al llamar setDoc, así que el id es usable de
+// inmediato. `listo` se ofrece para que el caller reporte un fallo eventual
+// sin bloquear la navegación en él.
+export function crearSesion(usuarioId, diaId) {
+  const ref = doc(collection(db, 'sesiones'))
+  const listo = setDoc(ref, {
     usuarioId,
     diaId,
     fecha: new Date(),
     nota: '',
     completada: false,
   })
-  return ref.id
+  return { id: ref.id, listo }
 }
 
-export async function completarSesion(sesionId, resumen = null) {
+export function completarSesion(sesionId, resumen = null, batch = null) {
   const update = { completada: true }
   if (resumen) update.resumen = resumen
-  await updateDoc(doc(db, 'sesiones', sesionId), update)
+  const ref = doc(db, 'sesiones', sesionId)
+  if (batch) { batch.update(ref, update); return }
+  return updateDoc(ref, update)
 }
 
 export async function backfillResumen(sesionId, resumen) {

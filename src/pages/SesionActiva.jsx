@@ -192,23 +192,28 @@ export default function SesionActiva() {
     }
   }
 
-  async function completarSerie() {
+  function completarSerie() {
     if (!repsHechas) return
     setGuardando(true)
     const pendingKey = `${ejIdx}_${serieIdx}`
     const pendingId = pendingEdits[pendingKey]
     let registroId
+    // No se espera el ACK del servidor: con persistentLocalCache la
+    // escritura ya se aplicó al cache local al llamarla. `guardando` acá
+    // funciona como guard anti-doble-tap durante la actualización de
+    // estado local (se resuelve en el mismo tick), no como espera de red.
+    const onFalloSync = e => { console.error(e); show({ variant: 'warning', message: 'Se sincronizará cuando haya conexión.' }) }
     try {
       if (pendingId) {
-        await editarRegistro(pendingId, {
+        editarRegistro(pendingId, {
           pesoUsado: Number(pesoUsado) || 0,
           repsHechas: Number(repsHechas),
           nota,
-        })
+        }).catch(onFalloSync)
         registroId = pendingId
         setPendingEdits(pe => { const next = { ...pe }; delete next[pendingKey]; return next })
       } else {
-        registroId = await agregarRegistro({
+        const { id, listo } = agregarRegistro({
           sesionId,
           ejercicioId: ejercicio.id,
           nombreEjercicio: ejercicio.nombre,
@@ -220,6 +225,8 @@ export default function SesionActiva() {
           pesoUsado: Number(pesoUsado) || 0,
           nota,
         })
+        registroId = id
+        listo.catch(onFalloSync)
       }
     } catch (e) { console.error(e); setGuardando(false); show({ variant: 'error', message: 'No se pudo guardar. Intentá de nuevo.' }); return }
     setHistorial(h => [...h, { ejIdx, serieIdx, registroId, repsHechas, pesoUsado, nota }])

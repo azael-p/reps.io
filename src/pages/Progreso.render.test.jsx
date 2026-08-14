@@ -34,7 +34,7 @@ vi.mock('../firebase/statsEjercicios', () => ({
 }))
 vi.mock('../firebase/peso', () => ({
   getHistorialPeso: vi.fn().mockResolvedValue([]),
-  agregarPeso: vi.fn(),
+  agregarPeso: vi.fn().mockResolvedValue(undefined),
 }))
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'

@@ -20,6 +20,11 @@ vi.mock('../firebase/programas', () => ({ getProgramas: vi.fn() }))
 vi.mock('../firebase/dias', () => ({ getDias: vi.fn() }))
 vi.mock('../firebase/sesiones', () => ({ crearSesion: vi.fn() }))
 
+const mockShow = vi.fn()
+vi.mock('../components/Toast', () => ({
+  useToast: () => ({ show: mockShow }),
+}))
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -83,7 +88,7 @@ describe('Entrenar — selección', () => {
 
 describe('Entrenar — empezar() sin sesión activa guardada', () => {
   it('crea una sesión nueva y navega a ella', async () => {
-    crearSesion.mockResolvedValue('nueva-sesion')
+    crearSesion.mockReturnValue({ id: 'nueva-sesion', listo: Promise.resolve() })
     const user = userEvent.setup()
     renderPage()
     await elegirProgramaYDia(user)
@@ -96,8 +101,23 @@ describe('Entrenar — empezar() sin sesión activa guardada', () => {
     await screen.findByTestId('sesion-activa')
   })
 
-  it('si crearSesion falla, muestra un error y no navega', async () => {
-    crearSesion.mockRejectedValue(new Error('fail'))
+  it('si la escritura de crearSesion falla en el servidor, igual navega (el id ya es válido en el cache local) y avisa por toast', async () => {
+    const listo = Promise.reject(new Error('fail'))
+    listo.catch(() => {}) // evita el warning de unhandled rejection entre el mock y el .catch real del componente
+    crearSesion.mockReturnValue({ id: 'nueva-sesion', listo })
+    const user = userEvent.setup()
+    renderPage()
+    await elegirProgramaYDia(user)
+    await user.click(screen.getByText('Empezar entrenamiento'))
+
+    await screen.findByTestId('sesion-activa')
+    await waitFor(() => {
+      expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({ variant: 'warning' }))
+    })
+  })
+
+  it('si crearSesion falla sincrónicamente, muestra un error y no navega', async () => {
+    crearSesion.mockImplementation(() => { throw new Error('fail') })
     const user = userEvent.setup()
     renderPage()
     await elegirProgramaYDia(user)
@@ -130,7 +150,7 @@ describe('Entrenar — empezar() con sesión activa guardada en localStorage', (
 
   it('si la sesión guardada es de otro día, crea una sesión nueva en su lugar', async () => {
     getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'otro-dia', completada: false }) })
-    crearSesion.mockResolvedValue('nueva-sesion')
+    crearSesion.mockReturnValue({ id: 'nueva-sesion', listo: Promise.resolve() })
     const user = userEvent.setup()
     renderPage()
     await elegirProgramaYDia(user)
@@ -143,7 +163,7 @@ describe('Entrenar — empezar() con sesión activa guardada en localStorage', (
 
   it('si la sesión guardada ya está completada, crea una sesión nueva en su lugar', async () => {
     getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'dia1', completada: true }) })
-    crearSesion.mockResolvedValue('nueva-sesion')
+    crearSesion.mockReturnValue({ id: 'nueva-sesion', listo: Promise.resolve() })
     const user = userEvent.setup()
     renderPage()
     await elegirProgramaYDia(user)
@@ -156,7 +176,7 @@ describe('Entrenar — empezar() con sesión activa guardada en localStorage', (
 
   it('si el documento de la sesión guardada ya no existe, crea una sesión nueva en su lugar', async () => {
     getDoc.mockResolvedValue({ exists: () => false, data: () => undefined })
-    crearSesion.mockResolvedValue('nueva-sesion')
+    crearSesion.mockReturnValue({ id: 'nueva-sesion', listo: Promise.resolve() })
     const user = userEvent.setup()
     renderPage()
     await elegirProgramaYDia(user)
@@ -169,7 +189,7 @@ describe('Entrenar — empezar() con sesión activa guardada en localStorage', (
 
   it('si falla la lectura de la sesión guardada, cae al flujo de crear sesión nueva', async () => {
     getDoc.mockRejectedValue(new Error('offline'))
-    crearSesion.mockResolvedValue('nueva-sesion')
+    crearSesion.mockReturnValue({ id: 'nueva-sesion', listo: Promise.resolve() })
     const user = userEvent.setup()
     renderPage()
     await elegirProgramaYDia(user)

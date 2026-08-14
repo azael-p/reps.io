@@ -10,23 +10,18 @@ const STEPS = [
 
 export default function Onboarding({ onCompletar, usuarioId }) {
   const [peso, setPeso] = useState('')
-  const [guardando, setGuardando] = useState(false)
   const [errorPeso, setErrorPeso] = useState('')
 
-  async function handleEmpezar() {
+  function handleEmpezar() {
     const kg = Number(peso)
     if (peso.trim() && (!kg || kg < 20 || kg > 300)) {
       setErrorPeso('Ingresá un peso entre 20 y 300 kg, o dejalo vacío')
       return
     }
     setErrorPeso('')
-    setGuardando(true)
-    try {
-      if (peso.trim()) {
-        await agregarPeso(usuarioId, kg)
-      }
-    } catch (e) { console.error(e) }
-    setGuardando(false)
+    if (peso.trim()) {
+      agregarPeso(usuarioId, kg).catch(e => console.error(e))
+    }
     onCompletar()
   }
 
@@ -92,15 +87,13 @@ export default function Onboarding({ onCompletar, usuarioId }) {
 
       <motion.button
         className="onboarding-btn"
-        style={{ opacity: guardando ? 0.7 : 1 }}
         onClick={handleEmpezar}
-        disabled={guardando}
         whileTap={{ scale: 0.97 }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
       >
-        {guardando ? <span className="spinner" /> : '¡Empezar!'}
+        ¡Empezar!
       </motion.button>
     </motion.div>
   )

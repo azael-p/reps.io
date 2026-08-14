@@ -4,11 +4,13 @@ import { motion, useMotionValue, useTransform, animate } from 'motion/react'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { getRegistrosSesion, editarRegistro } from '../firebase/registros'
-import { actualizarNotaSesion, completarSesion, backfillResumen } from '../firebase/sesiones'
+import { actualizarNotaSesion, backfillResumen } from '../firebase/sesiones'
+import { completarSesionConAgregados } from '../firebase/completarSesion'
 import { aplicarSesionAResumenGlobal } from '../firebase/statsGlobal'
-import { aplicarSesionAStats, rebuildStatsEjercicios } from '../firebase/statsEjercicios'
+import { rebuildStatsEjercicios } from '../firebase/statsEjercicios'
 import { Modal, PageWrapper } from '../components/ui'
 import { useUser } from '../context/UserContext'
+import { useToast } from '../components/Toast'
 import { logEvento } from '../firebase/analytics'
 import { useDesktop } from '../hooks/useDesktop'
 import { useLongPress } from '../hooks/useLongPress'
@@ -64,6 +66,7 @@ export default function ResumenSesion() {
   const { sesionId } = useParams()
   const navigate = useNavigate()
   const { usuario } = useUser()
+  const { show } = useToast()
   const [registros, setRegistros] = useState([])
   const [diaNombre, setDiaNombre] = useState('')
   const [nota, setNota] = useState('')
@@ -73,7 +76,6 @@ export default function ResumenSesion() {
   const [editando, setEditando] = useState(null)
   const [editPeso, setEditPeso] = useState('')
   const [editReps, setEditReps] = useState('')
-  const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const [fechaSesion, setFechaSesion] = useState(null)
   const notaTimeoutRef = useRef(null)
@@ -97,18 +99,21 @@ export default function ResumenSesion() {
 
       if (!sesionData.completada) {
         const resumen = buildResumen(regs, diaNombreVal)
-        await backfillResumen(sesionId, resumen)
-        await completarSesion(sesionId)
-        if (usuario?.id) {
-          await aplicarSesionAResumenGlobal(usuario.id, { sesionId, fecha: sesionData.fecha, resumen })
-          await aplicarSesionAStats(usuario.id, { sesionId, fecha: sesionData.fecha, resumen })
-        }
+        // No se espera el ACK del servidor: con persistentLocalCache la
+        // escritura ya se aplicó al cache local al llamar esta función, y
+        // sin red la promesa de commit() puede no resolver nunca — esperarla
+        // acá dejaría el spinner girando para siempre.
+        completarSesionConAgregados(sesionId, { usuarioId: usuario?.id, fecha: sesionData.fecha, resumen })
+          .catch(e => {
+            console.error(e)
+            show({ message: 'No se pudo confirmar la sesión con el servidor. Se sincronizará cuando haya conexión.', variant: 'warning', duration: 5000 })
+          })
       } else if (!sesionData.resumen && regs.length > 0) {
-        await backfillResumen(sesionId, buildResumen(regs, diaNombreVal))
+        backfillResumen(sesionId, buildResumen(regs, diaNombreVal)).catch(e => console.error(e))
       }
     } catch (e) { console.error(e); setError('Error al cargar la sesión') }
     setCargando(false)
-  }, [sesionId, usuario])
+  }, [sesionId, usuario, show])
 
   useEffect(() => {
     if (usuario?.id) {
@@ -137,29 +142,40 @@ export default function ResumenSesion() {
   }
 
   async function guardarEdicion() {
-    if (!editReps) return
-    setGuardando(true)
-    try {
-      await editarRegistro(editando.id, {
-        pesoUsado: Number(editPeso) || 0,
-        repsHechas: Number(editReps),
-      })
-      const regs = await getRegistrosSesion(sesionId)
-      const resumen = buildResumen(regs, diaNombre)
-      await backfillResumen(sesionId, resumen)
-      if (usuario?.id && fechaSesion) {
-        await aplicarSesionAResumenGlobal(usuario.id, { sesionId, fecha: fechaSesion, resumen })
-        // La edición puede BAJAR un PR: rebuild del ejercicio afectado.
-        await rebuildStatsEjercicios(usuario.id, [{
-          nombre: editando.nombreEjercicio,
-          grupoMuscular: editando.grupoMuscular,
-          catalogoId: editando.catalogoId ?? null,
-        }])
-      }
-      setRegistros(regs)
-    } catch (e) { console.error(e); setError('Error al guardar') }
+    if (!editReps || !editando) return
+    const idEditado = editando.id
+    const ejercicioEditado = {
+      nombre: editando.nombreEjercicio,
+      grupoMuscular: editando.grupoMuscular,
+      catalogoId: editando.catalogoId ?? null,
+    }
     setEditando(null)
-    setGuardando(false)
+
+    // Fire-and-forget: no se espera el ACK de ninguna de estas escrituras
+    // (mismo motivo que en cargar()). Cada una reporta su propio fallo por
+    // toast en vez de encadenarse detrás de un único await bloqueante.
+    editarRegistro(idEditado, {
+      pesoUsado: Number(editPeso) || 0,
+      repsHechas: Number(editReps),
+    }).catch(e => {
+      console.error(e)
+      show({ message: 'No se pudo guardar la edición. Se reintentará cuando haya conexión.', variant: 'warning' })
+    })
+
+    try {
+      // Lectura: resuelve del cache local casi al instante, incluso sin red,
+      // y ya refleja el editarRegistro recién encolado (el cache se
+      // actualiza al llamar la escritura, no al resolver su promesa).
+      const regs = await getRegistrosSesion(sesionId)
+      setRegistros(regs)
+      const resumen = buildResumen(regs, diaNombre)
+      backfillResumen(sesionId, resumen).catch(e => console.error(e))
+      if (usuario?.id && fechaSesion) {
+        aplicarSesionAResumenGlobal(usuario.id, { sesionId, fecha: fechaSesion, resumen }).catch(e => console.error(e))
+        // La edición puede BAJAR un PR: rebuild del ejercicio afectado.
+        rebuildStatsEjercicios(usuario.id, [ejercicioEditado]).catch(e => console.error(e))
+      }
+    } catch (e) { console.error(e); setError('Error al guardar') }
   }
 
   async function guardarNota() {
@@ -369,12 +385,12 @@ export default function ResumenSesion() {
           <motion.button className="resumen-cancel-btn" onClick={() => setEditando(null)} whileTap={{ scale: 0.97 }}>Cancelar</motion.button>
           <motion.button
             className="resumen-save-btn"
-            style={{ opacity: !editReps || guardando ? 0.5 : 1 }}
+            style={{ opacity: !editReps ? 0.5 : 1 }}
             onClick={guardarEdicion}
-            disabled={!editReps || guardando}
+            disabled={!editReps}
             whileTap={{ scale: 0.97 }}
           >
-            {guardando ? <span className="spinner" /> : 'Guardar'}
+            Guardar
           </motion.button>
         </div>
       </Modal>

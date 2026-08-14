@@ -1,5 +1,5 @@
 import { db, auth } from './config'
-import { collection, addDoc, updateDoc, doc, query, where, getDocs } from 'firebase/firestore'
+import { collection, updateDoc, setDoc, doc, query, where, getDocs } from 'firebase/firestore'
 import { esMismoEjercicio } from './sesiones'
 
 // Local lookup — no Firestore queries. sesiones must be sorted desc by fecha.
@@ -14,13 +14,19 @@ export function getUltimaVezEjercicioLocal(sesiones, ejercicio, sesionIdActual) 
   return null
 }
 
-export async function agregarRegistro({ sesionId, ejercicioId, nombreEjercicio, grupoMuscular, catalogoId = null, numeroSerie, repsEsperadas, repsHechas, pesoUsado, nota }) {
-  const ref = await addDoc(collection(db, 'registros'), {
+// No await-ea el ACK del servidor: con persistentLocalCache la escritura ya
+// se aplicó al cache local al llamar setDoc, así que el id es usable de
+// inmediato (necesario para poder editar esta serie si el usuario retrocede
+// antes de que la red confirme). `listo` se ofrece para reportar un fallo
+// eventual sin bloquear.
+export function agregarRegistro({ sesionId, ejercicioId, nombreEjercicio, grupoMuscular, catalogoId = null, numeroSerie, repsEsperadas, repsHechas, pesoUsado, nota }) {
+  const ref = doc(collection(db, 'registros'))
+  const listo = setDoc(ref, {
     sesionId, ejercicioId, nombreEjercicio, grupoMuscular, catalogoId,
     numeroSerie, repsEsperadas, repsHechas, pesoUsado, nota,
     usuarioId: auth.currentUser.uid,
   })
-  return ref.id
+  return { id: ref.id, listo }
 }
 
 export async function editarRegistro(id, campos) {

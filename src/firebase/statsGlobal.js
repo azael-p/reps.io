@@ -1,5 +1,5 @@
 import { db } from './config'
-import { doc, getDoc, setDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore'
+import { doc, getDoc, setDoc, arrayUnion, writeBatch, serverTimestamp, collection, query, where, getDocs, orderBy } from 'firebase/firestore'
 import { toDate } from '../utils/fechas'
 import { getSesionesConResumen } from './sesiones'
 
@@ -57,10 +57,45 @@ export async function getResumenGlobalConFallback(uid) {
   return construido
 }
 
-// Upsert idempotente por sesionId: sirve tanto al completar la sesión como al
-// re-editar sus series (reemplaza la entrada de volumen).
+// Alta ciega para sesión nueva completada: no lee el doc antes de escribir,
+// así que no puede pisar historial por una lectura de cache vacío/purgado
+// (ver aplicarSesionAResumenGlobal más abajo, que sí necesita leer para
+// poder REEMPLAZAR una entrada existente por sesionId). arrayUnion dedupea
+// por igualdad exacta de valor — sirve para altas, no para ediciones.
+export function agregarSesionAResumenGlobalBlind(batch, uid, { sesionId, fecha, resumen }) {
+  const e = epochDia(fecha)
+  const campos = { ultimaSesionId: sesionId, actualizadoEn: serverTimestamp() }
+  if (e !== null) campos.diasEntrenados = arrayUnion(e)
+  if (resumen?.volumenTotal > 0) {
+    campos.volumenPorSesion = arrayUnion({
+      sesionId,
+      fecha: toDate(fecha)?.getTime() ?? 0,
+      volumen: resumen.volumenTotal,
+      diaNombre: resumen?.diaNombre ?? '',
+    })
+  }
+  batch.set(statsRef(uid), campos, { merge: true })
+}
+
+// Upsert idempotente por sesionId: usado al re-editar series de una sesión
+// ya completada (reemplaza la entrada de volumen existente, algo que
+// arrayUnion no puede hacer). Necesita leer el doc actual.
 export async function aplicarSesionAResumenGlobal(uid, { sesionId, fecha, resumen }) {
-  const actual = (await getResumenGlobal(uid)) ?? { diasEntrenados: [], volumenPorSesion: [] }
+  const snap = await getDoc(statsRef(uid))
+  // Doc "no existe" según una lectura servida desde el cache (sin red) no es
+  // señal confiable de que no haya historial real (celular nuevo, cache
+  // purgado, primer arranque sin pasar por una pantalla que lo cachee). Para
+  // no arriesgar pisar meses de historial con un setDoc de reemplazo total,
+  // hacemos alta ciega (arrayUnion) en vez de asumir que el historial está
+  // vacío.
+  if (!snap.exists() && snap.metadata.fromCache) {
+    const batch = writeBatch(db)
+    agregarSesionAResumenGlobalBlind(batch, uid, { sesionId, fecha, resumen })
+    await batch.commit()
+    return
+  }
+
+  const actual = snap.exists() ? snap.data() : { diasEntrenados: [], volumenPorSesion: [] }
   const e = epochDia(fecha)
   const dias = new Set(actual.diasEntrenados)
   if (e !== null) dias.add(e)
@@ -78,7 +113,7 @@ export async function aplicarSesionAResumenGlobal(uid, { sesionId, fecha, resume
   await setDoc(statsRef(uid), {
     diasEntrenados: [...dias].sort((a, b) => a - b),
     volumenPorSesion: volumen.sort((a, b) => a.fecha - b.fecha).slice(-MAX_VOLUMEN),
-  })
+  }, { merge: true })
 }
 
 export async function removerSesionDeResumenGlobal(uid, { sesionId, fecha }) {
@@ -105,5 +140,5 @@ export async function removerSesionDeResumenGlobal(uid, { sesionId, fecha }) {
     if (!quedanOtras) dias = dias.filter(d => d !== e)
   }
 
-  await setDoc(statsRef(uid), { diasEntrenados: dias, volumenPorSesion: volumen })
+  await setDoc(statsRef(uid), { diasEntrenados: dias, volumenPorSesion: volumen }, { merge: true })
 }

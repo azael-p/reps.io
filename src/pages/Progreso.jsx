@@ -52,7 +52,6 @@ export default function Progreso() {
   const [modalPeso, setModalPeso] = useState(false)
   const [pesoInput, setPesoInput] = useState('')
   const [errorPeso, setErrorPeso] = useState('')
-  const [guardandoPeso, setGuardandoPeso] = useState(false)
 
   // Enriquece una página con los nombres de día/programa (falla suave).
   const enriquecer = useCallback(async (pagina) => {
@@ -161,18 +160,17 @@ export default function Progreso() {
     }
   }, [tab, isDesktop, pesoCargado, cargandoPeso, cargarPeso])
 
-  async function handleGuardarPeso() {
+  function handleGuardarPeso() {
     const kg = Number(pesoInput)
     if (!kg || kg < 20 || kg > 300) { setErrorPeso('Ingresá un peso entre 20 y 300 kg'); return }
     setErrorPeso('')
-    setGuardandoPeso(true)
-    try {
-      await agregarPeso(usuario.id, kg)
-      setModalPeso(false)
-      setPesoCargado(false)
-      cargarPeso()
-    } catch (e) { console.error(e); setErrorPeso('Error al guardar. Intentá de nuevo.') }
-    setGuardandoPeso(false)
+    agregarPeso(usuario.id, kg).catch(e => {
+      console.error(e)
+      show({ message: 'No se pudo guardar el peso. Se reintentará cuando haya conexión.', variant: 'warning' })
+    })
+    setModalPeso(false)
+    setPesoCargado(false)
+    cargarPeso()
   }
 
   function abrirModalPeso() {
@@ -379,7 +377,6 @@ export default function Progreso() {
         pesoInput={pesoInput}
         setPesoInput={setPesoInput}
         errorPeso={errorPeso}
-        guardandoPeso={guardandoPeso}
         onGuardar={handleGuardarPeso}
       />
 
