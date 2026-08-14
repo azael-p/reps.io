@@ -19,7 +19,7 @@ vi.mock('firebase/firestore', () => ({
 }))
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { addDoc, getDocs, updateDoc, writeBatch } from 'firebase/firestore'
+import { addDoc, getDocs, updateDoc, writeBatch, where } from 'firebase/firestore'
 import { getProgramas, crearPrograma, marcarParaEliminar, desmarcarParaEliminar, eliminarProgramaDefinitivo as eliminarPrograma, reordenarProgramas } from './programas'
 
 beforeEach(() => {
@@ -81,6 +81,27 @@ describe('eliminarPrograma', () => {
     await eliminarPrograma('prog-vacio')
 
     expect(mockBatch.delete).toHaveBeenCalledTimes(1) // solo el programa
+    expect(mockBatch.commit).toHaveBeenCalledOnce()
+  })
+
+  it('con varios días, hace una sola query "in" para ejerciciosDia en vez de una por día', async () => {
+    const diaDoc1 = { id: 'dia1', ref: { _id: 'dia1' } }
+    const diaDoc2 = { id: 'dia2', ref: { _id: 'dia2' } }
+    const diaDoc3 = { id: 'dia3', ref: { _id: 'dia3' } }
+    const ejDoc1 = { ref: { _id: 'ej1' } }
+    const ejDoc2 = { ref: { _id: 'ej2' } }
+
+    getDocs
+      .mockResolvedValueOnce({ docs: [diaDoc1, diaDoc2, diaDoc3] })
+      .mockResolvedValueOnce({ docs: [ejDoc1, ejDoc2] })
+
+    await eliminarPrograma('prog1')
+
+    // 1 query para días + 1 sola query "in" para ejerciciosDia (no 3, una por día)
+    expect(getDocs).toHaveBeenCalledTimes(2)
+    const [, , diaIdFiltro] = where.mock.calls[where.mock.calls.length - 1]
+    expect(diaIdFiltro).toEqual(['dia1', 'dia2', 'dia3'])
+    expect(mockBatch.delete).toHaveBeenCalledTimes(6) // ej1 + ej2 + dia1 + dia2 + dia3 + prog1
     expect(mockBatch.commit).toHaveBeenCalledOnce()
   })
 })

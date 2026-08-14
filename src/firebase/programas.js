@@ -34,12 +34,14 @@ export async function eliminarProgramaDefinitivo(programaId) {
     where('programaId', '==', programaId),
   ))
   const diasIds = diasSnap.docs.map(d => d.id)
+  const chunks = []
+  for (let i = 0; i < diasIds.length; i += 30) chunks.push(diasIds.slice(i, i + 30))
   const ejSnaps = await Promise.all(
-    diasIds.map(diaId =>
+    chunks.map(chunk =>
       getDocs(query(
         collection(db, 'ejerciciosDia'),
         where('usuarioId', '==', uid),
-        where('diaId', '==', diaId),
+        where('diaId', 'in', chunk),
       ))
     )
   )
