@@ -63,9 +63,9 @@ export function useTimer() {
   // siempre usan la última versión sin recrear el interval.
   const iniciarFaseRef = useRef(null)
 
-  const iniciarFase = useCallback((fase, setActual, config) => {
+  const iniciarFase = useCallback((fase, setActual, config, elapsedInicial = 0) => {
     const duracion = duracionFase(fase, config)
-    timestampInicioFaseRef.current = Date.now()
+    timestampInicioFaseRef.current = Date.now() - elapsedInicial * 1000
     segundosPausadosRef.current = 0
     pausaInicioRef.current = null
 
@@ -73,7 +73,7 @@ export function useTimer() {
       ...prev,
       fase,
       setActual,
-      segundosRestantes: duracion,
+      segundosRestantes: Math.max(0, Math.ceil(duracion - elapsedInicial)),
       pausado: false,
       config,
       ...(fase === 'fin' && tiempoTotalInicioRef.current
@@ -92,9 +92,19 @@ export function useTimer() {
       const restantes = Math.max(0, Math.ceil(duracionFase(cur.fase, cur.config) - elapsed))
 
       if (restantes <= 0) {
-        const siguiente = calcularSiguienteFase(cur.fase, cur.setActual, cur.config)
+        // El navegador puede haber congelado el interval (pantalla bloqueada);
+        // caminar la máquina de estados hasta la fase donde cae el elapsed real,
+        // en vez de avanzar una sola fase asumiendo que el tick fue puntual.
+        let overflow = elapsed - duracionFase(cur.fase, cur.config)
+        let siguiente = calcularSiguienteFase(cur.fase, cur.setActual, cur.config)
+
+        while (siguiente && siguiente.fase !== 'fin' && overflow >= duracionFase(siguiente.fase, cur.config)) {
+          overflow -= duracionFase(siguiente.fase, cur.config)
+          siguiente = calcularSiguienteFase(siguiente.fase, siguiente.setActual, cur.config)
+        }
+
         if (siguiente) {
-          iniciarFaseRef.current(siguiente.fase, siguiente.setActual, cur.config)
+          iniciarFaseRef.current(siguiente.fase, siguiente.setActual, cur.config, Math.max(0, overflow))
         }
         return
       }

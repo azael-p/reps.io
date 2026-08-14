@@ -152,4 +152,65 @@ describe('useTimer', () => {
     act(() => { result.current.saltarIntervalo() }) // trabajo(3) → enfriamiento (NO descanso)
     expect(result.current.fase).toBe('enfriamiento')
   })
+
+  describe('recuperación tras congelamiento del interval (pantalla bloqueada)', () => {
+    it('un solo tick con reloj adelantado salta varias fases completas y aterriza en la correcta', () => {
+      const { result } = renderHook(() => useTimer())
+      act(() => { result.current.iniciar(CONFIG) })
+      // "Dormimos" el reloj del sistema 21.25s sin avanzar el fake-timer clock,
+      // simulando que el navegador congeló la ejecución con la pantalla bloqueada.
+      act(() => { vi.setSystemTime(Date.now() + 21250) })
+      // Dispara solo el próximo tick agendado, no los 85 ticks intermedios.
+      act(() => { vi.advanceTimersByTime(250) })
+      // elapsed real = 21.5s → cae en trabajo del set 2 [18,23), a 3.5s de iniciado
+      expect(result.current.fase).toBe('trabajo')
+      expect(result.current.setActual).toBe(2)
+      expect(result.current.segundosRestantes).toBe(2) // ceil(5 - 3.5)
+    })
+
+    it('el reloj adelantado exactamente hasta el final aterriza en fin', () => {
+      const { result } = renderHook(() => useTimer())
+      act(() => { result.current.iniciar(CONFIG) })
+      const total = CONFIG.calentamiento
+        + (CONFIG.trabajo + CONFIG.descanso) * (CONFIG.sets - 1)
+        + CONFIG.trabajo
+        + CONFIG.enfriamiento
+      act(() => { vi.setSystemTime(Date.now() + total * 1000) })
+      act(() => { vi.advanceTimersByTime(250) })
+      expect(result.current.fase).toBe('fin')
+    })
+
+    it('el reloj adelantado mucho más allá del timer completo también aterriza en fin, sin colgar', () => {
+      const { result } = renderHook(() => useTimer())
+      act(() => { result.current.iniciar(CONFIG) })
+      act(() => { vi.setSystemTime(Date.now() + 5 * 60 * 1000) }) // 5 minutos
+      act(() => { vi.advanceTimersByTime(250) })
+      expect(result.current.fase).toBe('fin')
+    })
+
+    it('tiempoTotalSegundos en fin refleja el tiempo real dormido, no la suma nominal de fases', () => {
+      const { result } = renderHook(() => useTimer())
+      act(() => { result.current.iniciar(CONFIG) })
+      act(() => { vi.setSystemTime(Date.now() + 5 * 60 * 1000) })
+      act(() => { vi.advanceTimersByTime(250) })
+      expect(result.current.fase).toBe('fin')
+      expect(result.current.tiempoTotalSegundos).toBe(300)
+    })
+
+    it('config con todas las fases en 0 segundos no cuelga el timer', () => {
+      const CONFIG_CERO = { calentamiento: 0, trabajo: 0, descanso: 0, sets: 5, enfriamiento: 0 }
+      const { result } = renderHook(() => useTimer())
+      act(() => { result.current.iniciar(CONFIG_CERO) })
+      act(() => { vi.advanceTimersByTime(250) })
+      expect(result.current.fase).toBe('fin')
+    })
+
+    it('saltarIntervalo() sigue avanzando una sola fase, sin verse afectado por el fix', () => {
+      const { result } = renderHook(() => useTimer())
+      act(() => { result.current.iniciar(CONFIG) })
+      act(() => { result.current.saltarIntervalo() })
+      expect(result.current.fase).toBe('trabajo')
+      expect(result.current.setActual).toBe(1)
+    })
+  })
 })
