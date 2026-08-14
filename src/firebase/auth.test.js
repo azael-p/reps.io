@@ -10,17 +10,34 @@ vi.mock('firebase/auth', () => ({
 
 const mockGetDoc = vi.fn()
 const mockSetDoc = vi.fn()
+const mockTerminate = vi.fn()
+const mockClearIndexedDbPersistence = vi.fn()
 vi.mock('firebase/firestore', () => ({
   doc: vi.fn((_db, col, id) => ({ _col: col, _id: id })),
   getDoc: (...args) => mockGetDoc(...args),
   setDoc: (...args) => mockSetDoc(...args),
+  terminate: (...args) => mockTerminate(...args),
+  clearIndexedDbPersistence: (...args) => mockClearIndexedDbPersistence(...args),
 }))
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { signInWithGoogle, signOutUser, handleFirstLogin } from './auth'
+
+const originalLocation = window.location
+const mockCachesDelete = vi.fn()
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockTerminate.mockResolvedValue(undefined)
+  mockClearIndexedDbPersistence.mockResolvedValue(undefined)
+  mockCachesDelete.mockResolvedValue(true)
+  global.caches = { delete: mockCachesDelete }
+  delete window.location
+  window.location = { href: '' }
+})
+
+afterEach(() => {
+  window.location = originalLocation
 })
 
 // ---------------------------------------------------------------------------
@@ -44,6 +61,34 @@ describe('signOutUser', () => {
     mockSignOut.mockResolvedValue(undefined)
     await signOutUser()
     expect(mockSignOut).toHaveBeenCalledWith('AUTH')
+  })
+
+  it('termina y limpia la persistencia de Firestore, y borra el cache del SW', async () => {
+    mockSignOut.mockResolvedValue(undefined)
+    await signOutUser()
+    expect(mockTerminate).toHaveBeenCalledWith({})
+    expect(mockClearIndexedDbPersistence).toHaveBeenCalledWith({})
+    expect(mockCachesDelete).toHaveBeenCalledWith('firestore-cache')
+  })
+
+  it('fuerza una recarga a "/" para reinicializar Firestore', async () => {
+    mockSignOut.mockResolvedValue(undefined)
+    await signOutUser()
+    expect(window.location.href).toBe('/')
+  })
+
+  it('si falla la limpieza de Firestore, igual completa el logout y recarga', async () => {
+    mockSignOut.mockResolvedValue(undefined)
+    mockTerminate.mockRejectedValue(new Error('otra pestaña sigue activa'))
+    await signOutUser()
+    expect(window.location.href).toBe('/')
+  })
+
+  it('si signOut falla, no limpia nada ni recarga', async () => {
+    mockSignOut.mockRejectedValue(new Error('sin red'))
+    await expect(signOutUser()).rejects.toThrow('sin red')
+    expect(mockTerminate).not.toHaveBeenCalled()
+    expect(window.location.href).toBe('')
   })
 })
 

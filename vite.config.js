@@ -85,15 +85,6 @@ export default defineConfig({
               },
             },
           },
-          {
-            urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*$/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'firestore-cache',
-              networkTimeoutSeconds: 4,
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 },
-            },
-          },
         ],
       },
     }),
