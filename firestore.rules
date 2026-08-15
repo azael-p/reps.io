@@ -20,6 +20,11 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos);
     }
 
+    // Un campo puntual fue tocado por este update (valor distinto al doc previo).
+    function campoTocado(campo) {
+      return campo in request.resource.data.diff(resource.data).affectedKeys();
+    }
+
     match /usuarios/{userId} {
       allow read, delete: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null && request.auth.uid == userId
@@ -38,8 +43,22 @@ service cloud.firestore {
 
       match /stats/{statDoc} {
         allow read, delete: if request.auth != null && request.auth.uid == userId;
-        allow create, update: if request.auth != null && request.auth.uid == userId
-          && request.resource.data.keys().hasOnly(['diasEntrenados', 'volumenPorSesion']);
+
+        // ultimaSesionId/actualizadoEn: agregados por agregarSesionAResumenGlobalBlind
+        // (statsGlobal.js), corre en cada sesión completada. actualizadoEn requiere
+        // campoTocado() porque `== request.time` solo es cierto en el write que lo fija;
+        // sin el guard, un update posterior que no lo toque (ej.
+        // aplicarSesionAResumenGlobal) fallaría al comparar el timestamp preservado
+        // contra el request.time actual.
+        allow create: if request.auth != null && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['diasEntrenados', 'volumenPorSesion', 'ultimaSesionId', 'actualizadoEn'])
+          && (!('ultimaSesionId' in request.resource.data) || request.resource.data.ultimaSesionId is string)
+          && (!('actualizadoEn' in request.resource.data) || request.resource.data.actualizadoEn == request.time);
+
+        allow update: if request.auth != null && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['diasEntrenados', 'volumenPorSesion', 'ultimaSesionId', 'actualizadoEn'])
+          && (!('ultimaSesionId' in request.resource.data) || request.resource.data.ultimaSesionId is string)
+          && (!campoTocado('actualizadoEn') || request.resource.data.actualizadoEn == request.time);
       }
 
       match /statsEjercicios/{ejercicioId} {
