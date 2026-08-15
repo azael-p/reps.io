@@ -8,6 +8,30 @@
         { "fieldPath": "completada", "order": "ASCENDING" },
         { "fieldPath": "fecha", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "programas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "usuarioId", "order": "ASCENDING" },
+        { "fieldPath": "eliminadoEn", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "dias",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "usuarioId", "order": "ASCENDING" },
+        { "fieldPath": "eliminadoEn", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "ejerciciosDia",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "usuarioId", "order": "ASCENDING" },
+        { "fieldPath": "eliminadoEn", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

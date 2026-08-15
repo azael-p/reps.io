@@ -25,6 +25,17 @@ service cloud.firestore {
       return campo in request.resource.data.diff(resource.data).affectedKeys();
     }
 
+    // Forma de sesiones/{id}.resumen (ver buildResumen() en ResumenSesion.jsx).
+    // Solo valida la cáscara: tipos + topes de tamaño generosos frente al uso
+    // real (no hay forma de iterar los items de `ejercicios`/`series` en
+    // rules, así que la forma interna de cada ejercicio/serie no se valida).
+    function resumenValido(r) {
+      return r is map
+        && r.volumenTotal is number && r.volumenTotal >= 0
+        && r.diaNombre is string && r.diaNombre.size() <= 300
+        && r.ejercicios is list && r.ejercicios.size() <= 100;
+    }
+
     match /usuarios/{userId} {
       allow read, delete: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null && request.auth.uid == userId
@@ -63,8 +74,14 @@ service cloud.firestore {
 
       match /statsEjercicios/{ejercicioId} {
         allow read, delete: if request.auth != null && request.auth.uid == userId;
+        // aplicarSesionAStats/rebuildStatsEjercicios/getStatsEjerciciosConFallback
+        // siempre hacen set() SIN merge (doc completo reescrito por el cliente),
+        // así que puntos llega siempre como el array final ya cappeado a
+        // MAX_PUNTOS=150 (statsEjercicios.js) -- seguro de validar sin condicional.
         allow create, update: if request.auth != null && request.auth.uid == userId
-          && request.resource.data.keys().hasOnly(['nombre', 'grupoMuscular', 'catalogoId', 'pr', 'ultimaVez', 'puntos']);
+          && request.resource.data.keys().hasOnly(['nombre', 'grupoMuscular', 'catalogoId', 'pr', 'ultimaVez', 'puntos'])
+          && request.resource.data.puntos is list
+          && request.resource.data.puntos.size() <= 150;
       }
 
       match /timerPresets/{presetId} {
@@ -101,7 +118,8 @@ service cloud.firestore {
     match /sesiones/{id} {
       allow read, delete: if esElDueno();
       allow update: if esElDueno() && noCambiaDueno()
-        && soloCambia(['nota', 'completada', 'resumen']);
+        && soloCambia(['nota', 'completada', 'resumen'])
+        && (!campoTocado('resumen') || resumenValido(request.resource.data.resumen));
       allow create: if creandoComoDueno()
         && request.resource.data.keys().hasOnly(['usuarioId', 'diaId', 'fecha', 'nota', 'completada']);
     }
@@ -109,9 +127,16 @@ service cloud.firestore {
     match /registros/{id} {
       allow read, delete: if esElDueno();
       allow update: if esElDueno() && noCambiaDueno()
-        && soloCambia(['pesoUsado', 'repsHechas', 'nota']);
+        && soloCambia(['pesoUsado', 'repsHechas', 'nota'])
+        && (!campoTocado('pesoUsado') || (request.resource.data.pesoUsado is number && request.resource.data.pesoUsado >= 0 && request.resource.data.pesoUsado <= 1000))
+        && (!campoTocado('repsHechas') || (request.resource.data.repsHechas is number && request.resource.data.repsHechas >= 0 && request.resource.data.repsHechas <= 1000))
+        && (!campoTocado('nota') || (request.resource.data.nota is string && request.resource.data.nota.size() <= 500));
       allow create: if creandoComoDueno()
-        && request.resource.data.keys().hasOnly(['usuarioId', 'sesionId', 'ejercicioId', 'nombreEjercicio', 'grupoMuscular', 'catalogoId', 'numeroSerie', 'repsEsperadas', 'repsHechas', 'pesoUsado', 'nota']);
+        && request.resource.data.keys().hasOnly(['usuarioId', 'sesionId', 'ejercicioId', 'nombreEjercicio', 'grupoMuscular', 'catalogoId', 'numeroSerie', 'repsEsperadas', 'repsHechas', 'pesoUsado', 'nota'])
+        && request.resource.data.numeroSerie is number && request.resource.data.numeroSerie >= 1 && request.resource.data.numeroSerie <= 200
+        && request.resource.data.pesoUsado is number && request.resource.data.pesoUsado >= 0 && request.resource.data.pesoUsado <= 1000
+        && request.resource.data.repsHechas is number && request.resource.data.repsHechas >= 0 && request.resource.data.repsHechas <= 1000
+        && request.resource.data.nota is string && request.resource.data.nota.size() <= 500;
     }
 
     match /ejerciciosCatalogo/{id} {
