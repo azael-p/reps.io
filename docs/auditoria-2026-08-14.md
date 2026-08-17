@@ -37,7 +37,7 @@ ni configuración.
 | 15 | 🟡 media | `UpdateBanner.jsx:18-20` | Auto-reload sin aviso a mitad de una serie — **✅ resuelto 2026-08-17** |
 | 16 | 🟡 media | `ResumenSesion.jsx:106-108` | Backfillea el resumen pero no los agregados — **✅ resuelto 2026-08-17** |
 | 17 | 🟡 media | varios | Errores tragados en silencio y promesas flotantes — **✅ resuelto 2026-08-17** |
-| 18 | 🟡 media | `npm audit` | 20 vulnerabilidades; `npm audit fix` resuelve la mayoría sin breaking changes |
+| 18 | 🟡 media | `npm audit` | 20 vulnerabilidades; `npm audit fix` resuelve la mayoría sin breaking changes — **✅ resuelto 2026-08-17** |
 | 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores |
 
 Los tres primeros son los que **rompen datos de usuarios reales** y deberían ir
@@ -1193,6 +1193,26 @@ rollback efectivamente falla si se quita la línea que restaura el estado.
 **Fix propuesto:** `npm audit fix` resuelve `react-router`, `vite`, `postcss`,
 `nanoid`, `brace-expansion`, `fast-uri` y `form-data` sin breaking changes.
 `firebase-admin@14` es un major y requiere revisión manual.
+
+**Resolución (2026-08-17):** se corrió `npm audit fix` (sin `--force`).
+
+- **De 20 vulnerabilidades a 8** (1 crítica → 0, 9 altas → 0, 9 moderadas →
+  8, 1 baja → 0). Solo cambió `package-lock.json`; ningún rango de
+  `package.json` necesitó tocarse.
+- Cerrado el ítem crítico (`websocket-driver`) y todos los altos, incluido
+  `react-router` (XSS por protocolo / open redirect) y `vite`.
+- **Las 8 restantes son todas moderadas y llegan por `firebase-admin`**
+  (`uuid` → `gaxios`/`google-gax`/`teeny-request`/`@google-cloud/*`).
+  Requieren `npm audit fix --force`, que instalaría `firebase-admin@14` (un
+  major). **No se aplicó a propósito:** `firebase-admin` es devDependency y
+  solo lo usan los scripts one-off de `scripts/` corriendo localmente con
+  service account — no llega al bundle de producción ni a la app. Subir un
+  major sin necesidad arriesgaría romper `backfillStats.js`/`migrarSesiones.js`/
+  `reporteActividad.js` a cambio de cerrar vulnerabilidades sin superficie de
+  ataque real en este proyecto. Queda como seguimiento de mantenimiento, no
+  como riesgo abierto.
+- Verificado post-fix: `npm run test:run` (406 tests), `npm run lint` (0
+  errores) y `npm run build` en verde con las versiones nuevas.
 
 ---
 
