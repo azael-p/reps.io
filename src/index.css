@@ -617,6 +617,12 @@ select:focus-visible {
   align-items: start;
 }
 .entrenar-desktop-col { border-right: 1px solid var(--border); }
+.entrenar-modal-titulo { margin: 0 0 8px; font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; }
+.entrenar-modal-texto { margin: 0 0 18px; font-size: 0.9rem; color: var(--text-mute); line-height: 1.4; }
+.entrenar-modal-acciones { display: flex; gap: 10px; }
+.entrenar-modal-cancelar-btn { flex: 1; padding: 14px; background: var(--bg-input); color: var(--text-mute); border: 1px solid var(--border); border-radius: var(--r-md); font-size: 0.95rem; }
+.entrenar-modal-continuar-btn { flex: 1; padding: 14px; background: var(--orange-grad); color: #fff; border: none; border-radius: var(--r-md); font-size: 0.95rem; font-weight: 700; }
+.entrenar-modal-descartar-btn { width: 100%; margin-top: 10px; padding: 12px; background: transparent; color: var(--danger); border: none; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; justify-content: center; }
 
 /* ============== TimerFin ============== */
 .timer-fin-page {

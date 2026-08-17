@@ -4,10 +4,10 @@ import { motion, AnimatePresence } from 'motion/react'
 import { useUser } from '../context/UserContext'
 import { getProgramas } from '../firebase/programas'
 import { getDias } from '../firebase/dias'
-import { crearSesion } from '../firebase/sesiones'
+import { crearSesion, eliminarSesion } from '../firebase/sesiones'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
-import { Header, EmptyState, ListSkeleton, PageWrapper } from '../components/ui'
+import { Header, EmptyState, ListSkeleton, PageWrapper, Modal } from '../components/ui'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
 
@@ -23,6 +23,8 @@ export default function Entrenar() {
   const [cargando, setCargando] = useState(true)
   const [iniciando, setIniciando] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [conflicto, setConflicto] = useState(null)
+  const [descartando, setDescartando] = useState(false)
 
   useEffect(() => {
     if (!usuario?.id) return
@@ -36,21 +38,7 @@ export default function Entrenar() {
     try { setDias(await getDias(id)) } catch (e) { console.error(e); setErrorMsg('Error al cargar los días') }
   }
 
-  async function empezar() {
-    if (!diaId) return
-    setIniciando(true)
-
-    const stored = localStorage.getItem(`sesion_activa_${usuario.id}`)
-    if (stored) {
-      try {
-        const snap = await getDoc(doc(db, 'sesiones', stored))
-        if (snap.exists() && !snap.data().completada && snap.data().diaId === diaId) {
-          navigate(`/sesion/${stored}`)
-          return
-        }
-      } catch (e) { console.error('No se pudo verificar la sesión previa:', e) /* si falla, creamos nueva sesión */ }
-    }
-
+  async function crearYNavegar() {
     try {
       const { id: sesionId, listo } = crearSesion(usuario.id, diaId)
       localStorage.setItem(`sesion_activa_${usuario.id}`, sesionId)
@@ -63,6 +51,52 @@ export default function Entrenar() {
       })
       navigate(`/sesion/${sesionId}`)
     } catch (e) { console.error(e); setErrorMsg('Error al crear la sesión'); setIniciando(false) }
+  }
+
+  async function empezar() {
+    if (!diaId) return
+    setIniciando(true)
+
+    const stored = localStorage.getItem(`sesion_activa_${usuario.id}`)
+    if (stored) {
+      try {
+        const snap = await getDoc(doc(db, 'sesiones', stored))
+        if (snap.exists() && !snap.data().completada) {
+          if (snap.data().diaId === diaId) {
+            navigate(`/sesion/${stored}`)
+            return
+          }
+          // Sesión pendiente de OTRO día: preguntar antes de pisarla y
+          // dejar sus registros huérfanos (ver useEliminarConUndo para el
+          // mismo patrón de "avisar antes de perder algo sin terminar").
+          const diaSnap = await getDoc(doc(db, 'dias', snap.data().diaId))
+          setConflicto({ sesionId: stored, diaNombre: diaSnap.data()?.nombre ?? 'Entrenamiento' })
+          setIniciando(false)
+          return
+        }
+      } catch (e) { console.error('No se pudo verificar la sesión previa:', e) /* si falla, creamos nueva sesión */ }
+    }
+
+    await crearYNavegar()
+  }
+
+  function continuarSesionPendiente() {
+    navigate(`/sesion/${conflicto.sesionId}`)
+  }
+
+  async function descartarYEmpezar() {
+    setDescartando(true)
+    try {
+      await eliminarSesion(conflicto.sesionId)
+    } catch (e) {
+      console.error(e)
+      show({ message: 'No se pudo descartar la sesión anterior. Intentá de nuevo.', variant: 'error' })
+      setDescartando(false)
+      return
+    }
+    setConflicto(null)
+    setDescartando(false)
+    await crearYNavegar()
   }
 
   const programasList = (
@@ -234,6 +268,32 @@ export default function Entrenar() {
           )}
         </AnimatePresence>
       )}
+
+      <Modal open={!!conflicto} onClose={() => setConflicto(null)}>
+        <h2 className="entrenar-modal-titulo">Sesión sin terminar</h2>
+        <p className="entrenar-modal-texto">
+          Tenés un entrenamiento de <strong>{conflicto?.diaNombre}</strong> sin
+          terminar. Si empezás uno nuevo vas a perder las series que ya
+          cargaste ahí.
+        </p>
+        <div className="entrenar-modal-acciones">
+          <motion.button className="entrenar-modal-cancelar-btn" onClick={() => setConflicto(null)} whileTap={{ scale: 0.97 }}>
+            Volver
+          </motion.button>
+          <motion.button className="entrenar-modal-continuar-btn" onClick={continuarSesionPendiente} whileTap={{ scale: 0.97 }}>
+            Continuar
+          </motion.button>
+        </div>
+        <motion.button
+          className="entrenar-modal-descartar-btn"
+          style={{ opacity: descartando ? 0.7 : 1 }}
+          onClick={descartarYEmpezar}
+          disabled={descartando}
+          whileTap={{ scale: 0.97 }}
+        >
+          {descartando ? <span className="spinner" /> : 'Descartar y empezar de nuevo'}
+        </motion.button>
+      </Modal>
     </PageWrapper>
   )
 }

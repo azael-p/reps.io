@@ -18,7 +18,7 @@ vi.mock('firebase/firestore', () => ({
 
 vi.mock('../firebase/programas', () => ({ getProgramas: vi.fn() }))
 vi.mock('../firebase/dias', () => ({ getDias: vi.fn() }))
-vi.mock('../firebase/sesiones', () => ({ crearSesion: vi.fn() }))
+vi.mock('../firebase/sesiones', () => ({ crearSesion: vi.fn(), eliminarSesion: vi.fn() }))
 
 const mockShow = vi.fn()
 vi.mock('../components/Toast', () => ({
@@ -32,7 +32,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { getDoc } from 'firebase/firestore'
 import { getProgramas } from '../firebase/programas'
 import { getDias } from '../firebase/dias'
-import { crearSesion } from '../firebase/sesiones'
+import { crearSesion, eliminarSesion } from '../firebase/sesiones'
 import Entrenar from './Entrenar'
 
 const PROGRAMA = { id: 'prog1', nombre: 'PPL' }
@@ -148,19 +148,6 @@ describe('Entrenar — empezar() con sesión activa guardada en localStorage', (
     expect(crearSesion).not.toHaveBeenCalled()
   })
 
-  it('si la sesión guardada es de otro día, crea una sesión nueva en su lugar', async () => {
-    getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'otro-dia', completada: false }) })
-    crearSesion.mockReturnValue({ id: 'nueva-sesion', listo: Promise.resolve() })
-    const user = userEvent.setup()
-    renderPage()
-    await elegirProgramaYDia(user)
-    await user.click(screen.getByText('Empezar entrenamiento'))
-
-    await waitFor(() => {
-      expect(crearSesion).toHaveBeenCalledWith('user1', 'dia1')
-    })
-  })
-
   it('si la sesión guardada ya está completada, crea una sesión nueva en su lugar', async () => {
     getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'dia1', completada: true }) })
     crearSesion.mockReturnValue({ id: 'nueva-sesion', listo: Promise.resolve() })
@@ -198,5 +185,81 @@ describe('Entrenar — empezar() con sesión activa guardada en localStorage', (
     await waitFor(() => {
       expect(crearSesion).toHaveBeenCalledWith('user1', 'dia1')
     })
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('Entrenar — sesión guardada de OTRO día (conflicto)', () => {
+  beforeEach(() => {
+    localStorage.setItem('sesion_activa_user1', 'sesion-guardada')
+    getDoc
+      .mockResolvedValueOnce({ exists: () => true, data: () => ({ diaId: 'otro-dia', completada: false }) })
+      .mockResolvedValueOnce({ exists: () => true, data: () => ({ nombre: 'Día de espalda' }) })
+  })
+
+  it('no crea una sesión nueva de una: muestra el modal de conflicto con el nombre del día pendiente', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await elegirProgramaYDia(user)
+    await user.click(screen.getByText('Empezar entrenamiento'))
+
+    expect(await screen.findByText('Sesión sin terminar')).toBeInTheDocument()
+    expect(screen.getByText('Día de espalda')).toBeInTheDocument()
+    expect(crearSesion).not.toHaveBeenCalled()
+  })
+
+  it('"Continuar" navega a la sesión pendiente sin crear ni borrar nada', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await elegirProgramaYDia(user)
+    await user.click(screen.getByText('Empezar entrenamiento'))
+    await user.click(await screen.findByText('Continuar'))
+
+    await screen.findByTestId('sesion-activa')
+    expect(crearSesion).not.toHaveBeenCalled()
+    expect(eliminarSesion).not.toHaveBeenCalled()
+  })
+
+  it('"Volver" cierra el modal sin crear ni borrar nada', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await elegirProgramaYDia(user)
+    await user.click(screen.getByText('Empezar entrenamiento'))
+    await user.click(await screen.findByText('Volver'))
+
+    await waitFor(() => {
+      expect(screen.queryByText('Sesión sin terminar')).not.toBeInTheDocument()
+    })
+    expect(crearSesion).not.toHaveBeenCalled()
+    expect(eliminarSesion).not.toHaveBeenCalled()
+  })
+
+  it('"Descartar y empezar de nuevo" borra la sesión pendiente y crea una nueva para el día elegido', async () => {
+    eliminarSesion.mockResolvedValue(undefined)
+    crearSesion.mockReturnValue({ id: 'nueva-sesion', listo: Promise.resolve() })
+    const user = userEvent.setup()
+    renderPage()
+    await elegirProgramaYDia(user)
+    await user.click(screen.getByText('Empezar entrenamiento'))
+    await user.click(await screen.findByText('Descartar y empezar de nuevo'))
+
+    await waitFor(() => expect(eliminarSesion).toHaveBeenCalledWith('sesion-guardada'))
+    expect(crearSesion).toHaveBeenCalledWith('user1', 'dia1')
+    await screen.findByTestId('sesion-activa')
+  })
+
+  it('si falla el descarte, muestra un error y no crea la sesión nueva', async () => {
+    eliminarSesion.mockRejectedValue(new Error('offline'))
+    const user = userEvent.setup()
+    renderPage()
+    await elegirProgramaYDia(user)
+    await user.click(screen.getByText('Empezar entrenamiento'))
+    await user.click(await screen.findByText('Descartar y empezar de nuevo'))
+
+    await waitFor(() => {
+      expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({ variant: 'error' }))
+    })
+    expect(crearSesion).not.toHaveBeenCalled()
   })
 })
