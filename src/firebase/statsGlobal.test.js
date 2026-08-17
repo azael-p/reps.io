@@ -27,6 +27,7 @@ import {
   epochDia, buildResumenGlobal, getResumenGlobalConFallback,
   agregarSesionAResumenGlobalBlind, aplicarSesionAResumenGlobal, removerSesionDeResumenGlobal,
 } from './statsGlobal'
+import { where } from 'firebase/firestore'
 import { getSesionesConResumen } from './sesiones'
 
 const DIA = (y, m, d) => new Date(y, m - 1, d)
@@ -162,6 +163,28 @@ describe('removerSesionDeResumenGlobal', () => {
     mockGetDoc.mockResolvedValue({ exists: () => false })
     await removerSesionDeResumenGlobal('user1', { sesionId: 's1', fecha: DIA(2026, 6, 10) })
     expect(mockSetDoc).not.toHaveBeenCalled()
+  })
+
+  // Chile adelanta el reloj el 2026-09-06: ese día local dura 23 h, así que
+  // `inicio + 24h` se pasaba una hora al día siguiente.
+  it('la ventana del día termina en la medianoche siguiente aunque el día dure 23 h (DST)', async () => {
+    const tzOriginal = process.env.TZ
+    process.env.TZ = 'America/Santiago'
+    try {
+      mockGetDoc.mockResolvedValue({ exists: () => true, data: () => ({ diasEntrenados: [], volumenPorSesion: [] }) })
+      mockGetDocs.mockResolvedValue({ docs: [] })
+
+      await removerSesionDeResumenGlobal('user1', { sesionId: 's1', fecha: new Date(2026, 8, 6, 15, 0) })
+
+      const fin = where.mock.calls.find(c => c[0] === 'fecha' && c[1] === '<')[2]
+      expect(fin.getDate()).toBe(7)
+      expect(fin.getHours()).toBe(0)
+    } finally {
+      // Asignar `undefined` dejaría la string "undefined" y rompería el TZ
+      // del resto de la suite.
+      if (tzOriginal === undefined) delete process.env.TZ
+      else process.env.TZ = tzOriginal
+    }
   })
 
   it('con batch externo, escribe en el batch (merge) y no llama a setDoc ni comitea', async () => {

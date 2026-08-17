@@ -130,7 +130,9 @@ export async function removerSesionDeResumenGlobal(uid, { sesionId, fecha }, bat
     // antes o después de que se borre `sesionId` (ej. dentro de un batch
     // compartido que todavía no comiteó).
     const inicio = new Date(e)
-    const fin = new Date(e + 86400000)
+    // Reconstruido por componentes, no sumando 24h en millis: en una
+    // transición de DST el día local dura 23 o 25 h.
+    const fin = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + 1)
     const snap = await getDocs(query(
       collection(db, 'sesiones'),
       where('usuarioId', '==', uid),

@@ -38,7 +38,7 @@ ni configuración.
 | 16 | 🟡 media | `ResumenSesion.jsx:106-108` | Backfillea el resumen pero no los agregados — **✅ resuelto 2026-08-17** |
 | 17 | 🟡 media | varios | Errores tragados en silencio y promesas flotantes — **✅ resuelto 2026-08-17** |
 | 18 | 🟡 media | `npm audit` | 20 vulnerabilidades; `npm audit fix` resuelve la mayoría sin breaking changes — **✅ resuelto 2026-08-17** |
-| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19 ✅ resuelto 2026-08-17** (requiere correr `scripts/backfillStats.js`) |
+| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19, #20 ✅ resueltos 2026-08-17** (#19 requiere correr `scripts/backfillStats.js`) |
 
 Los tres primeros son los que **rompen datos de usuarios reales** y deberían ir
 primero. El #4, #5 y #8 son los de mejor relación esfuerzo/impacto.
@@ -1293,6 +1293,29 @@ medianoche **local**. En una transición de DST el día dura 23 o 25 h, así que
 `removerSesionDeResumenGlobal` puede no ver una sesión del mismo día (y borrar el
 día del calendario indebidamente) o ver una del día siguiente. Uruguay no usa DST
 hoy, así que es latente. **Fix:** `new Date(y, m, d + 1)`.
+
+**Resolución (2026-08-17):** aplicado el fix propuesto en
+[`removerSesionDeResumenGlobal`](../src/firebase/statsGlobal.js) — `fin` se
+reconstruye por componentes de fecha
+(`new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + 1)`)
+en vez de sumar 86400000 ms. `Date` normaliza el rollover de mes/año solo.
+
+- Se revisaron los otros 4 usos de `86400000` del repo: `utils/stats.js`
+  (3 usos) y `sesion-activa/ReferenciaCard.jsx` calculan **diferencias**
+  entre fechas con `Math.round`/`Math.floor`, no límites de día — un día de
+  23 o 25 h sigue redondeando a 1. No necesitaban cambio; el único caso de
+  ventana de día real era éste.
+- **Sí se pudo testear**, a diferencia de lo que se creía: Node aplica
+  `process.env.TZ` dinámicamente, así que el test fija
+  `TZ='America/Santiago'` (Chile adelanta el reloj el 2026-09-06, día de
+  23 h), ejecuta la función y verifica que el `where('fecha','<',fin)` de la
+  query caiga en la medianoche del día 7. Con la fórmula vieja caía a las
+  01:00 del 7, una hora dentro del día siguiente. Se confirmó que el test
+  falla si se revierte el fix.
+  - El `finally` del test restaura el `TZ` con `delete process.env.TZ`
+    cuando no estaba definido: asignarle `undefined` deja la string
+    `"undefined"` y corrompe el huso del resto de la suite (se detectó al
+    romper otro test del mismo archivo).
 
 ### 21. Código muerto con tests que dan falsa cobertura
 
