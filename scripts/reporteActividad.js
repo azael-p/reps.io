@@ -133,7 +133,9 @@ async function construirReportePorUsuario(uid, perfilFs, perfilAuth) {
   return {
     uid,
     nombre: perfilFs?.nombre ?? perfilAuth?.email ?? uid,
-    email: perfilFs?.email ?? perfilAuth?.email ?? null,
+    // Auth primero: el email de Firestore es autodeclarado por el usuario
+    // (las reglas no lo comparan contra request.auth.token.email).
+    email: perfilAuth?.email ?? perfilFs?.email ?? null,
     creadoEn: perfilAuth?.creationTime ?? null,
     ultimoLogin: perfilAuth?.lastSignInTime ?? null,
     diasEntrenados: diasEntrenadosEpochs.length,

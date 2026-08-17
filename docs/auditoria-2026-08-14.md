@@ -38,7 +38,7 @@ ni configuración.
 | 16 | 🟡 media | `ResumenSesion.jsx:106-108` | Backfillea el resumen pero no los agregados — **✅ resuelto 2026-08-17** |
 | 17 | 🟡 media | varios | Errores tragados en silencio y promesas flotantes — **✅ resuelto 2026-08-17** |
 | 18 | 🟡 media | `npm audit` | 20 vulnerabilidades; `npm audit fix` resuelve la mayoría sin breaking changes — **✅ resuelto 2026-08-17** |
-| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19–#23 ✅ resueltos 2026-08-17** (#19 requiere correr `scripts/backfillStats.js`) |
+| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19–#24 ✅ resueltos 2026-08-17** (#19 requiere correr `scripts/backfillStats.js`) |
 
 Los tres primeros son los que **rompen datos de usuarios reales** y deberían ir
 primero. El #4, #5 y #8 son los de mejor relación esfuerzo/impacto.
@@ -1468,6 +1468,59 @@ anterior, pero conviene una pasada visual rápida en el próximo uso real.
   Auth (`perfilFs?.email ?? perfilAuth?.email`). Un usuario puede mostrar un email
   falso en el reporte interno. El HTML se escapa, así que no hay inyección — solo
   confusión de identidad. **Fix:** invertir la precedencia en el script.
+
+**Resolución (2026-08-17):** 3 de los 4 puntos aplicados; el 4º documentado
+como limitación conocida.
+
+- **`hasAll` en paralelo a `hasOnly`** en los 5 `create` (`programas`,
+  `dias`, `ejerciciosDia`, `sesiones`, `registros`): se verificó contra los
+  `src/firebase/*.js` que los clientes siempre escriben la lista completa de
+  campos, así que exigir todos no rompe ningún flujo real. Cierra el hueco
+  de crear un doc con solo `{usuarioId}` (que rompía el `a.orden - b.orden`
+  de la propia UI con `NaN`). Costo: cero lecturas.
+- **FK validada por dueño** con la nueva función `fkPropia(coleccion, id)`
+  (`exists()` + `get().data.usuarioId == request.auth.uid`), aplicada en el
+  `create` de `dias` (→ `programas`), `ejerciciosDia` (→ `dias`) y
+  `sesiones` (→ `dias`).
+- **`registros` quedó deliberadamente SIN `fkPropia`** (sí recibió `hasAll`).
+  Cada `get()` en rules se cobra como una lectura, y este `create` corre
+  **una vez por serie** (~24 por sesión): validar `sesionId` + `ejercicioId`
+  sumaría ~48 lecturas por entrenamiento en el camino de escritura más
+  caliente de la app, contra la regla de cuota explícita de `CLAUDE.md`
+  (50k lecturas/día en el plan gratuito). El propio audit clasifica el
+  impacto de la FK sin validar como "solo genera basura en el propio árbol"
+  (ninguna regla de read ni query deja ver datos ajenos), así que no
+  justifica ese costo. Documentado con un comentario en la regla misma.
+- **Límite de 5 presets (`timerPresets`): NO resuelto**, documentado como
+  limitación conocida. Contar documentos de una colección al evaluar un
+  `create` no es expresable en rules sin cambiar el modelo de datos (un
+  doc-contador, o pasar los presets a un array dentro de un solo doc). El
+  audit lo califica de impacto cosmético; no vale una migración de datos
+  para eso.
+- **Precedencia de `email`** invertida en
+  [`scripts/reporteActividad.js`](../scripts/reporteActividad.js):
+  `perfilAuth?.email ?? perfilFs?.email`. Ahora el reporte muestra el email
+  del token de Auth, no el autodeclarado en Firestore. (El campo `email` de
+  `usuarios/{uid}` se dejó como está: endurecer la regla para compararlo
+  contra `request.auth.token.email` rompería a los usuarios existentes cuyo
+  doc ya lo tenga desincronizado, y con el reporte corregido el vector de
+  confusión de identidad queda cerrado igual.)
+
+**Verificado contra el emulador de Firestore** (`firebase emulators:start
+--only firestore`) con un script temporal usando
+`@firebase/rules-unit-testing` — instalado fuera del repo, **no** se agregó
+como dependencia (`CLAUDE.md`: no sumar dependencias sin justificación
+fuerte). 13 casos, todos en verde:
+
+- Los 5 flujos de escritura reales de la app (`crearPrograma`, `crearDia`,
+  `agregarEjercicioDia`, `crearSesion`, `agregarRegistro`) siguen
+  permitidos.
+- Un `create` incompleto (`programa` sin `nombre`/`orden`, `dia` sin
+  `nombre`/`orden`, `sesion` sin `fecha`) ahora se rechaza.
+- Un `create` con FK ajena (día → programa de otro usuario, ejercicioDia →
+  día ajeno, sesión → día ajeno) o inexistente ahora se rechaza.
+- El aislamiento entre usuarios sigue intacto (un usuario no lee el
+  programa de otro).
 
 ### 25. UID real hardcodeado en un repo público
 

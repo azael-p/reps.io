@@ -25,6 +25,14 @@ service cloud.firestore {
       return campo in request.resource.data.diff(resource.data).affectedKeys();
     }
 
+    // La FK apunta a un doc que existe y es del mismo usuario. Cuesta 1
+    // lectura por llamada, así que solo se usa en los create poco
+    // frecuentes (ver la nota sobre `registros` más abajo).
+    function fkPropia(coleccion, id) {
+      return exists(/databases/$(database)/documents/$(coleccion)/$(id))
+        && get(/databases/$(database)/documents/$(coleccion)/$(id)).data.usuarioId == request.auth.uid;
+    }
+
     // Forma de sesiones/{id}.resumen (ver buildResumen() en ResumenSesion.jsx).
     // Solo valida la cáscara: tipos + topes de tamaño generosos frente al uso
     // real (no hay forma de iterar los items de `ejercicios`/`series` en
@@ -96,7 +104,8 @@ service cloud.firestore {
       allow update: if esElDueno() && noCambiaDueno()
         && soloCambia(['nombre', 'orden', 'eliminadoEn']);
       allow create: if creandoComoDueno()
-        && request.resource.data.keys().hasOnly(['usuarioId', 'nombre', 'orden']);
+        && request.resource.data.keys().hasOnly(['usuarioId', 'nombre', 'orden'])
+        && request.resource.data.keys().hasAll(['usuarioId', 'nombre', 'orden']);
     }
 
     match /dias/{id} {
@@ -104,7 +113,9 @@ service cloud.firestore {
       allow update: if esElDueno() && noCambiaDueno()
         && soloCambia(['nombre', 'orden', 'eliminadoEn']);
       allow create: if creandoComoDueno()
-        && request.resource.data.keys().hasOnly(['usuarioId', 'programaId', 'nombre', 'orden']);
+        && request.resource.data.keys().hasOnly(['usuarioId', 'programaId', 'nombre', 'orden'])
+        && request.resource.data.keys().hasAll(['usuarioId', 'programaId', 'nombre', 'orden'])
+        && fkPropia('programas', request.resource.data.programaId);
     }
 
     match /ejerciciosDia/{id} {
@@ -112,7 +123,9 @@ service cloud.firestore {
       allow update: if esElDueno() && noCambiaDueno()
         && soloCambia(['nombre', 'seriesEsperadas', 'repsEsperadas', 'orden', 'eliminadoEn']);
       allow create: if creandoComoDueno()
-        && request.resource.data.keys().hasOnly(['usuarioId', 'diaId', 'nombre', 'grupoMuscular', 'esCustom', 'catalogoId', 'seriesEsperadas', 'repsEsperadas', 'orden']);
+        && request.resource.data.keys().hasOnly(['usuarioId', 'diaId', 'nombre', 'grupoMuscular', 'esCustom', 'catalogoId', 'seriesEsperadas', 'repsEsperadas', 'orden'])
+        && request.resource.data.keys().hasAll(['usuarioId', 'diaId', 'nombre', 'grupoMuscular', 'esCustom', 'catalogoId', 'seriesEsperadas', 'repsEsperadas', 'orden'])
+        && fkPropia('dias', request.resource.data.diaId);
     }
 
     match /sesiones/{id} {
@@ -121,7 +134,9 @@ service cloud.firestore {
         && soloCambia(['nota', 'completada', 'resumen'])
         && (!campoTocado('resumen') || resumenValido(request.resource.data.resumen));
       allow create: if creandoComoDueno()
-        && request.resource.data.keys().hasOnly(['usuarioId', 'diaId', 'fecha', 'nota', 'completada']);
+        && request.resource.data.keys().hasOnly(['usuarioId', 'diaId', 'fecha', 'nota', 'completada'])
+        && request.resource.data.keys().hasAll(['usuarioId', 'diaId', 'fecha', 'nota', 'completada'])
+        && fkPropia('dias', request.resource.data.diaId);
     }
 
     match /registros/{id} {
@@ -131,8 +146,15 @@ service cloud.firestore {
         && (!campoTocado('pesoUsado') || (request.resource.data.pesoUsado is number && request.resource.data.pesoUsado >= 0 && request.resource.data.pesoUsado <= 1000))
         && (!campoTocado('repsHechas') || (request.resource.data.repsHechas is number && request.resource.data.repsHechas >= 0 && request.resource.data.repsHechas <= 1000))
         && (!campoTocado('nota') || (request.resource.data.nota is string && request.resource.data.nota.size() <= 500));
+      // Sin fkPropia() a proposito: este create corre una vez por SERIE
+      // (~24 por sesion), y validar sesionId + ejercicioId costaria 2
+      // lecturas extra cada vez -- el camino de escritura mas caliente de la
+      // app, contra la regla de cuota de CLAUDE.md. La FK sin validar solo
+      // permite ensuciar el propio arbol (ninguna regla de read ni query
+      // deja ver datos ajenos), asi que no justifica ese costo.
       allow create: if creandoComoDueno()
         && request.resource.data.keys().hasOnly(['usuarioId', 'sesionId', 'ejercicioId', 'nombreEjercicio', 'grupoMuscular', 'catalogoId', 'numeroSerie', 'repsEsperadas', 'repsHechas', 'pesoUsado', 'nota'])
+        && request.resource.data.keys().hasAll(['usuarioId', 'sesionId', 'ejercicioId', 'nombreEjercicio', 'grupoMuscular', 'catalogoId', 'numeroSerie', 'repsEsperadas', 'repsHechas', 'pesoUsado', 'nota'])
         && request.resource.data.numeroSerie is number && request.resource.data.numeroSerie >= 1 && request.resource.data.numeroSerie <= 200
         && request.resource.data.pesoUsado is number && request.resource.data.pesoUsado >= 0 && request.resource.data.pesoUsado <= 1000
         && request.resource.data.repsHechas is number && request.resource.data.repsHechas >= 0 && request.resource.data.repsHechas <= 1000
