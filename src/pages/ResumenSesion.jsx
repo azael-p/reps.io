@@ -7,7 +7,7 @@ import { getRegistrosSesion, editarRegistro } from '../firebase/registros'
 import { actualizarNotaSesion, backfillResumen } from '../firebase/sesiones'
 import { completarSesionConAgregados } from '../firebase/completarSesion'
 import { aplicarSesionAResumenGlobal } from '../firebase/statsGlobal'
-import { rebuildStatsEjercicios } from '../firebase/statsEjercicios'
+import { aplicarSesionAStats, rebuildStatsEjercicios } from '../firebase/statsEjercicios'
 import { Modal, PageWrapper } from '../components/ui'
 import { useUser } from '../context/UserContext'
 import { useToast } from '../components/Toast'
@@ -109,7 +109,20 @@ export default function ResumenSesion() {
             show({ message: 'No se pudo confirmar la sesión con el servidor. Se sincronizará cuando haya conexión.', variant: 'warning', duration: 5000 })
           })
       } else if (!sesionData.resumen && regs.length > 0) {
-        backfillResumen(sesionId, buildResumen(regs, diaNombreVal)).catch(e => console.error(e))
+        // Reparar también los agregados: sin esto la sesión se ve en el
+        // historial pero queda fuera del volumen, el calendario y los PR, y
+        // ningún fallback la recupera (solo reconstruyen si falta el doc
+        // entero). Mismo criterio no-bloqueante que la rama de arriba.
+        const resumen = buildResumen(regs, diaNombreVal)
+        const reparar = Promise.all([
+          backfillResumen(sesionId, resumen),
+          usuario?.id ? aplicarSesionAResumenGlobal(usuario.id, { sesionId, fecha: sesionData.fecha, resumen }) : null,
+          usuario?.id ? aplicarSesionAStats(usuario.id, { sesionId, fecha: sesionData.fecha, resumen }) : null,
+        ])
+        reparar.catch(e => {
+          console.error(e)
+          show({ message: 'No se pudo reparar el resumen de esta sesión. Se reintentará más adelante.', variant: 'warning', duration: 5000 })
+        })
       }
     } catch (e) { console.error(e); setError('Error al cargar la sesión') }
     setCargando(false)

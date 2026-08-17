@@ -35,7 +35,7 @@ ni configuración.
 | 13 | 🟡 media | `Progreso.jsx:227-237` | Eliminar una sesión no es atómico — **✅ resuelto 2026-08-17** |
 | 14 | 🟡 media | `utils/stats.js:39-65` | Frecuencia semanal: omite semanas vacías y cuenta sesiones como días — **✅ resuelto 2026-08-17** |
 | 15 | 🟡 media | `UpdateBanner.jsx:18-20` | Auto-reload sin aviso a mitad de una serie — **✅ resuelto 2026-08-17** |
-| 16 | 🟡 media | `ResumenSesion.jsx:106-108` | Backfillea el resumen pero no los agregados |
+| 16 | 🟡 media | `ResumenSesion.jsx:106-108` | Backfillea el resumen pero no los agregados — **✅ resuelto 2026-08-17** |
 | 17 | 🟡 media | varios | Errores tragados en silencio y promesas flotantes |
 | 18 | 🟡 media | `npm audit` | 20 vulnerabilidades; `npm audit fix` resuelve la mayoría sin breaking changes |
 | 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores |
@@ -1097,6 +1097,35 @@ Se repara el doc de la sesión pero **no** se llama a
 `aplicarSesionAResumenGlobal` ni a `aplicarSesionAStats`. Esa sesión queda visible
 en el historial pero ausente del volumen, del calendario, de las rachas y de los
 PR — y como los agregados ya existen, ningún fallback la va a recuperar (ver #2).
+
+**Resolución (2026-08-17):** el bloque de backfill en
+[`ResumenSesion.jsx`](../src/pages/ResumenSesion.jsx) ahora repara también
+los dos agregados, no solo el doc de la sesión.
+
+- Además de `backfillResumen`, dispara `aplicarSesionAResumenGlobal` (para
+  `stats/global`: volumen, calendario, rachas) y `aplicarSesionAStats` (para
+  `statsEjercicios`: PR y última vez) con el mismo `resumen` recién
+  construido. Se agrupan en un `Promise.all` para tener un solo punto de
+  reporte de error.
+- **No se usó el `writeBatch` atómico** de `completarSesionConAgregados`
+  (bug #2), a propósito: este es un camino de *reparación* de una sesión ya
+  completada, no el alta original. Las 3 escrituras son idempotentes por
+  `sesionId` (`aplicarSesionAResumenGlobal` reemplaza la entrada existente,
+  `mergeSesionEnStats` filtra el punto previo del mismo `sesionId`), así que
+  una aplicación parcial se corrige sola en la próxima visita al resumen —
+  no hace falta la garantía de todo-o-nada, y evitarla mantiene el cambio
+  chico.
+- Se respeta el patrón no-bloqueante del bug #1: no se `await`ea nada antes
+  de destrabar la UI; un fallo tardío se reporta con un toast
+  (`variant: 'warning'`) en vez de un error que tape la página.
+- Se mantiene el guard `usuario?.id` (igual que la rama de arriba): sin
+  usuario cargado solo se repara el doc de la sesión.
+
+Tests nuevos en [`ResumenSesion.test.jsx`](../src/pages/ResumenSesion.test.jsx)
+(`describe('ResumenSesion — backfill de una sesión completada sin resumen')`):
+una sesión completada sin `resumen` y con registros llama a las 3 funciones
+con el `sesionId`/volumen correctos, y un fallo en cualquiera de ellas
+muestra el toast de warning sin bloquear el render.
 
 ### 17. Errores tragados en silencio y promesas flotantes
 

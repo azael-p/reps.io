@@ -19,6 +19,7 @@ vi.mock('../firebase/registros', () => ({
 }))
 vi.mock('../firebase/statsGlobal', () => ({ aplicarSesionAResumenGlobal: vi.fn() }))
 vi.mock('../firebase/statsEjercicios', () => ({
+  aplicarSesionAStats: vi.fn(),
   rebuildStatsEjercicios: vi.fn(),
 }))
 vi.mock('firebase/firestore', () => ({
@@ -37,6 +38,8 @@ vi.mock('../components/Toast', () => ({
 import { getDoc } from 'firebase/firestore'
 import { backfillResumen } from '../firebase/sesiones'
 import { completarSesionConAgregados } from '../firebase/completarSesion'
+import { aplicarSesionAResumenGlobal } from '../firebase/statsGlobal'
+import { aplicarSesionAStats } from '../firebase/statsEjercicios'
 import { getRegistrosSesion } from '../firebase/registros'
 import ResumenSesion from './ResumenSesion'
 
@@ -106,6 +109,50 @@ describe('ResumenSesion — completar sesión sin bloquear la UI (bug offline)',
 
     await waitFor(() => {
       expect(completarSesionConAgregados).not.toHaveBeenCalled()
+    })
+  })
+})
+
+describe('ResumenSesion — backfill de una sesión completada sin resumen', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    getRegistrosSesion.mockResolvedValue([
+      { ejercicioId: 'e1', nombreEjercicio: 'Press Banca', grupoMuscular: 'Pecho', numeroSerie: 1, pesoUsado: 80, repsHechas: 8 },
+    ])
+    getDoc
+      .mockResolvedValueOnce({
+        exists: () => true,
+        data: () => ({ diaId: 'dia1', nota: '', completada: true, fecha: new Date('2026-08-10') }),
+      })
+      .mockResolvedValueOnce({ exists: () => true, data: () => ({ nombre: 'Push' }) })
+  })
+
+  it('repara el resumen y también los agregados (stats/global y statsEjercicios)', async () => {
+    backfillResumen.mockResolvedValue(undefined)
+    aplicarSesionAResumenGlobal.mockResolvedValue(undefined)
+    aplicarSesionAStats.mockResolvedValue(undefined)
+
+    renderResumen()
+
+    await screen.findByText('Press Banca')
+    await waitFor(() => {
+      expect(backfillResumen).toHaveBeenCalledWith('ses1', expect.objectContaining({ volumenTotal: 640 }))
+      expect(aplicarSesionAResumenGlobal).toHaveBeenCalledWith('user1', expect.objectContaining({ sesionId: 'ses1' }))
+      expect(aplicarSesionAStats).toHaveBeenCalledWith('user1', expect.objectContaining({ sesionId: 'ses1' }))
+    })
+  })
+
+  it('si la reparación falla, avisa por toast sin bloquear la página', async () => {
+    backfillResumen.mockResolvedValue(undefined)
+    aplicarSesionAResumenGlobal.mockRejectedValue(new Error('offline'))
+    aplicarSesionAStats.mockResolvedValue(undefined)
+
+    renderResumen()
+
+    await screen.findByText('Press Banca')
+    await waitFor(() => {
+      expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({ variant: 'warning' }))
     })
   })
 })
