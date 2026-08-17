@@ -1,4 +1,4 @@
-// Normaliza los nombres de ejercicios de Fernando contra el catálogo, para que
+// Normaliza los nombres de ejercicios de un usuario contra el catálogo, para que
 // los gráficos de progreso dejen de partirse entre nombres duplicados
 // ("Remo barra" vs "Remo con barra", "Prck deck" vs "Peck deck", etc).
 //
@@ -8,8 +8,8 @@
 //   - sesiones.resumen.ejercicios[].nombre / grupoMuscular  ← lo que leen los gráficos
 //
 // Uso:
-//   node scripts/migrarSesiones.js            → dry-run, no escribe nada
-//   node scripts/migrarSesiones.js --aplicar  → escribe los cambios
+//   node scripts/migrarSesiones.js --uid=<UID>            → dry-run, no escribe nada
+//   node scripts/migrarSesiones.js --uid=<UID> --aplicar  → escribe los cambios
 //
 // Idempotente: correrlo dos veces no cambia nada la segunda vez.
 
@@ -22,7 +22,11 @@ const serviceAccount = require('./serviceAccount.json')
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) })
 const db = admin.firestore()
 
-const FERNANDO_UID = 'JkLFCW4UQrSuB0NiK8k6BTME1qM2'
+const UID = process.argv.find(a => a.startsWith('--uid='))?.slice('--uid='.length)
+if (!UID) {
+  console.error('Falta --uid=<UID>. Uso: node scripts/migrarSesiones.js --uid=<UID> [--aplicar]')
+  process.exit(1)
+}
 const APLICAR = process.argv.includes('--aplicar')
 const BATCH_SIZE = 490
 
@@ -103,7 +107,7 @@ async function main() {
 
   // --- registros ---
   console.log('\n→ registros')
-  const regSnap = await db.collection('registros').where('usuarioId', '==', FERNANDO_UID).get()
+  const regSnap = await db.collection('registros').where('usuarioId', '==', UID).get()
   const updRegistros = []
   for (const doc of regSnap.docs) {
     const r = doc.data()
@@ -122,7 +126,7 @@ async function main() {
 
   // --- ejerciciosDia ---
   console.log('\n→ ejerciciosDia')
-  const edSnap = await db.collection('ejerciciosDia').where('usuarioId', '==', FERNANDO_UID).get()
+  const edSnap = await db.collection('ejerciciosDia').where('usuarioId', '==', UID).get()
   const updEjercicios = []
   for (const doc of edSnap.docs) {
     const e = doc.data()
@@ -141,7 +145,7 @@ async function main() {
 
   // --- sesiones.resumen (lo que leen los gráficos) ---
   console.log('\n→ sesiones.resumen')
-  const sesSnap = await db.collection('sesiones').where('usuarioId', '==', FERNANDO_UID).get()
+  const sesSnap = await db.collection('sesiones').where('usuarioId', '==', UID).get()
   const updSesiones = []
   for (const doc of sesSnap.docs) {
     const s = doc.data()

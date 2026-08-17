@@ -38,7 +38,7 @@ ni configuración.
 | 16 | 🟡 media | `ResumenSesion.jsx:106-108` | Backfillea el resumen pero no los agregados — **✅ resuelto 2026-08-17** |
 | 17 | 🟡 media | varios | Errores tragados en silencio y promesas flotantes — **✅ resuelto 2026-08-17** |
 | 18 | 🟡 media | `npm audit` | 20 vulnerabilidades; `npm audit fix` resuelve la mayoría sin breaking changes — **✅ resuelto 2026-08-17** |
-| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19–#24 ✅ resueltos 2026-08-17** (#19 requiere correr `scripts/backfillStats.js`) |
+| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19–#25 ✅ resueltos 2026-08-17** (#19 requiere correr `scripts/backfillStats.js`) |
 
 Los tres primeros son los que **rompen datos de usuarios reales** y deberían ir
 primero. El #4, #5 y #8 son los de mejor relación esfuerzo/impacto.
@@ -1528,6 +1528,24 @@ fuerte). 13 casos, todos en verde:
 No es un secreto (las reglas no permiten leer los datos de ese usuario), pero es un
 identificador de usuario real en un repositorio público. Conviene pasarlo por
 `argv`.
+
+**Resolución (2026-08-17):** la constante se reemplazó por un flag
+`--uid=<UID>`, siguiendo el patrón `--clave=valor` que ya usaba
+`reporteActividad.js` (`process.argv.find(a => a.startsWith('--dias='))`) —
+no se introdujo ningún parser de argumentos nuevo.
+
+- **Sin valor por defecto:** si falta `--uid`, el script imprime el uso y
+  sale con código 1. Un default habría dejado la puerta abierta a operar
+  sobre un UID equivocado por omisión, que es peor que fallar.
+- Se actualizó el bloque de uso de la cabecera y se generalizó la primera
+  línea (el script ya no es "de Fernando", sirve para cualquier usuario).
+- El UID ya no aparece en ninguna parte del repo. Nota: sigue estando en el
+  historial de git — sacarlo de ahí requeriría reescribir la historia, algo
+  desproporcionado para un identificador que no es un secreto y que las
+  reglas ya protegen.
+
+**Verificado:** `node scripts/migrarSesiones.js` sin `--uid` sale con código
+1 y el mensaje de uso.
 
 ### 26. Restringir la API key de Firebase
 
