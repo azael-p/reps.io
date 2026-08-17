@@ -16,6 +16,22 @@ vi.mock('../components/Toast', () => ({
   useToast: () => ({ show: mockShow }),
 }))
 
+// Expone onReorder como un botón: simular el drag real de @dnd-kit en jsdom
+// no aporta nada acá, lo que se testea es el manejo del fallo de escritura.
+vi.mock('../components/DnDList', () => ({
+  default: ({ items, onReorder, renderItem }) => (
+    <div>
+      <button onClick={() => onReorder([...items].reverse().map((it, i) => ({ ...it, orden: i })))}>
+        reordenar
+      </button>
+      {items.map((item, i) => {
+        const render = renderItem(item, i)
+        return <div key={item.id}>{render({ dragHandleProps: {} })}</div>
+      })}
+    </div>
+  ),
+}))
+
 vi.mock('../firebase/dias', () => ({
   getDias: vi.fn(),
   crearDia: vi.fn(),
@@ -33,7 +49,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { getDoc } from 'firebase/firestore'
 import Dias from './Dias'
 import {
-  getDias, crearDia, editarDia,
+  getDias, crearDia, editarDia, reordenarDias,
   marcarDiaParaEliminar, desmarcarDiaParaEliminar, eliminarDiaDefinitivo,
 } from '../firebase/dias'
 
@@ -176,5 +192,32 @@ describe('Dias — editar', () => {
     await waitFor(() => {
       expect(editarDia).toHaveBeenCalledWith('d1', 'Día 1 - Espalda')
     })
+  })
+})
+
+describe('Dias — fallo al reordenar', () => {
+  beforeEach(() => {
+    getDias.mockResolvedValue([
+      { id: 'd1', nombre: 'Push', orden: 0 },
+      { id: 'd2', nombre: 'Pull', orden: 1 },
+    ])
+  })
+
+  it('revierte el orden local y muestra un toast de error', async () => {
+    const user = userEvent.setup()
+    reordenarDias.mockRejectedValue(new Error('sin red'))
+    renderPage()
+    await screen.findByText('Push')
+
+    await user.click(screen.getByRole('button', { name: 'reordenar' }))
+
+    await waitFor(() => {
+      expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'No se pudo guardar el orden. Intentá de nuevo.',
+        variant: 'error',
+      }))
+    })
+    const nombres = screen.getAllByText(/^(Push|Pull)$/).map(n => n.textContent)
+    expect(nombres[0]).toBe('Push')
   })
 })

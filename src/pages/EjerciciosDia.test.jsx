@@ -15,7 +15,30 @@ vi.mock('../components/Toast', () => ({
 }))
 
 vi.mock('../components/SeleccionarEjercicio', () => ({
-  default: () => null,
+  default: ({ onSeleccionar }) => (
+    <button onClick={() => onSeleccionar({
+      nombre: 'Sentadilla', grupoMuscular: 'Piernas', esCustom: false,
+      catalogoId: 'cat1', seriesEsperadas: 3, repsEsperadas: 10,
+    })}>
+      confirmar-ejercicio
+    </button>
+  ),
+}))
+
+// Expone onReorder como un botón: simular el drag real de @dnd-kit en jsdom
+// no aporta nada acá, lo que se testea es el manejo del fallo de escritura.
+vi.mock('../components/DnDList', () => ({
+  default: ({ items, onReorder, renderItem }) => (
+    <div>
+      <button onClick={() => onReorder([...items].reverse().map((it, i) => ({ ...it, orden: i })))}>
+        reordenar
+      </button>
+      {items.map((item, i) => {
+        const render = renderItem(item, i)
+        return <div key={item.id}>{render({ dragHandleProps: {} })}</div>
+      })}
+    </div>
+  ),
 }))
 
 vi.mock('../firebase/ejerciciosDia', () => ({
@@ -35,7 +58,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { getDoc } from 'firebase/firestore'
 import EjerciciosDia from './EjerciciosDia'
 import {
-  getEjerciciosDia, editarEjercicioDia,
+  getEjerciciosDia, editarEjercicioDia, reordenarEjercicios, agregarEjercicioDia,
   marcarEjercicioParaEliminar, desmarcarEjercicioParaEliminar, eliminarEjercicioDefinitivo,
 } from '../firebase/ejerciciosDia'
 
@@ -171,5 +194,62 @@ describe('EjerciciosDia — eliminar con deshacer', () => {
 
     expect(eliminarEjercicioDefinitivo).toHaveBeenCalledWith('e1')
     expect(desmarcarEjercicioParaEliminar).not.toHaveBeenCalled()
+  })
+})
+
+describe('EjerciciosDia — fallos de escritura avisan al usuario', () => {
+  beforeEach(() => {
+    getEjerciciosDia.mockResolvedValue([
+      { id: 'e1', nombre: 'Press Banca', grupoMuscular: 'Pecho', seriesEsperadas: 3, repsEsperadas: 8, orden: 0 },
+      { id: 'e2', nombre: 'Remo', grupoMuscular: 'Espalda', seriesEsperadas: 3, repsEsperadas: 10, orden: 1 },
+    ])
+  })
+
+  it('si falla reordenar, revierte el orden local y muestra un toast de error', async () => {
+    const user = userEvent.setup()
+    reordenarEjercicios.mockRejectedValue(new Error('sin red'))
+    renderPage()
+    await screen.findByText('Press Banca')
+
+    await user.click(screen.getByRole('button', { name: 'reordenar' }))
+
+    await waitFor(() => {
+      expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'No se pudo guardar el orden. Intentá de nuevo.',
+        variant: 'error',
+      }))
+    })
+    // El primero de la lista vuelve a ser el original, no el invertido.
+    const nombres = screen.getAllByText(/Press Banca|Remo/).map(n => n.textContent)
+    expect(nombres[0]).toBe('Press Banca')
+  })
+
+  it('si falla agregar un ejercicio, muestra un toast de error', async () => {
+    const user = userEvent.setup()
+    agregarEjercicioDia.mockRejectedValue(new Error('sin red'))
+    renderPage()
+    await screen.findByText('Press Banca')
+
+    await user.click(screen.getByRole('button', { name: 'Agregar' }))
+    await user.click(screen.getByRole('button', { name: 'confirmar-ejercicio' }))
+
+    await waitFor(() => {
+      expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'No se pudo agregar el ejercicio. Intentá de nuevo.',
+        variant: 'error',
+      }))
+    })
+  })
+
+  it('si reordenar tiene éxito, no muestra ningún toast de error', async () => {
+    const user = userEvent.setup()
+    reordenarEjercicios.mockResolvedValue(undefined)
+    renderPage()
+    await screen.findByText('Press Banca')
+
+    await user.click(screen.getByRole('button', { name: 'reordenar' }))
+
+    await waitFor(() => expect(reordenarEjercicios).toHaveBeenCalled())
+    expect(mockShow).not.toHaveBeenCalledWith(expect.objectContaining({ variant: 'error' }))
   })
 })

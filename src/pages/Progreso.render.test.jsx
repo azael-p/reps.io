@@ -139,3 +139,21 @@ describe('Progreso — tabs', () => {
     expect(await screen.findByText('Entrená para empezar a generar rachas.')).toBeInTheDocument()
   })
 })
+
+describe('Progreso — fallo al cargar el peso corporal', () => {
+  it('avisa por toast en vez de mostrar el empty state como si no hubiera registros', async () => {
+    const { getHistorialPeso } = await import('../firebase/peso')
+    getHistorialPeso.mockRejectedValue(new Error('sin red'))
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Peso' }))
+
+    await waitFor(() => {
+      expect(showMock).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'No se pudieron cargar los registros de peso.',
+        variant: 'error',
+      }))
+    })
+  })
+})

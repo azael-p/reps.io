@@ -15,6 +15,22 @@ vi.mock('../components/Toast', () => ({
   useToast: () => ({ show: mockShow }),
 }))
 
+// Expone onReorder como un botón: simular el drag real de @dnd-kit en jsdom
+// no aporta nada acá, lo que se testea es el manejo del fallo de escritura.
+vi.mock('../components/DnDList', () => ({
+  default: ({ items, onReorder, renderItem }) => (
+    <div>
+      <button onClick={() => onReorder([...items].reverse().map((it, i) => ({ ...it, orden: i })))}>
+        reordenar
+      </button>
+      {items.map((item, i) => {
+        const render = renderItem(item, i)
+        return <div key={item.id}>{render({ dragHandleProps: {} })}</div>
+      })}
+    </div>
+  ),
+}))
+
 vi.mock('../firebase/programas', () => ({
   getProgramas: vi.fn(),
   crearPrograma: vi.fn(),
@@ -31,7 +47,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import Programas from './Programas'
 import {
-  getProgramas, crearPrograma, editarPrograma,
+  getProgramas, crearPrograma, editarPrograma, reordenarProgramas,
   marcarParaEliminar, desmarcarParaEliminar, eliminarProgramaDefinitivo,
 } from '../firebase/programas'
 
@@ -160,5 +176,32 @@ describe('Programas — editar', () => {
     await waitFor(() => {
       expect(editarPrograma).toHaveBeenCalledWith('p1', 'Pull Day')
     })
+  })
+})
+
+describe('Programas — fallo al reordenar', () => {
+  beforeEach(() => {
+    getProgramas.mockResolvedValue([
+      { id: 'p1', nombre: 'PPL', orden: 0 },
+      { id: 'p2', nombre: 'Full Body', orden: 1 },
+    ])
+  })
+
+  it('revierte el orden local y muestra un toast de error', async () => {
+    const user = userEvent.setup()
+    reordenarProgramas.mockRejectedValue(new Error('sin red'))
+    renderPage()
+    await screen.findByText('PPL')
+
+    await user.click(screen.getByRole('button', { name: 'reordenar' }))
+
+    await waitFor(() => {
+      expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'No se pudo guardar el orden. Intentá de nuevo.',
+        variant: 'error',
+      }))
+    })
+    const nombres = screen.getAllByText(/^(PPL|Full Body)$/).map(n => n.textContent)
+    expect(nombres[0]).toBe('PPL')
   })
 })

@@ -115,10 +115,13 @@ export default function Progreso() {
     try {
       const data = await getHistorialPeso(usuario.id)
       setHistorialPeso(data)
-    } catch (e) { console.error(e) }
+    } catch (e) {
+      console.error(e)
+      show({ message: 'No se pudieron cargar los registros de peso.', variant: 'error' })
+    }
     setPesoCargado(true)
     setCargandoPeso(false)
-  }, [usuario])
+  }, [usuario, show])
 
   useEffect(() => { cargar() }, [cargar])
 

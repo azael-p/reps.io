@@ -49,7 +49,10 @@ export default function EjerciciosDia() {
     try {
       await agregarEjercicioDia({ diaId, nombre, grupoMuscular, esCustom, catalogoId, seriesEsperadas, repsEsperadas, orden: ejercicios.length })
       show({ message: 'Ejercicio agregado', variant: 'success' })
-    } catch (e) { console.error(e) }
+    } catch (e) {
+      console.error(e)
+      show({ message: 'No se pudo agregar el ejercicio. Intentá de nuevo.', variant: 'error' })
+    }
     cargar()
   }
 
@@ -114,8 +117,15 @@ export default function EjerciciosDia() {
         <DnDList
           items={ejercicios}
           onReorder={async (reordenados) => {
+            const anterior = ejercicios
             setEjercicios(reordenados)
-            await reordenarEjercicios(reordenados.map(({ id, orden }) => ({ id, orden })))
+            try {
+              await reordenarEjercicios(reordenados.map(({ id, orden }) => ({ id, orden })))
+            } catch (e) {
+              console.error(e)
+              setEjercicios(anterior)
+              show({ message: 'No se pudo guardar el orden. Intentá de nuevo.', variant: 'error' })
+            }
           }}
           renderItem={(e, i) => ({ dragHandleProps }) => (
             <motion.div

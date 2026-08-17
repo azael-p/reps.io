@@ -130,8 +130,15 @@ export default function Dias() {
         <DnDList
           items={dias}
           onReorder={async (reordenados) => {
+            const anterior = dias
             setDias(reordenados)
-            await reordenarDias(reordenados.map(({ id, orden }) => ({ id, orden })))
+            try {
+              await reordenarDias(reordenados.map(({ id, orden }) => ({ id, orden })))
+            } catch (e) {
+              console.error(e)
+              setDias(anterior)
+              show({ message: 'No se pudo guardar el orden. Intentá de nuevo.', variant: 'error' })
+            }
           }}
           renderItem={(d, i) => ({ dragHandleProps }) => (
             <motion.div

@@ -122,8 +122,15 @@ export default function Programas() {
           <DnDList
             items={programas}
             onReorder={async (reordenados) => {
+              const anterior = programas
               setProgramas(reordenados)
-              await reordenarProgramas(reordenados.map(({ id, orden }) => ({ id, orden })))
+              try {
+                await reordenarProgramas(reordenados.map(({ id, orden }) => ({ id, orden })))
+              } catch (e) {
+                console.error(e)
+                setProgramas(anterior)
+                show({ message: 'No se pudo guardar el orden. Intentá de nuevo.', variant: 'error' })
+              }
             }}
             renderItem={(p) => ({ dragHandleProps }) => (
               <SwipeToDelete onDelete={() => eliminar(p)} onClick={() => navigate(`/programas/${p.id}`)}>

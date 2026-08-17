@@ -36,7 +36,7 @@ ni configuración.
 | 14 | 🟡 media | `utils/stats.js:39-65` | Frecuencia semanal: omite semanas vacías y cuenta sesiones como días — **✅ resuelto 2026-08-17** |
 | 15 | 🟡 media | `UpdateBanner.jsx:18-20` | Auto-reload sin aviso a mitad de una serie — **✅ resuelto 2026-08-17** |
 | 16 | 🟡 media | `ResumenSesion.jsx:106-108` | Backfillea el resumen pero no los agregados — **✅ resuelto 2026-08-17** |
-| 17 | 🟡 media | varios | Errores tragados en silencio y promesas flotantes |
+| 17 | 🟡 media | varios | Errores tragados en silencio y promesas flotantes — **✅ resuelto 2026-08-17** |
 | 18 | 🟡 media | `npm audit` | 20 vulnerabilidades; `npm audit fix` resuelve la mayoría sin breaking changes |
 | 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores |
 
@@ -1139,6 +1139,45 @@ muestra el toast de warning sin bloquear el render.
 - [src/pages/Progreso.jsx:118](../src/pages/Progreso.jsx#L118) — `cargarPeso` traga
   el error y setea `pesoCargado: true`, así que se muestra el empty state "Sin
   registros de peso" cuando en realidad la query falló.
+
+**Resolución (2026-08-17):** los 3 puntos resueltos con el patrón de toast de
+error que ya usaba el resto de la app (`useToast()` + `variant: 'error'`, como
+en `Progreso.jsx`/`SesionActiva.jsx`/`Entrenar.jsx`/`Home.jsx`). No se
+introdujo ninguna abstracción nueva.
+
+- **Agregar ejercicio** ([`EjerciciosDia.jsx`](../src/pages/EjerciciosDia.jsx)):
+  el `catch (e) { console.error(e) }` ahora muestra
+  "No se pudo agregar el ejercicio. Intentá de nuevo.". El `cargar()` posterior
+  se mantiene: refleja el estado real de Firestore, y ahora el usuario entiende
+  por qué el ejercicio no aparece.
+- **`onReorder` sin `try/catch`** (`EjerciciosDia.jsx`, `Dias.jsx`,
+  `Programas.jsx` — el mismo patrón en los 3): se agregó
+  **optimistic update con rollback**: se guarda el array previo antes del
+  `setEstado(reordenados)`, y si la escritura falla se restaura y se muestra
+  "No se pudo guardar el orden. Intentá de nuevo.". Cierra las dos mitades del
+  problema: ya no hay `unhandledrejection`, y el orden local deja de divergir
+  del de Firestore.
+  - Se implementó **inline en cada página** en vez de extraer un hook
+    compartido: son 3 usos independientes de ~8 líneas cada uno, y un
+    `useReorderConRollback` genérico agregaría indirección sin eliminar
+    duplicación real (cada uno tiene su propio estado y su propia función de
+    escritura).
+  - No existía ningún patrón de rollback previo en el repo para copiar (lo
+    más cercano, `useEliminarConUndo`, es un undo manual del usuario, no una
+    reversión automática ante un fallo de escritura).
+- **`cargarPeso`** ([`Progreso.jsx`](../src/pages/Progreso.jsx)): el catch
+  ahora muestra "No se pudieron cargar los registros de peso.". Se dejó
+  `setPesoCargado(true)` como estaba (no se rediseñó la máquina de estados):
+  visualmente sigue cayendo al empty state, pero el fallo ya no es silencioso.
+
+Tests nuevos: `EjerciciosDia.test.jsx` (fallo al agregar → toast; fallo al
+reordenar → rollback del orden + toast; reorden exitoso → sin toast de error),
+`Dias.test.jsx` y `Programas.test.jsx` (rollback + toast), y
+`Progreso.render.test.jsx` (fallo de `getHistorialPeso` → toast). Los 3
+archivos de páginas con DnD mockean `DnDList` exponiendo `onReorder` como un
+botón — simular el drag real de `@dnd-kit` en jsdom no aporta nada, lo que se
+testea es el manejo del fallo de escritura. Se verificó que el test de
+rollback efectivamente falla si se quita la línea que restaura el estado.
 
 ### 18. Dependencias: 20 vulnerabilidades
 
