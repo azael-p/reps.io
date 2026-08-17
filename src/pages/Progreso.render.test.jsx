@@ -157,3 +157,28 @@ describe('Progreso — fallo al cargar el peso corporal', () => {
     })
   })
 })
+
+describe('Progreso — registrar peso con coma decimal', () => {
+  it('guarda 78,5 como 78.5 en vez de rechazarlo', async () => {
+    const { agregarPeso } = await import('../firebase/peso')
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Peso' }))
+    await user.click(await screen.findByRole('button', { name: /registrar peso/i }))
+    await user.type(screen.getByPlaceholderText('Ej: 78'), '78,5')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => expect(agregarPeso).toHaveBeenCalledWith('user1', 78.5))
+  })
+})
+
+describe('Progreso — accesibilidad del historial', () => {
+  it('la tarjeta de sesión es un botón real (accesible por teclado), no un div con onClick', async () => {
+    getSesionesPaginadas.mockResolvedValue({ sesiones: [SESION], ultimoDoc: {}, hayMas: false })
+    renderPage()
+
+    const nombre = await screen.findByText('Push')
+    expect(nombre.closest('button')).not.toBeNull()
+  })
+})

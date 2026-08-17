@@ -1,12 +1,32 @@
 vi.mock('../firebase/config', () => ({ db: {}, auth: {} }))
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { calcular1RM, frecuenciaSemanal } from '../utils/stats'
+import { calcular1RM, frecuenciaSemanal, parsePeso } from '../utils/stats'
 
 const ts = (y, m, d) => {
   const date = new Date(y, m - 1, d)
   return { toDate: () => date, toMillis: () => date.getTime() }
 }
+
+// ---------------------------------------------------------------------------
+
+describe('parsePeso', () => {
+  it('acepta punto decimal', () => {
+    expect(parsePeso('78.5')).toBe(78.5)
+  })
+
+  it('acepta coma decimal (lo que sale del teclado es-UY)', () => {
+    expect(parsePeso('78,5')).toBe(78.5)
+  })
+
+  it('acepta enteros', () => {
+    expect(parsePeso('78')).toBe(78)
+  })
+
+  it('devuelve NaN para texto no numérico', () => {
+    expect(parsePeso('abc')).toBeNaN()
+  })
+})
 
 // ---------------------------------------------------------------------------
 

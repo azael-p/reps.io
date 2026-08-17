@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'motion/react'
 import { agregarPeso } from '../firebase/peso'
+import { parsePeso } from '../utils/stats'
 
 const STEPS = [
   { icon: '📋', label: 'Creá tu primer programa', desc: 'Definí tus rutinas con días y ejercicios' },
@@ -13,7 +14,7 @@ export default function Onboarding({ onCompletar, usuarioId }) {
   const [errorPeso, setErrorPeso] = useState('')
 
   function handleEmpezar() {
-    const kg = Number(peso)
+    const kg = parsePeso(peso)
     if (peso.trim() && (!kg || kg < 20 || kg > 300)) {
       setErrorPeso('Ingresá un peso entre 20 y 300 kg, o dejalo vacío')
       return
@@ -71,14 +72,13 @@ export default function Onboarding({ onCompletar, usuarioId }) {
         </label>
         <div className="onboarding-peso-row">
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             className="onboarding-peso-input"
             placeholder="Ej: 78"
             value={peso}
             onChange={e => setPeso(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleEmpezar()}
-            min="20"
-            max="300"
           />
           <span className="onboarding-peso-kg">kg</span>
         </div>

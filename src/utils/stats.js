@@ -1,6 +1,12 @@
 // Cálculos puros de estadísticas de entrenamiento (sin React ni Firestore).
 import { toDate } from './fechas'
 
+// Acepta coma decimal: en teclados es-UY es lo que sale naturalmente, y
+// Number('78,5') es NaN.
+export function parsePeso(input) {
+  return Number(String(input).replace(',', '.'))
+}
+
 export function calcular1RM(peso, reps) {
   if (!peso || !reps || reps <= 1) return peso
   return Math.round(peso * (1 + reps / 30))

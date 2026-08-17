@@ -54,7 +54,7 @@ export default function HistorialTab({
                   exit={{ opacity: 0, x: -16, transition: { duration: 0.2 } }}
                   transition={{ delay: i * 0.04, type: 'spring', stiffness: 220, damping: 22 }}
                 >
-                  <div className="progreso-sesion-info" onClick={() => navigate(`/sesion/${sesion.id}/resumen`)}>
+                  <button type="button" className="progreso-sesion-info" onClick={() => navigate(`/sesion/${sesion.id}/resumen`)}>
                     <div className="progreso-fecha-badge">
                       <span className="progreso-fecha-dia">{toDate(sesion.fecha)?.getDate()}</span>
                       <span className="progreso-fecha-mes">{toDate(sesion.fecha)?.toLocaleDateString('es-UY', { month: 'short' })}</span>
@@ -63,7 +63,7 @@ export default function HistorialTab({
                       <span className="progreso-sesion-nombre">{sesion.diaNombre}</span>
                       <span className="progreso-sesion-fecha">{formatFecha(sesion.fecha)}</span>
                     </div>
-                  </div>
+                  </button>
                   <div className="progreso-sesion-acciones">
                     <motion.button
                       className="progreso-accion-btn"

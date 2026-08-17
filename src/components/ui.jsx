@@ -32,7 +32,7 @@ export function Header({ titulo, subtitulo, accent = 'var(--green)', onBack, onA
           <div style={hs.bc}>
             {breadcrumbs.map((b, i) => (
               <span key={i}>
-                <span style={hs.bcLink} onClick={b.onClick}>{b.label}</span>
+                <button type="button" style={hs.bcLink} onClick={b.onClick}>{b.label}</button>
                 {i < breadcrumbs.length - 1 && <span style={hs.bcSep}> / </span>}
               </span>
             ))}
@@ -333,7 +333,7 @@ const hs = {
   },
   info: { flex: 1 },
   bc: { display: 'flex', alignItems: 'center', gap: '2px', fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '2px' },
-  bcLink: { cursor: 'pointer', color: 'var(--text-dim)', ':hover': { color: 'var(--text)' } },
+  bcLink: { cursor: 'pointer', color: 'var(--text-dim)', background: 'none', border: 'none', padding: 0, font: 'inherit' },
   bcSep: { color: 'var(--border-strong)', margin: '0 1px' },
   sub: { margin: 0, fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' },
   titulo: { margin: '2px 0 0', fontSize: '1.2rem', fontWeight: 700, letterSpacing: '-0.02em' },

@@ -135,6 +135,7 @@ export default function Calendario({ fechas = [] }) {
                   key={i}
                   className={claseDia}
                   whileHover={!sesion && !futuro ? { scale: 1.05, borderColor: 'var(--border-strong)' } : {}}
+                  role="img"
                   aria-label={fechaLabel}
                   initial={sesion ? { scale: 0.5, opacity: 0 } : false}
                   animate={sesion ? { scale: 1, opacity: 1 } : {}}

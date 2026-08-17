@@ -12,7 +12,7 @@ import PullToRefresh from '../components/PullToRefresh'
 import LazyPanel from '../components/LazyPanel'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
-import { frecuenciaSemanal, calcularStreaks } from '../utils/stats'
+import { frecuenciaSemanal, calcularStreaks, parsePeso } from '../utils/stats'
 import { toDate } from '../utils/fechas'
 import { formatFecha, formatFechaCorta } from './progreso/format'
 import HeaderProgreso from './progreso/HeaderProgreso'
@@ -165,7 +165,7 @@ export default function Progreso() {
   }, [tab, isDesktop, pesoCargado, cargandoPeso, cargarPeso])
 
   function handleGuardarPeso() {
-    const kg = Number(pesoInput)
+    const kg = parsePeso(pesoInput)
     if (!kg || kg < 20 || kg > 300) { setErrorPeso('Ingresá un peso entre 20 y 300 kg'); return }
     setErrorPeso('')
     agregarPeso(usuario.id, kg).catch(e => {

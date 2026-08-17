@@ -29,7 +29,7 @@ export default function SerieForm({
             <motion.button className="sa-stepper-btn" aria-label="Sumar 2,5 kg" {...sumarPesoPress} whileTap={BTN_TAP_SMALL}>+</motion.button>
           </div>
           {ultimoPeso[ejercicio.id] && !pesoUsado && (
-            <p className="sa-hint-tocable" onClick={() => setPesoUsado(String(ultimoPeso[ejercicio.id]))}>↳ Última vez: {ultimoPeso[ejercicio.id]}kg</p>
+            <button type="button" className="sa-hint-tocable" onClick={() => setPesoUsado(String(ultimoPeso[ejercicio.id]))}>↳ Última vez: {ultimoPeso[ejercicio.id]}kg</button>
           )}
         </div>
         <div className="sa-input-group">

@@ -38,7 +38,7 @@ ni configuración.
 | 16 | 🟡 media | `ResumenSesion.jsx:106-108` | Backfillea el resumen pero no los agregados — **✅ resuelto 2026-08-17** |
 | 17 | 🟡 media | varios | Errores tragados en silencio y promesas flotantes — **✅ resuelto 2026-08-17** |
 | 18 | 🟡 media | `npm audit` | 20 vulnerabilidades; `npm audit fix` resuelve la mayoría sin breaking changes — **✅ resuelto 2026-08-17** |
-| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19–#22 ✅ resueltos 2026-08-17** (#19 requiere correr `scripts/backfillStats.js`) |
+| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19–#23 ✅ resueltos 2026-08-17** (#19 requiere correr `scripts/backfillStats.js`) |
 
 Los tres primeros son los que **rompen datos de usuarios reales** y deberían ir
 primero. El #4, #5 y #8 son los de mejor relación esfuerzo/impacto.
@@ -1400,6 +1400,54 @@ Lo que falta:
 - [src/pages/progreso/PesoModal.jsx:12](../src/pages/progreso/PesoModal.jsx#L12) —
   `type="number"` sin `inputMode="decimal"`: escribir `78,5` con coma no funciona y
   el mensaje que aparece ("Ingresá un peso entre 20 y 300 kg") confunde.
+
+**Resolución (2026-08-17):** los 5 puntos cerrados. No existía en el repo
+ningún patrón `role="button" + tabIndex + onKeyDown` para copiar, así que en
+vez de introducirlo se usaron **`<button>` nativos**: más simples, ya
+accesibles por teclado, y sin reimplementar semántica que el navegador da
+gratis.
+
+- **Elementos clickeables → `<button type="button">`** con reset de estilos
+  en la clase CSS existente (`background:none; border:none; padding:0;
+  font:inherit`, etc.), sin crear clases nuevas:
+  [`HistorialTab.jsx`](../src/pages/progreso/HistorialTab.jsx) (la tarjeta de
+  sesión), [`ui.jsx`](../src/components/ui.jsx) (breadcrumbs) y
+  [`SerieForm.jsx`](../src/pages/sesion-activa/SerieForm.jsx) (el atajo
+  "↳ Última vez").
+  - **Desvío deliberado del fix propuesto en `HistorialTab`:** la auditoría
+    sugería quitarle el `onClick` al div por ser redundante con el botón
+    "Ver" hermano. Se descartó: eso reduce el área tocable de la tarjeta
+    entera a un botón chico, y `CLAUDE.md` prioriza explícitamente los tap
+    targets grandes ("celular en la mano entre series"). Convertirlo en
+    `<button>` conserva el área grande **y** suma el acceso por teclado.
+- **`Calendario.jsx`:** las celdas no son clickeables (son informativas), así
+  que se les agregó `role="img"` para que el `aria-label` que ya tenían sea
+  anunciado. No se las convirtió en interactivas: sería inventar una
+  affordance que la UI no ofrece.
+- **Input de peso:** el fix propuesto (agregar `inputMode="decimal"`) **no
+  alcanzaba**: sobre un `<input type="number">` el navegador descarta el
+  valor al tipear una coma, así que `78,5` llegaba como string vacía sin
+  importar el `inputMode`. Se cambió a `type="text" inputMode="decimal"` (el
+  teclado numérico con decimales se sigue mostrando en mobile) y se extrajo
+  [`parsePeso`](../src/utils/stats.js), que normaliza la coma a punto antes
+  de `Number()`.
+  - Se aplicó a los **dos** call-sites que tenían el bug duplicado:
+    `PesoModal.jsx`/`Progreso.jsx` y `Onboarding.jsx` (mismo rango 20-300,
+    mensaje de error casi idéntico).
+  - Se quitaron los `min`/`max` de ambos inputs: no aplican a `type="text"`
+    y ya eran decorativos (sin `<form>` no disparan validación nativa, como
+    documentó el bug #5). El rango se sigue validando en JS.
+
+Tests nuevos: `parsePeso` (coma, punto, entero, no-numérico) en
+`Progreso.test.jsx`, y dos de integración en `Progreso.render.test.jsx` —
+que "78,5" se guarda como `78.5` (se verificó que falla si se revierte a
+`Number()`), y que la tarjeta de sesión del historial es un `<button>` real.
+
+**No verificado visualmente en navegador:** el login usa `signInWithPopup`
+con Google, que no se puede automatizar en este entorno sin credenciales
+(misma limitación ya documentada en el bug #11). Los resets de estilo de los
+3 `<button>` nuevos se escribieron para ser visualmente idénticos al elemento
+anterior, pero conviene una pasada visual rápida en el próximo uso real.
 
 ### 24. Reglas de Firestore: detalles menores
 

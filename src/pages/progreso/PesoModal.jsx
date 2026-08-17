@@ -9,15 +9,14 @@ export default function PesoModal({
       <h2 className="progreso-modal-titulo">Registrar peso</h2>
       <div className="progreso-peso-modal-row">
         <input
-          type="number"
+          type="text"
+          inputMode="decimal"
           className="progreso-peso-modal-input"
           placeholder="Ej: 78"
           value={pesoInput}
           onChange={e => setPesoInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && onGuardar()}
           autoFocus
-          min="20"
-          max="300"
         />
         <span className="progreso-peso-modal-kg">kg</span>
       </div>
