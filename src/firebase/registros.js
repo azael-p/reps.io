@@ -1,18 +1,5 @@
 import { db, auth } from './config'
 import { collection, updateDoc, setDoc, doc, query, where, getDocs } from 'firebase/firestore'
-import { esMismoEjercicio } from './sesiones'
-
-// Local lookup — no Firestore queries. sesiones must be sorted desc by fecha.
-export function getUltimaVezEjercicioLocal(sesiones, ejercicio, sesionIdActual) {
-  for (const sesion of sesiones) {
-    if (sesion.id === sesionIdActual) continue
-    const ej = sesion.resumen?.ejercicios?.find(e => esMismoEjercicio(e, ejercicio))
-    if (ej?.series?.length > 0) {
-      return { fecha: sesion.fecha, series: ej.series }
-    }
-  }
-  return null
-}
 
 // No await-ea el ACK del servidor: con persistentLocalCache la escritura ya
 // se aplicó al cache local al llamar setDoc, así que el id es usable de

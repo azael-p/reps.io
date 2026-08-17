@@ -38,7 +38,7 @@ ni configuración.
 | 16 | 🟡 media | `ResumenSesion.jsx:106-108` | Backfillea el resumen pero no los agregados — **✅ resuelto 2026-08-17** |
 | 17 | 🟡 media | varios | Errores tragados en silencio y promesas flotantes — **✅ resuelto 2026-08-17** |
 | 18 | 🟡 media | `npm audit` | 20 vulnerabilidades; `npm audit fix` resuelve la mayoría sin breaking changes — **✅ resuelto 2026-08-17** |
-| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19, #20 ✅ resueltos 2026-08-17** (#19 requiere correr `scripts/backfillStats.js`) |
+| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19, #20, #21 ✅ resueltos 2026-08-17** (#19 requiere correr `scripts/backfillStats.js`) |
 
 Los tres primeros son los que **rompen datos de usuarios reales** y deberían ir
 primero. El #4, #5 y #8 son los de mejor relación esfuerzo/impacto.
@@ -1326,6 +1326,30 @@ sus tests (todo Progreso migró a los agregados): `getVolumenPorSesionLocal`,
 `getUltimaVezEjercicioLocal` (`registros.js:6-15`) y `buildResumenGlobal`
 (`statsGlobal.js:23-42`, solo lo usa el fallback). Parte de los 347 tests verdes
 cubre código que ya nadie ejecuta.
+
+**Resolución (2026-08-17):** eliminadas 6 de las 7 funciones, con sus tests.
+
+- Borradas de [`sesiones.js`](../src/firebase/sesiones.js):
+  `getEjerciciosUsadosConGrupoLocal`, `getVolumenPorSesionLocal`,
+  `getRegistrosPorEjercicioLocal`, `getStreaksLocal`, `getFechasSesiones`.
+  Borrada de [`registros.js`](../src/firebase/registros.js):
+  `getUltimaVezEjercicioLocal`. Se reconfirmó con grep sobre todo `src/` y
+  `scripts/` que ninguna tenía consumidores fuera de su propia definición y
+  su propio archivo de test.
+- **`buildResumenGlobal` NO se eliminó — es un falso positivo del audit.**
+  La usa `getResumenGlobalConFallback` (self-healing de `stats/global` para
+  usuarios sin el doc agregado todavía), que a su vez consumen `Progreso.jsx`
+  y `Home.jsx`. El texto original ya lo distinguía ("solo lo usa el
+  fallback") pero lo listaba junto a las otras 6; sí tiene consumidores
+  reales y sigue viva.
+- Efecto colateral esperado: la suite pasó de 409 a **381 tests**. Los 28
+  que se fueron cubrían exclusivamente el código eliminado — que era
+  justamente el problema que reportaba este ítem (cobertura que no
+  correspondía a nada que la app ejecute).
+- Se limpiaron también los imports que quedaron sin uso: `toDate` y
+  `calcularStreaks` en `sesiones.js`, `esMismoEjercicio` en `registros.js`, y
+  los helpers de test (`ts`, `mkSesion`) que solo servían a los describes
+  borrados.
 
 ### 22. `localStorage` contradice la regla del proyecto
 

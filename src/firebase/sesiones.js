@@ -1,7 +1,5 @@
 import { db, auth } from './config'
 import { collection, updateDoc, setDoc, doc, query, where, getDocs, writeBatch, orderBy, limit, startAfter } from 'firebase/firestore'
-import { toDate } from '../utils/fechas'
-import { calcularStreaks } from '../utils/stats'
 
 export async function enrichSesionesConPrograma(usuarioId, sesiones) {
   if (sesiones.length === 0) return sesiones
@@ -108,60 +106,6 @@ export async function getSesionesPaginadas(usuarioId, { after = null, pageSize =
 export function esMismoEjercicio(a, b) {
   if (a.catalogoId && b.catalogoId) return a.catalogoId === b.catalogoId
   return a.nombre === b.nombre
-}
-
-// Client-side equivalents — call after getSesionesConResumen
-export function getEjerciciosUsadosConGrupoLocal(sesiones) {
-  const grupos = []
-  for (const s of sesiones) {
-    for (const ej of s.resumen?.ejercicios ?? []) {
-      const grupo = grupos.find(g => esMismoEjercicio(g, ej))
-      if (grupo) {
-        if (!grupo.catalogoId && ej.catalogoId) grupo.catalogoId = ej.catalogoId
-      } else {
-        grupos.push({ nombre: ej.nombre, grupoMuscular: ej.grupoMuscular, catalogoId: ej.catalogoId ?? null })
-      }
-    }
-  }
-  return grupos.sort((a, b) => a.nombre.localeCompare(b.nombre))
-}
-
-export function getVolumenPorSesionLocal(sesiones) {
-  return sesiones
-    .filter(s => s.resumen?.volumenTotal > 0)
-    .map(s => ({ fecha: s.fecha, volumen: s.resumen.volumenTotal, sesionId: s.id }))
-    .sort((a, b) => (a.fecha?.toMillis?.() ?? 0) - (b.fecha?.toMillis?.() ?? 0))
-}
-
-export function getRegistrosPorEjercicioLocal(sesiones, ejercicio) {
-  const result = []
-  for (const s of sesiones) {
-    const ej = s.resumen?.ejercicios?.find(e => esMismoEjercicio(e, ejercicio))
-    if (!ej) continue
-    for (const serie of ej.series) {
-      result.push({
-        sesionId: s.id,
-        fecha: s.fecha,
-        pesoUsado: serie.pesoUsado,
-        repsHechas: serie.repsHechas,
-        numeroSerie: serie.numeroSerie,
-      })
-    }
-  }
-  return result.sort((a, b) => (a.fecha?.toMillis?.() ?? 0) - (b.fecha?.toMillis?.() ?? 0))
-}
-
-export function getStreaksLocal(sesiones) {
-  const epochs = sesiones
-    .map(d => toDate(d.fecha))
-    .filter(Boolean)
-    .map(d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime())
-  return calcularStreaks(epochs)
-}
-
-export async function getFechasSesiones(usuarioId) {
-  const snap = await getDocs(query(collection(db, 'sesiones'), where('usuarioId', '==', usuarioId), where('completada', '==', true)))
-  return snap.docs.map(d => d.data().fecha).filter(Boolean)
 }
 
 export async function eliminarSesion(sesionId, batch = null) {
