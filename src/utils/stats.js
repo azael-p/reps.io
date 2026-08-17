@@ -36,30 +36,42 @@ export function calcularStreaks(epochsDias) {
   return { actual, maxima }
 }
 
-export function frecuenciaSemanal(sesiones) {
-  const semanas = {}
-  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
-  const lunesHoy = new Date(hoy)
-  lunesHoy.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7))
+const lunesDeSemana = (d) => {
+  const lunes = new Date(d)
+  lunes.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  lunes.setHours(0, 0, 0, 0)
+  return lunes
+}
 
+// Últimas 8 semanas (lunes a domingo) contiguas hasta la actual, sin saltos
+// aunque haya semanas sin entrenar. Cuenta días únicos, no sesiones: dos
+// sesiones el mismo día suman 1 solo día.
+export function frecuenciaSemanal(sesiones) {
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+  const lunesHoy = lunesDeSemana(hoy)
+
+  const diasUnicos = new Set()
   for (const s of sesiones) {
     if (!s.fecha) continue
     const d = toDate(s.fecha)
-    const lunes = new Date(d)
-    lunes.setDate(d.getDate() - ((d.getDay() + 6) % 7))
-    lunes.setHours(0, 0, 0, 0)
-    const key = lunes.getTime()
-    if (!semanas[key]) semanas[key] = { fecha: lunes, dias: 0 }
-    semanas[key].dias += 1
+    diasUnicos.add(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime())
   }
-  return Object.values(semanas)
-    .sort((a, b) => a.fecha - b.fecha)
-    .map(({ fecha, dias }) => {
-      const esActual = fecha.getTime() === lunesHoy.getTime()
-      const domingo = new Date(fecha); domingo.setDate(fecha.getDate() + 6)
-      const fmtDia = d => d.toLocaleDateString('es-UY', { day: 'numeric', month: 'short' }).replace('.', '')
-      const semana = esActual ? 'Esta sem.' : `${fmtDia(fecha)}–${fmtDia(domingo)}`
-      return { semana, dias }
-    })
-    .slice(-8)
+
+  const diasPorSemana = {}
+  for (const epoch of diasUnicos) {
+    const key = lunesDeSemana(new Date(epoch)).getTime()
+    diasPorSemana[key] = (diasPorSemana[key] ?? 0) + 1
+  }
+
+  const fmtDia = d => d.toLocaleDateString('es-UY', { day: 'numeric', month: 'short' }).replace('.', '')
+  const semanas = []
+  for (let i = 7; i >= 0; i--) {
+    const lunes = new Date(lunesHoy)
+    lunes.setDate(lunesHoy.getDate() - i * 7)
+    const esActual = i === 0
+    const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6)
+    const semana = esActual ? 'Esta sem.' : `${fmtDia(lunes)}–${fmtDia(domingo)}`
+    semanas.push({ semana, dias: diasPorSemana[lunes.getTime()] ?? 0 })
+  }
+  return semanas
 }
