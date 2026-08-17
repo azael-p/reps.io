@@ -63,6 +63,12 @@ VITE_FIREBASE_APP_ID=...
 VITE_FIREBASE_MEASUREMENT_ID=...
 ```
 
+Opcionalmente, `VITE_SENTRY_DSN` con el DSN del proyecto en [sentry.io](https://sentry.io) para reportar errores de JS. Solo se activa en el build de producción (`import.meta.env.PROD`) — en desarrollo local no se envía nada a Sentry, así que dejarla vacía o sin definir no rompe nada.
+
+```
+VITE_SENTRY_DSN=...
+```
+
 ```bash
 npm run dev      # desarrollo
 npm run build    # producción

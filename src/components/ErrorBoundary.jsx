@@ -1,6 +1,7 @@
 import { Component } from 'react'
 import { logEvento } from '../firebase/analytics'
 import { truncar } from '../firebase/errores'
+import { capturarError } from '../sentry'
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -19,6 +20,7 @@ export default class ErrorBoundary extends Component {
       stack: truncar(error.stack),
       pathname: window.location.pathname,
     })
+    capturarError(error, { contexts: { react: { componentStack: info.componentStack } } })
   }
 
   handleRetry = () => {
