@@ -3,6 +3,8 @@ import { render } from '@testing-library/react'
 import UpdateBanner from './UpdateBanner'
 
 const updateServiceWorker = vi.fn()
+const mockShow = vi.fn(() => 'toast-1')
+const mockDismiss = vi.fn()
 let mockNeedRefresh = false
 let capturedOnRegisteredSW
 
@@ -17,9 +19,15 @@ vi.mock('virtual:pwa-register/react', () => ({
   }),
 }))
 
+vi.mock('./Toast', () => ({
+  useToast: () => ({ show: mockShow, dismiss: mockDismiss }),
+}))
+
 beforeEach(() => {
   mockNeedRefresh = false
   updateServiceWorker.mockClear()
+  mockShow.mockClear()
+  mockDismiss.mockClear()
   capturedOnRegisteredSW = undefined
 })
 
@@ -35,14 +43,30 @@ describe('UpdateBanner', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('actualiza el service worker automáticamente cuando hay una versión nueva', () => {
+  it('muestra un toast persistente con acción "Actualizar" cuando hay una versión nueva, sin recargar solo', () => {
     mockNeedRefresh = true
     render(<UpdateBanner />)
+
+    expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({
+      duration: 0,
+      action: expect.objectContaining({ label: 'Actualizar' }),
+    }))
+    expect(updateServiceWorker).not.toHaveBeenCalled()
+  })
+
+  it('actualiza el service worker recién cuando el usuario toca la acción del toast', () => {
+    mockNeedRefresh = true
+    render(<UpdateBanner />)
+
+    const { action } = mockShow.mock.calls[0][0]
+    action.onClick()
+
     expect(updateServiceWorker).toHaveBeenCalledWith(true)
   })
 
-  it('no actualiza el service worker si no hay una versión nueva', () => {
+  it('no muestra el toast ni actualiza el service worker si no hay una versión nueva', () => {
     render(<UpdateBanner />)
+    expect(mockShow).not.toHaveBeenCalled()
     expect(updateServiceWorker).not.toHaveBeenCalled()
   })
 
