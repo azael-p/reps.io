@@ -163,6 +163,21 @@ describe('removerSesionDeResumenGlobal', () => {
     await removerSesionDeResumenGlobal('user1', { sesionId: 's1', fecha: DIA(2026, 6, 10) })
     expect(mockSetDoc).not.toHaveBeenCalled()
   })
+
+  it('con batch externo, escribe en el batch (merge) y no llama a setDoc ni comitea', async () => {
+    mockGetDoc.mockResolvedValue({ exists: () => true, data: () => agregado })
+    mockGetDocs.mockResolvedValue({ docs: [{ id: 's1' }] })
+    const batch = { set: vi.fn(), commit: vi.fn() }
+
+    await removerSesionDeResumenGlobal('user1', { sesionId: 's1', fecha: DIA(2026, 6, 10) }, batch)
+
+    expect(mockSetDoc).not.toHaveBeenCalled()
+    expect(batch.commit).not.toHaveBeenCalled()
+    const [ref, escrito, opciones] = batch.set.mock.calls[0]
+    expect(ref.path).toBe('usuarios/user1/stats/global')
+    expect(escrito.diasEntrenados).toEqual([])
+    expect(opciones).toEqual({ merge: true })
+  })
 })
 
 // ---------------------------------------------------------------------------

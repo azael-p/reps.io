@@ -1,11 +1,12 @@
 vi.mock('./config', () => ({ db: {}, auth: { currentUser: { uid: 'test-uid' } } }))
 const mockGetDocs = vi.fn()
+const mockWriteBatch = vi.fn()
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn((_db, ...path) => ({ path: path.join('/') })),
   addDoc: vi.fn(),
   updateDoc: vi.fn(),
   deleteDoc: vi.fn(),
-  doc: vi.fn(),
+  doc: vi.fn((_db, ...path) => ({ path: path.join('/') })),
   getDoc: vi.fn(),
   query: vi.fn((col, ...restricciones) => ({ col, restricciones })),
   where: vi.fn((...args) => ({ type: 'where', args })),
@@ -13,6 +14,7 @@ vi.mock('firebase/firestore', () => ({
   limit: vi.fn((n) => ({ type: 'limit', n })),
   startAfter: vi.fn((doc) => ({ type: 'startAfter', doc })),
   getDocs: (...args) => mockGetDocs(...args),
+  writeBatch: (...args) => mockWriteBatch(...args),
 }))
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
@@ -23,6 +25,7 @@ import {
   getStreaksLocal,
   esMismoEjercicio,
   getSesionesPaginadas,
+  eliminarSesion,
 } from './sesiones'
 
 // Use local dates (y, m, d) to avoid UTC vs local timezone mismatches.
@@ -352,5 +355,34 @@ describe('getSesionesPaginadas', () => {
     const llamada = mockGetDocs.mock.calls[0][0]
     const startAfterCall = llamada.restricciones.find(r => r.type === 'startAfter')
     expect(startAfterCall.doc).toBe(cursor)
+  })
+})
+
+describe('eliminarSesion', () => {
+  const registrosDocs = [{ ref: { path: 'registros/r1' } }, { ref: { path: 'registros/r2' } }]
+
+  beforeEach(() => {
+    mockGetDocs.mockResolvedValue({ docs: registrosDocs })
+    mockWriteBatch.mockClear()
+  })
+
+  it('sin batch externo, borra los registros y la sesión en un batch propio y lo comitea', async () => {
+    const own = { delete: vi.fn(), commit: vi.fn().mockResolvedValue(undefined) }
+    mockWriteBatch.mockReturnValue(own)
+
+    await eliminarSesion('ses1')
+
+    expect(own.delete).toHaveBeenCalledTimes(3) // 2 registros + la sesión
+    expect(own.commit).toHaveBeenCalledOnce()
+  })
+
+  it('con batch externo, agrega los deletes a ese batch y no comitea', async () => {
+    const externo = { delete: vi.fn(), commit: vi.fn() }
+
+    await eliminarSesion('ses1', externo)
+
+    expect(externo.delete).toHaveBeenCalledTimes(3)
+    expect(externo.commit).not.toHaveBeenCalled()
+    expect(mockWriteBatch).not.toHaveBeenCalled()
   })
 })

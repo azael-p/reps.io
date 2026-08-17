@@ -95,11 +95,18 @@ export async function aplicarSesionAStats(uid, { sesionId, fecha, resumen }, bat
 
 // Reconstruye los docs de stats de VARIOS ejercicios con un solo scan del
 // historial. Camino raro (editar/eliminar sesiones viejas): acá sí se paga.
-export async function rebuildStatsEjercicios(uid, ejercicios) {
+// Si se pasa un `batch` externo, agrega a ese batch sin comitear (el caller
+// es responsable del commit). `excluirSesionId` saca esa sesión del
+// historial usado para reconstruir, aunque su doc todavía exista en
+// Firestore (caso: se está borrando dentro del mismo batch, que no es
+// visible a esta lectura hasta que se comitee).
+export async function rebuildStatsEjercicios(uid, ejercicios, batch = null, { excluirSesionId = null } = {}) {
   if (!ejercicios?.length) return
-  const sesiones = await getSesionesConResumen(uid) // desc por fecha
+  let sesiones = await getSesionesConResumen(uid) // desc por fecha
+  if (excluirSesionId) sesiones = sesiones.filter(s => s.id !== excluirSesionId)
 
-  const batch = writeBatch(db)
+  const own = !batch
+  const b = batch ?? writeBatch(db)
   for (const ejercicio of ejercicios) {
     let stats = null
     for (const s of [...sesiones].reverse()) {
@@ -108,7 +115,7 @@ export async function rebuildStatsEjercicios(uid, ejercicios) {
       stats = mergeSesionEnStats(stats, ej, toDate(s.fecha)?.getTime() ?? 0, s.id)
     }
     const ref = doc(db, 'usuarios', uid, 'statsEjercicios', statsDocId(ejercicio))
-    batch.set(ref, stats ?? {
+    b.set(ref, stats ?? {
       // El ejercicio ya no aparece en ninguna sesión: doc vacío.
       nombre: ejercicio.nombre,
       grupoMuscular: ejercicio.grupoMuscular ?? '',
@@ -116,7 +123,7 @@ export async function rebuildStatsEjercicios(uid, ejercicios) {
       pr: null, ultimaVez: null, puntos: [],
     })
   }
-  await batch.commit()
+  if (own) await b.commit()
 }
 
 // Self-healing: si la colección está vacía pero hay historial, la construye.

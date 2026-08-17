@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useUser } from '../context/UserContext'
-import { getSesionesPaginadas, enrichSesionesConPrograma, eliminarSesion, esMismoEjercicio } from '../firebase/sesiones'
-import { getResumenGlobalConFallback, removerSesionDeResumenGlobal } from '../firebase/statsGlobal'
-import { getStatsEjerciciosConFallback, rebuildStatsEjercicios } from '../firebase/statsEjercicios'
+import { getSesionesPaginadas, enrichSesionesConPrograma, esMismoEjercicio } from '../firebase/sesiones'
+import { getResumenGlobalConFallback } from '../firebase/statsGlobal'
+import { getStatsEjerciciosConFallback } from '../firebase/statsEjercicios'
+import { eliminarSesionConAgregados } from '../firebase/eliminarSesion'
 import { getHistorialPeso, agregarPeso } from '../firebase/peso'
 import { PageWrapper, ConfirmDialog } from '../components/ui'
 import PullToRefresh from '../components/PullToRefresh'
@@ -224,9 +225,11 @@ export default function Progreso() {
       icon: '🗑️',
       onConfirm: async () => {
         try {
-          await eliminarSesion(sesion.id)
-          await removerSesionDeResumenGlobal(usuario.id, { sesionId: sesion.id, fecha: sesion.fecha })
-          await rebuildStatsEjercicios(usuario.id, sesion.resumen?.ejercicios ?? [])
+          await eliminarSesionConAgregados(sesion.id, {
+            usuarioId: usuario.id,
+            fecha: sesion.fecha,
+            ejercicios: sesion.resumen?.ejercicios ?? [],
+          })
         } catch (e) {
           console.error(e)
           show({ message: 'No se pudo eliminar la sesión. Intentá de nuevo.', variant: 'error' })

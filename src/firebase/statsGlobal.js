@@ -116,7 +116,7 @@ export async function aplicarSesionAResumenGlobal(uid, { sesionId, fecha, resume
   }, { merge: true })
 }
 
-export async function removerSesionDeResumenGlobal(uid, { sesionId, fecha }) {
+export async function removerSesionDeResumenGlobal(uid, { sesionId, fecha }, batch = null) {
   const actual = await getResumenGlobal(uid)
   if (!actual) return
 
@@ -126,6 +126,9 @@ export async function removerSesionDeResumenGlobal(uid, { sesionId, fecha }) {
   const e = epochDia(fecha)
   if (e !== null) {
     // El día se quita solo si no queda ninguna otra sesión completada ese día.
+    // Filtra por id explícitamente, así que da igual si esta lectura corre
+    // antes o después de que se borre `sesionId` (ej. dentro de un batch
+    // compartido que todavía no comiteó).
     const inicio = new Date(e)
     const fin = new Date(e + 86400000)
     const snap = await getDocs(query(
@@ -140,5 +143,7 @@ export async function removerSesionDeResumenGlobal(uid, { sesionId, fecha }) {
     if (!quedanOtras) dias = dias.filter(d => d !== e)
   }
 
-  await setDoc(statsRef(uid), { diasEntrenados: dias, volumenPorSesion: volumen }, { merge: true })
+  const update = { diasEntrenados: dias, volumenPorSesion: volumen }
+  if (batch) { batch.set(statsRef(uid), update, { merge: true }); return }
+  await setDoc(statsRef(uid), update, { merge: true })
 }

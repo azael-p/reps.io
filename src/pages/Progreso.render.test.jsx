@@ -21,16 +21,16 @@ vi.mock('../firebase/sesiones', async (importOriginal) => {
     ...actual,
     getSesionesPaginadas: vi.fn(),
     enrichSesionesConPrograma: vi.fn(async (_uid, pagina) => pagina.map(s => ({ ...s, diaNombre: s.resumen?.diaNombre ?? 'Push', programaNombre: 'PPL' }))),
-    eliminarSesion: vi.fn().mockResolvedValue(),
   }
 })
 vi.mock('../firebase/statsGlobal', () => ({
   getResumenGlobalConFallback: vi.fn().mockResolvedValue({ diasEntrenados: [], volumenPorSesion: [] }),
-  removerSesionDeResumenGlobal: vi.fn().mockResolvedValue(),
 }))
 vi.mock('../firebase/statsEjercicios', () => ({
   getStatsEjerciciosConFallback: vi.fn().mockResolvedValue([]),
-  rebuildStatsEjercicios: vi.fn().mockResolvedValue(),
+}))
+vi.mock('../firebase/eliminarSesion', () => ({
+  eliminarSesionConAgregados: vi.fn().mockResolvedValue(),
 }))
 vi.mock('../firebase/peso', () => ({
   getHistorialPeso: vi.fn().mockResolvedValue([]),
@@ -41,9 +41,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { getSesionesPaginadas, eliminarSesion } from '../firebase/sesiones'
-import { removerSesionDeResumenGlobal } from '../firebase/statsGlobal'
-import { rebuildStatsEjercicios } from '../firebase/statsEjercicios'
+import { getSesionesPaginadas } from '../firebase/sesiones'
+import { eliminarSesionConAgregados } from '../firebase/eliminarSesion'
 import Progreso from './Progreso'
 
 const ts = (y, m, d) => {
@@ -102,18 +101,18 @@ describe('Progreso — historial', () => {
 
     await user.click(screen.getByRole('button', { name: 'Eliminar' }))
     expect(await screen.findByText('¿Eliminar esta sesión?')).toBeInTheDocument()
-    expect(eliminarSesion).not.toHaveBeenCalled()
+    expect(eliminarSesionConAgregados).not.toHaveBeenCalled()
 
     const botonesEliminar = screen.getAllByRole('button', { name: 'Eliminar' })
     await user.click(botonesEliminar[botonesEliminar.length - 1])
-    await waitFor(() => expect(eliminarSesion).toHaveBeenCalledWith('ses1'))
-    expect(removerSesionDeResumenGlobal).toHaveBeenCalledWith('user1', { sesionId: 'ses1', fecha: SESION.fecha })
-    expect(rebuildStatsEjercicios).toHaveBeenCalledWith('user1', [])
+    await waitFor(() => expect(eliminarSesionConAgregados).toHaveBeenCalledWith('ses1', {
+      usuarioId: 'user1', fecha: SESION.fecha, ejercicios: [],
+    }))
   })
 
   it('si falla el borrado, muestra un toast de error', async () => {
     getSesionesPaginadas.mockResolvedValue({ sesiones: [SESION], ultimoDoc: null, hayMas: false })
-    eliminarSesion.mockRejectedValue(new Error('offline'))
+    eliminarSesionConAgregados.mockRejectedValue(new Error('offline'))
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const user = userEvent.setup()
     renderPage()

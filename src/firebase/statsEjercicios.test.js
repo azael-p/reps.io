@@ -140,6 +140,44 @@ describe('rebuildStatsEjercicios', () => {
     expect(escrito.pr).toBeNull()
     expect(escrito.puntos).toEqual([])
   })
+
+  it('sin batch externo, comitea el batch propio', async () => {
+    getSesionesConResumen.mockResolvedValue([])
+    await rebuildStatsEjercicios('user1', [{ catalogoId: 'press', nombre: 'Press', grupoMuscular: 'Pecho' }])
+    expect(mockBatchCommit).toHaveBeenCalledOnce()
+  })
+
+  it('con batch externo, agrega al batch pero no comitea', async () => {
+    getSesionesConResumen.mockResolvedValue([])
+    const batchExterno = { set: mockBatchSet, commit: mockBatchCommit }
+    await rebuildStatsEjercicios('user1', [{ catalogoId: 'press', nombre: 'Press', grupoMuscular: 'Pecho' }], batchExterno)
+    expect(mockBatchSet).toHaveBeenCalledTimes(1)
+    expect(mockBatchCommit).not.toHaveBeenCalled()
+  })
+
+  it('excluirSesionId saca esa sesión del historial usado para reconstruir', async () => {
+    getSesionesConResumen.mockResolvedValue([
+      {
+        id: 's-vieja', fecha: new Date(FECHA1),
+        resumen: { ejercicios: [{ ejercicioId: 'a', catalogoId: 'press', nombre: 'Press', grupoMuscular: 'Pecho', series: [{ numeroSerie: 1, pesoUsado: 60, repsHechas: 5 }] }] },
+      },
+      {
+        // Esta es la sesión que se está borrando: si no se excluye, su peso
+        // más alto (85) ganaría el PR en vez del de la sesión vieja (60).
+        id: 's-borrando', fecha: new Date(FECHA1 + 1000),
+        resumen: { ejercicios: [{ ejercicioId: 'a', catalogoId: 'press', nombre: 'Press', grupoMuscular: 'Pecho', series: [{ numeroSerie: 1, pesoUsado: 85, repsHechas: 5 }] }] },
+      },
+    ])
+    await rebuildStatsEjercicios(
+      'user1',
+      [{ catalogoId: 'press', nombre: 'Press', grupoMuscular: 'Pecho' }],
+      null,
+      { excluirSesionId: 's-borrando' },
+    )
+    const escrito = mockBatchSet.mock.calls[0][1]
+    expect(escrito.pr.maxPeso).toBe(60)
+    expect(escrito.pr.sesionId).toBe('s-vieja')
+  })
 })
 
 // ---------------------------------------------------------------------------

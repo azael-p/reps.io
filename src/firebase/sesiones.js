@@ -164,14 +164,15 @@ export async function getFechasSesiones(usuarioId) {
   return snap.docs.map(d => d.data().fecha).filter(Boolean)
 }
 
-export async function eliminarSesion(sesionId) {
+export async function eliminarSesion(sesionId, batch = null) {
   const rSnap = await getDocs(query(
     collection(db, 'registros'),
     where('usuarioId', '==', auth.currentUser.uid),
     where('sesionId', '==', sesionId),
   ))
-  const batch = writeBatch(db)
-  rSnap.docs.forEach(r => batch.delete(r.ref))
-  batch.delete(doc(db, 'sesiones', sesionId))
-  await batch.commit()
+  const own = !batch
+  const b = batch ?? writeBatch(db)
+  rSnap.docs.forEach(r => b.delete(r.ref))
+  b.delete(doc(db, 'sesiones', sesionId))
+  if (own) await b.commit()
 }
