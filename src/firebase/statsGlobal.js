@@ -10,6 +10,10 @@ import { getSesionesConResumen } from './sesiones'
 // guardan como epoch millis; toDate() las convierte donde haga falta.
 
 const MAX_VOLUMEN = 200
+// Margen sobre MAX_VOLUMEN para no reescribir el doc en cada lectura una vez
+// pasado el cap: se compacta a 200 recién al llegar a 250, así hacen falta
+// otras 50 sesiones para la próxima.
+const UMBRAL_COMPACTACION = 250
 
 const statsRef = (uid) => doc(db, 'usuarios', uid, 'stats', 'global')
 
@@ -46,11 +50,40 @@ export async function getResumenGlobal(uid) {
   return snap.exists() ? snap.data() : null
 }
 
+// Deja volumenPorSesion en <= MAX_VOLUMEN entradas: dedupea por sesionId
+// (quedándose con la última) y ordena por fecha. El camino de alta escribe
+// con arrayUnion (ver bug #3), que no puede cappear ni ordenar al escribir,
+// así que el array crece sin techo; esto lo recorta cada tanto.
+export function compactarVolumen(volumenPorSesion) {
+  const porSesion = new Map()
+  for (const v of volumenPorSesion ?? []) porSesion.set(v.sesionId, v)
+  return [...porSesion.values()]
+    .sort((a, b) => a.fecha - b.fecha)
+    .slice(-MAX_VOLUMEN)
+}
+
 // Self-healing: si el agregado no existe todavía (usuario pre-migración),
-// lo construye desde el historial completo y lo persiste.
+// lo construye desde el historial completo y lo persiste. De paso compacta
+// volumenPorSesion si creció por encima del umbral.
 export async function getResumenGlobalConFallback(uid) {
-  const existente = await getResumenGlobal(uid)
-  if (existente) return existente
+  const snap = await getDoc(statsRef(uid))
+
+  if (snap.exists()) {
+    const data = snap.data()
+    // El tamaño se chequea primero (discriminador barato, falso en el caso
+    // normal). Solo se compacta con una lectura confirmada por el servidor:
+    // sobre un doc servido del cache podría haber entradas escritas desde
+    // otro dispositivo que este cliente todavía no vio, y recortar sobre esa
+    // base las borraría (mismo riesgo que motivó el bug #3).
+    if ((data.volumenPorSesion?.length ?? 0) > UMBRAL_COMPACTACION && !snap.metadata.fromCache) {
+      const volumenPorSesion = compactarVolumen(data.volumenPorSesion)
+      // Fire-and-forget: es mantenimiento, no debe demorar el render (bug #1).
+      setDoc(statsRef(uid), { volumenPorSesion }, { merge: true }).catch(e => console.error(e))
+      return { ...data, volumenPorSesion }
+    }
+    return data
+  }
+
   const sesiones = await getSesionesConResumen(uid)
   const construido = buildResumenGlobal(sesiones)
   if (sesiones.length > 0) await setDoc(statsRef(uid), construido)

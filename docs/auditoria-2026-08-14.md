@@ -274,6 +274,36 @@ distintos según si hace falta leer antes de escribir o no.
   ya se hacía en memoria, así que no rompe nada funcional hoy, pero vale
   monitorear el tamaño del doc en usuarios de mucha antigüedad — no
   resuelto en este fix (tarea de compactación periódica, pendiente).
+  - **Seguimiento cerrado (2026-08-17):** implementada la compactación como
+    **tarea oportunista en la lectura**, no periódica. Nueva función
+    [`compactarVolumen`](../src/firebase/statsGlobal.js) (dedupea por
+    `sesionId`, ordena por fecha y recorta a `MAX_VOLUMEN`), invocada desde
+    `getResumenGlobalConFallback` — el punto por el que Progreso y Home ya
+    leen el agregado, así que no hace falta ninguna lectura extra ni un
+    proceso aparte.
+    - **Histéresis:** se compacta a 200 recién al superar
+      `UMBRAL_COMPACTACION = 250`, no apenas se pasa el cap. Sin ese margen
+      el doc se reescribiría en cada lectura una vez llegado a 201.
+    - **Guard de `fromCache`, igual que en el camino de edición:** solo se
+      compacta si la lectura fue confirmada por el servidor. Sobre un doc
+      servido del cache podría haber entradas escritas desde otro
+      dispositivo que este cliente todavía no vio, y recortar sobre esa base
+      las borraría — exactamente el modo de falla que motivó este bug #3.
+    - La escritura es fire-and-forget con `.catch` (patrón del bug #1): es
+      mantenimiento, no debe demorar el render ni colgar la UI sin red. Se
+      escribe con `{merge:true}` y **solo** el campo `volumenPorSesion`, así
+      que no toca `diasEntrenados`.
+    - De paso cubre un caso que el texto original no mencionaba: `arrayUnion`
+      dedupea por igualdad **exacta de valor**, así que dos altas de la misma
+      sesión con un `diaNombre` distinto dejarían dos entradas para el mismo
+      `sesionId`. La compactación dedupea por `sesionId`.
+
+    Tests en [`statsGlobal.test.js`](../src/firebase/statsGlobal.test.js):
+    `compactarVolumen` (cap, orden, dedupe por `sesionId`, `undefined`), y 4
+    de `getResumenGlobalConFallback` — compacta y persiste con lectura del
+    servidor, **no** compacta con lectura de cache (se verificó que el test
+    falla si se quita el guard), no escribe por debajo del umbral, y un fallo
+    de escritura no rompe la lectura.
 - No se usó `runTransaction` (misma razón que en el bug #2: no está en uso
   en el proyecto y reintroduciría el riesgo de cuelgue offline del bug #1).
 

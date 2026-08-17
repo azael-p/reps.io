@@ -24,7 +24,7 @@ vi.mock('./sesiones', () => ({ getSesionesConResumen: vi.fn() }))
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
-  epochDia, buildResumenGlobal, getResumenGlobalConFallback,
+  epochDia, buildResumenGlobal, getResumenGlobalConFallback, compactarVolumen,
   agregarSesionAResumenGlobalBlind, aplicarSesionAResumenGlobal, removerSesionDeResumenGlobal,
 } from './statsGlobal'
 import { where } from 'firebase/firestore'
@@ -35,6 +35,8 @@ const E = (y, m, d) => DIA(y, m, d).getTime()
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // El código hace .catch() sobre setDoc en el camino fire-and-forget.
+  mockSetDoc.mockResolvedValue(undefined)
 })
 
 // ---------------------------------------------------------------------------
@@ -245,5 +247,97 @@ describe('aplicarSesionAResumenGlobal — guard de lectura desde cache', () => {
     const escrito = mockSetDoc.mock.calls[0][1]
     expect(escrito.diasEntrenados).toEqual([E(2026, 6, 10)])
     expect(escrito.volumenPorSesion.map(v => v.sesionId)).toEqual(['s1'])
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('compactarVolumen', () => {
+  const entrada = (i) => ({ sesionId: `s${i}`, fecha: i, volumen: 100, diaNombre: 'Push' })
+
+  it('deja como mucho MAX_VOLUMEN (200) entradas, quedándose con las más recientes', () => {
+    const r = compactarVolumen(Array.from({ length: 260 }, (_, i) => entrada(i)))
+    expect(r).toHaveLength(200)
+    expect(r[0].sesionId).toBe('s60')
+    expect(r[199].sesionId).toBe('s259')
+  })
+
+  it('ordena por fecha aunque venga desordenado (arrayUnion no ordena)', () => {
+    const r = compactarVolumen([entrada(3), entrada(1), entrada(2)])
+    expect(r.map(v => v.fecha)).toEqual([1, 2, 3])
+  })
+
+  it('dedupea por sesionId quedándose con la última entrada', () => {
+    const r = compactarVolumen([
+      { sesionId: 's1', fecha: 1, volumen: 100, diaNombre: 'Push' },
+      { sesionId: 's1', fecha: 1, volumen: 250, diaNombre: 'Push renombrado' },
+    ])
+    expect(r).toHaveLength(1)
+    expect(r[0].volumen).toBe(250)
+  })
+
+  it('tolera undefined', () => {
+    expect(compactarVolumen(undefined)).toEqual([])
+  })
+})
+
+describe('getResumenGlobalConFallback — compactación oportunista', () => {
+  const grande = Array.from({ length: 260 }, (_, i) => ({ sesionId: `s${i}`, fecha: i, volumen: 100, diaNombre: 'Push' }))
+
+  it('compacta y persiste cuando el array pasó el umbral y la lectura vino del servidor', async () => {
+    mockGetDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => ({ diasEntrenados: [1], volumenPorSesion: grande }),
+      metadata: { fromCache: false },
+    })
+
+    const r = await getResumenGlobalConFallback('user1')
+
+    expect(r.volumenPorSesion).toHaveLength(200)
+    expect(r.diasEntrenados).toEqual([1]) // el resto del doc se preserva
+    const [ref, escrito, opciones] = mockSetDoc.mock.calls[0]
+    expect(ref.path).toBe('usuarios/user1/stats/global')
+    expect(escrito.volumenPorSesion).toHaveLength(200)
+    expect(escrito.diasEntrenados).toBeUndefined() // merge parcial: no reescribe los días
+    expect(opciones).toEqual({ merge: true })
+  })
+
+  it('NO compacta si la lectura vino del cache (podría haber entradas de otro dispositivo)', async () => {
+    mockGetDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => ({ diasEntrenados: [1], volumenPorSesion: grande }),
+      metadata: { fromCache: true },
+    })
+
+    const r = await getResumenGlobalConFallback('user1')
+
+    expect(r.volumenPorSesion).toHaveLength(260) // devuelve el doc tal cual
+    expect(mockSetDoc).not.toHaveBeenCalled()
+  })
+
+  it('no escribe nada si el array está por debajo del umbral', async () => {
+    const chico = grande.slice(0, 250)
+    mockGetDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => ({ diasEntrenados: [1], volumenPorSesion: chico }),
+      metadata: { fromCache: false },
+    })
+
+    await getResumenGlobalConFallback('user1')
+
+    expect(mockSetDoc).not.toHaveBeenCalled()
+  })
+
+  it('un fallo al compactar no rompe la lectura', async () => {
+    mockGetDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => ({ diasEntrenados: [1], volumenPorSesion: grande }),
+      metadata: { fromCache: false },
+    })
+    mockSetDoc.mockRejectedValue(new Error('sin red'))
+
+    const r = await getResumenGlobalConFallback('user1')
+
+    expect(r.volumenPorSesion).toHaveLength(200)
   })
 })
