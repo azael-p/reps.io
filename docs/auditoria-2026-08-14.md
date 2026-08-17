@@ -38,7 +38,7 @@ ni configuración.
 | 16 | 🟡 media | `ResumenSesion.jsx:106-108` | Backfillea el resumen pero no los agregados — **✅ resuelto 2026-08-17** |
 | 17 | 🟡 media | varios | Errores tragados en silencio y promesas flotantes — **✅ resuelto 2026-08-17** |
 | 18 | 🟡 media | `npm audit` | 20 vulnerabilidades; `npm audit fix` resuelve la mayoría sin breaking changes — **✅ resuelto 2026-08-17** |
-| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19, #20, #21 ✅ resueltos 2026-08-17** (#19 requiere correr `scripts/backfillStats.js`) |
+| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19–#22 ✅ resueltos 2026-08-17** (#19 requiere correr `scripts/backfillStats.js`) |
 
 Los tres primeros son los que **rompen datos de usuarios reales** y deberían ir
 primero. El #4, #5 y #8 son los de mejor relación esfuerzo/impacto.
@@ -1359,6 +1359,27 @@ Firestore", pero hay 16 usos en `SesionActiva.jsx`, `Entrenar.jsx`, `Home.jsx` y
 onboarding). Conviene actualizar la regla o el código: hoy el flag de onboarding y
 el puntero de sesión activa **no sincronizan entre dispositivos**, y el cache del
 calendario (`Home.jsx:87`) puede quedar desfasado del agregado real.
+
+**Resolución (2026-08-17):** se actualizó **la regla**, no el código —
+decisión tomada explícitamente con el desarrollador.
+
+- `CLAUDE.md` ahora distingue dos cosas que la regla original mezclaba:
+  *todo dato de entrenamiento va a Firestore sin excepción*, y `localStorage`
+  queda permitido **solo** para estado efímero del dispositivo. Se enumeran
+  las 3 claves vigentes (`sesion_activa_{uid}`, `calendario_{uid}`,
+  `onboarding_{uid}`) con la indicación de que esa lista no debería crecer
+  sin razón clara, y se documenta la consecuencia aceptada (esas 3 cosas no
+  siguen al usuario entre dispositivos).
+- **Por qué no se migró el código:** ninguno de los 3 usos es historial de
+  entrenamiento — son un puntero de navegación, un cache de render y un flag
+  de UI. Migrarlos agregaría lecturas de Firestore en Home y al iniciar una
+  sesión, es decir en los flujos que `CLAUDE.md` prioriza mantener
+  instantáneos ("celular en la mano entre series"), a cambio de sincronizar
+  cosas que no aportan valor cruzado entre dispositivos.
+- Los 16 usos se verificaron uno por uno: los 16 caen dentro de esas 3
+  claves. No había ningún dato de entrenamiento guardado en `localStorage`,
+  así que la regla actualizada describe el código tal como está — no se
+  legitimó ninguna desviación real.
 
 ### 23. Accesibilidad
 
