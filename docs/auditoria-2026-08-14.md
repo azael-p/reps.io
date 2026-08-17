@@ -38,7 +38,7 @@ ni configuración.
 | 16 | 🟡 media | `ResumenSesion.jsx:106-108` | Backfillea el resumen pero no los agregados — **✅ resuelto 2026-08-17** |
 | 17 | 🟡 media | varios | Errores tragados en silencio y promesas flotantes — **✅ resuelto 2026-08-17** |
 | 18 | 🟡 media | `npm audit` | 20 vulnerabilidades; `npm audit fix` resuelve la mayoría sin breaking changes — **✅ resuelto 2026-08-17** |
-| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores |
+| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19 ✅ resuelto 2026-08-17** (requiere correr `scripts/backfillStats.js`) |
 
 Los tres primeros son los que **rompen datos de usuarios reales** y deberían ir
 primero. El #4, #5 y #8 son los de mejor relación esfuerzo/impacto.
@@ -1231,6 +1231,59 @@ crudo. Consecuencias:
    sigue apareciendo en el selector de Progreso como un ejercicio fantasma.
 3. `statsDocId({ nombre: '⚡' })` → slug vacío → id `n_`, compartido por todos los
    nombres sin caracteres ASCII.
+
+**Resolución (2026-08-17):** el diagnóstico afinado es que `statsDocId` era
+**menos discriminante** que `esMismoEjercicio`: el slug normaliza acentos y
+mayúsculas, mientras que `esMismoEjercicio` compara el `nombre` crudo. El fix
+alinea a `statsDocId` con esa semántica sin tocar `esMismoEjercicio` (que ya
+es correcta para su propio uso: agrupar por igualdad exacta del nombre
+embebido en el historial).
+
+- [`statsDocId`](../src/firebase/statsEjercicios.js) ahora sufija el slug con
+  un hash djb2 determinístico del **nombre exacto**:
+  `n_${slug}_${hashNombre(nombre)}`. Se conserva el slug por legibilidad en
+  la consola de Firestore. Cierra los casos 1 y 3 de raíz:
+  `"Sentadilla búlgara"` → `n_sentadilla-bulgara_1c0fqvd` vs
+  `"sentadilla bulgara"` → `n_sentadilla-bulgara_fyzakk`, y `'⚡'`/`'🔥'`
+  dejan de compartir el id `n_`.
+- **El caso 2 (renombrar un ejercicio custom "abandona" el doc viejo) se
+  resolvió como no-bug**, deliberadamente: `CLAUDE.md` documenta que el
+  nombre se guarda como string en cada registro histórico *"para proteger el
+  historial si se edita el ejercicio después"*. El doc viejo representa PRs
+  reales logrados bajo el nombre anterior — fusionarlo con el nuevo cambiaría
+  el historial retroactivamente. Lo que sí se corrigió es la acumulación de
+  huérfanos (ver el script, abajo).
+- **Migración de datos, obligatoria:** el cambio de fórmula altera el id de
+  **todos** los docs de `statsEjercicios` sin `catalogoId`, no solo los que
+  colisionaban. Sin migrar, los docs viejos quedan huérfanos y el
+  self-healing no los recupera (`getStatsEjerciciosConFallback` solo
+  reconstruye si la colección está **vacía**, y no lo estaría).
+  [`scripts/backfillStats.js`](../scripts/backfillStats.js) es la
+  herramienta: reconstruye `statsEjercicios` desde el historial de sesiones,
+  así que regenera todo con los ids nuevos.
+  - Se actualizó su copia local de `statsDocId`/`hashNombre` (el script no
+    puede importar `src/firebase/` porque ese módulo inicializa el SDK
+    cliente); se verificó carácter por carácter que ambas implementaciones
+    son idénticas.
+  - **Se le agregó el borrado de huérfanos**, que faltaba: el script decía
+    en su cabecera "Idempotente: reconstruye desde cero" pero nunca borraba
+    los docs que dejaba de producir. Ahora lista los docs existentes que no
+    están en el set recién calculado, los reporta en el dry-run y los borra
+    en el mismo batch con `--aplicar`. Sin esto, la migración habría dejado
+    los docs viejos conviviendo con los nuevos (ejercicios fantasma en el
+    selector de Progreso).
+  - **Pendiente de ejecución:** correr `node scripts/backfillStats.js`
+    (dry-run, revisar el listado de huérfanos) y recién después
+    `--aplicar`, **antes o junto con** el deploy de este cambio. Es una
+    escritura masiva sobre datos reales, así que requiere confirmación
+    explícita — no se ejecutó como parte de este fix.
+
+Tests nuevos en
+[`statsEjercicios.test.js`](../src/firebase/statsEjercicios.test.js): el id
+es determinístico, dos nombres que slugifican igual ya no colisionan, y dos
+nombres cuyo slug queda vacío tampoco. El test existente de
+`aplicarSesionAStats` dejó de hardcodear el id literal (ahora lo deriva
+llamando a `statsDocId`) para no acoplarse al valor del hash.
 
 ### 20. Ventana de día de ±1 h en cambios de horario
 

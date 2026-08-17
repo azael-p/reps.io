@@ -37,7 +37,25 @@ describe('statsDocId', () => {
   })
 
   it('slugifica el nombre para ejercicios custom (acentos incluidos)', () => {
-    expect(statsDocId({ catalogoId: null, nombre: 'Extensión de tríceps' })).toBe('n_extension-de-triceps')
+    expect(statsDocId({ catalogoId: null, nombre: 'Extensión de tríceps' })).toMatch(/^n_extension-de-triceps_/)
+  })
+
+  it('es determinístico: el mismo nombre da siempre el mismo id', () => {
+    const a = statsDocId({ catalogoId: null, nombre: 'Sentadilla búlgara' })
+    const b = statsDocId({ catalogoId: null, nombre: 'Sentadilla búlgara' })
+    expect(a).toBe(b)
+  })
+
+  it('no colisiona entre nombres que slugifican igual (acentos/mayúsculas)', () => {
+    const conAcento = statsDocId({ catalogoId: null, nombre: 'Sentadilla búlgara' })
+    const sinAcento = statsDocId({ catalogoId: null, nombre: 'sentadilla bulgara' })
+    expect(conAcento).not.toBe(sinAcento)
+  })
+
+  it('no colisiona entre nombres cuyo slug queda vacío (sin caracteres ASCII)', () => {
+    const rayo = statsDocId({ catalogoId: null, nombre: '⚡' })
+    const fuego = statsDocId({ catalogoId: null, nombre: '🔥' })
+    expect(rayo).not.toBe(fuego)
   })
 })
 
@@ -97,7 +115,7 @@ describe('aplicarSesionAStats', () => {
     expect(mockBatchSet).toHaveBeenCalledTimes(2)
     const paths = mockBatchSet.mock.calls.map(c => c[0].path)
     expect(paths).toContain('usuarios/user1/statsEjercicios/press')
-    expect(paths).toContain('usuarios/user1/statsEjercicios/n_curl-raro')
+    expect(paths).toContain(`usuarios/user1/statsEjercicios/${statsDocId({ catalogoId: null, nombre: 'Curl raro' })}`)
     expect(mockBatchCommit).toHaveBeenCalledOnce()
   })
 

@@ -46,12 +46,19 @@ const esMismoEjercicio = (a, b) => {
   return a.nombre === b.nombre
 }
 
+// Debe coincidir con statsDocId/hashNombre de src/firebase/statsEjercicios.js.
+const hashNombre = (nombre) => {
+  let h = 5381
+  for (let i = 0; i < nombre.length; i++) h = ((h << 5) + h + nombre.charCodeAt(i)) | 0
+  return (h >>> 0).toString(36)
+}
+
 const statsDocId = (ejercicio) => {
   if (ejercicio.catalogoId) return ejercicio.catalogoId
   const slug = ejercicio.nombre
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-  return `n_${slug}`
+  return `n_${slug}_${hashNombre(ejercicio.nombre)}`
 }
 
 function mergeSesion(prev, ej, fechaMs, sesionId) {
@@ -127,13 +134,23 @@ async function main() {
       }
     }
 
-    console.log(`${uid}: ${sesiones.length} sesiones → ${resumenGlobal.diasEntrenados.length} días, ${Object.keys(porId).length} ejercicios`)
+    // Docs que ya no produce la reconstrucción: quedan de ids viejos (ej.
+    // tras un cambio en la fórmula de statsDocId) y hay que borrarlos, o la
+    // colección acumula ejercicios fantasma que la UI sigue mostrando.
+    const existentesSnap = await db.collection(`usuarios/${uid}/statsEjercicios`).get()
+    const huerfanos = existentesSnap.docs.map(d => d.id).filter(id => !(id in porId))
+
+    console.log(`${uid}: ${sesiones.length} sesiones → ${resumenGlobal.diasEntrenados.length} días, ${Object.keys(porId).length} ejercicios${huerfanos.length ? `, ${huerfanos.length} huérfanos a borrar` : ''}`)
+    if (huerfanos.length) console.log(`  huérfanos: ${huerfanos.join(', ')}`)
 
     if (APLICAR) {
       const batch = db.batch()
       batch.set(db.doc(`usuarios/${uid}/stats/global`), resumenGlobal)
       for (const [id, stats] of Object.entries(porId)) {
         batch.set(db.doc(`usuarios/${uid}/statsEjercicios/${id}`), stats)
+      }
+      for (const id of huerfanos) {
+        batch.delete(db.doc(`usuarios/${uid}/statsEjercicios/${id}`))
       }
       await batch.commit()
       console.log(`  ✓ escrito`)

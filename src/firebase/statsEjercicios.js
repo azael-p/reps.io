@@ -16,13 +16,26 @@ const MAX_PUNTOS = 150
 
 const col = (uid) => collection(db, 'usuarios', uid, 'statsEjercicios')
 
+// djb2 sobre el nombre exacto. El slug solo, al normalizar acentos y
+// mayúsculas, es MENOS discriminante que esMismoEjercicio (que compara el
+// nombre crudo): "Sentadilla búlgara" y "sentadilla bulgara" caían en el
+// mismo doc siendo ejercicios distintos para el resto de la app. El hash
+// restaura esa correspondencia sin perder la legibilidad del slug.
+function hashNombre(nombre) {
+  let h = 5381
+  for (let i = 0; i < nombre.length; i++) h = ((h << 5) + h + nombre.charCodeAt(i)) | 0
+  return (h >>> 0).toString(36)
+}
+
 // Misma semántica que esMismoEjercicio: catalogoId, o nombre para los custom.
 export function statsDocId(ejercicio) {
   if (ejercicio.catalogoId) return ejercicio.catalogoId
   const slug = ejercicio.nombre
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-  return `n_${slug}`
+  // El slug puede quedar vacío (nombre sin caracteres ASCII); el hash
+  // garantiza un id distinto igual.
+  return `n_${slug}_${hashNombre(ejercicio.nombre)}`
 }
 
 function statsDeSesion(ejercicioResumen, fechaMs, sesionId) {
