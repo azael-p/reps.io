@@ -623,15 +623,28 @@ los reemplaza).
     ahí promover `Content-Security-Policy-Report-Only` a
     `Content-Security-Policy` (fusionando con la directiva `frame-ancestors`
     que ya quedó enforcing por separado).
+  - **Primera ronda de verificación (2026-08-17):** hecha sobre la app
+    deployada, recorriendo login, sesión completa, Timer, Progreso y
+    Programas con la consola abierta. Aparecieron 3 violaciones; 2 quedaron
+    resueltas sumando `https://apis.google.com` a `script-src` y una
+    directiva `frame-src https://reps-io.firebaseapp.com https://apis.google.com`
+    (ver la corrección de más abajo). Queda una tercera pendiente de
+    identificar (ejecución de un script inline), así que la política **sigue
+    en Report-Only** — no se promueve a enforcing hasta cerrarla.
   - `photoURL` (guardado en `usuarios/{uid}` desde el perfil de Google, ver
     `handleFirstLogin` en `auth.js`) se verificó que no se renderiza en
     ningún `<img>` del código actual, así que `img-src` no necesitó incluir
     `googleusercontent.com`.
-  - El popup de `signInWithPopup` no requiere `frame-src`: CSP `frame-src`
-    solo rige elementos `<iframe>`/`<object>` embebidos en la página, no
-    ventanas abiertas con `window.open`. La nota de la auditoría sobre
-    `frame-src` sigue aplicando tal cual si en el futuro se migra a
-    `signInWithRedirect`.
+  - ~~El popup de `signInWithPopup` no requiere `frame-src`~~ —
+    **corregido 2026-08-17, era incorrecto.** El razonamiento (CSP
+    `frame-src` solo rige `<iframe>`/`<object>` embebidos, no ventanas de
+    `window.open`) es cierto sobre el popup en sí, pero omitía que el SDK de
+    Firebase Auth **además monta un iframe oculto** apuntando al
+    `authDomain` (`reps-io.firebaseapp.com`) y carga `gapi` desde
+    `https://apis.google.com`. Verificado en producción con la consola del
+    navegador sobre la política en modo Report-Only: sin esas dos entradas,
+    activar la CSP habría roto el login. Es exactamente el motivo por el que
+    se decidió el rollout en dos pasos en vez de aplicarla enforcing de una.
 
 ### 9. Docs soft-deleted que nunca se borran
 
