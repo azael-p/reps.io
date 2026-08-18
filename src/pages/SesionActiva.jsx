@@ -251,6 +251,7 @@ export default function SesionActiva() {
       reps: Number(repsHechas),
     })
     setGuardando(false)
+    navigator.vibrate?.(15)
     setCelebrar(true)
     clearTimeout(celebrarTimeoutRef.current)
     celebrarTimeoutRef.current = setTimeout(() => setCelebrar(false), 600)

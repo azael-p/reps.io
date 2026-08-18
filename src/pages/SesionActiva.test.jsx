@@ -290,6 +290,35 @@ describe('SesionActiva — el peso se arrastra a la serie siguiente', () => {
 
 // ---------------------------------------------------------------------------
 
+describe('SesionActiva — feedback háptico al completar serie (#23)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'dia1', completada: false }) })
+    getRegistrosSesion.mockResolvedValue([])
+    getStatsEjerciciosConFallback.mockResolvedValue([])
+    agregarRegistro.mockReturnValue({ id: 'reg1', listo: Promise.resolve() })
+  })
+
+  it('llama a navigator.vibrate al completar una serie', async () => {
+    const vibrate = vi.fn()
+    navigator.vibrate = vibrate
+    const user = userEvent.setup()
+    getEjerciciosDia.mockResolvedValue([EJ1])
+    renderSesion()
+    await waitFor(() => expect(getEjerciciosDia).toHaveBeenCalled())
+
+    await user.clear(screen.getByLabelText('Peso (kg)'))
+    await user.type(screen.getByLabelText('Peso (kg)'), '60')
+    await user.click(screen.getByRole('button', { name: /Completar serie 1/ }))
+
+    await waitFor(() => expect(vibrate).toHaveBeenCalledWith(15))
+    delete navigator.vibrate
+  })
+})
+
+// ---------------------------------------------------------------------------
+
 describe('SesionActiva — punto de sincronización en el header', () => {
   beforeEach(() => {
     vi.clearAllMocks()
