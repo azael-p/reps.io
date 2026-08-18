@@ -304,7 +304,7 @@ export default function ResumenSesion() {
               className="resumen-ejercicio-card"
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + i * 0.06, type: 'spring', stiffness: 220, damping: 22 }}
+              transition={{ delay: 0.2 + Math.min(i, 8) * 0.06, type: 'spring', stiffness: 220, damping: 22 }}
             >
               <p className="resumen-ejercicio-nombre">{nombre}</p>
               <div className="resumen-series-wrap">
@@ -316,7 +316,7 @@ export default function ResumenSesion() {
                     whileTap={{ scale: 0.98, backgroundColor: 'rgba(255,255,255,0.04)' }}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.25 + i * 0.06 + j * 0.03 }}
+                    transition={{ delay: 0.25 + Math.min(i, 8) * 0.06 + Math.min(j, 5) * 0.03 }}
                   >
                     <span className="resumen-serie-num">{r.numeroSerie}</span>
                     <span className="resumen-serie-detalle">

@@ -4,6 +4,10 @@ import { toDate } from '../../utils/fechas'
 import ChipsFiltro from './ChipsFiltro'
 import { formatFecha } from './format'
 
+// Sin tope, la sesión 20 entraba recién a los 800 ms. Mismo patrón que el
+// picker de ejercicios (SeleccionarEjercicio.jsx).
+const TOPE_ESCALONADO = 8
+
 export default function HistorialTab({
   errorCarga, cargar, sesiones, navigate,
   frec, maxFrec,
@@ -52,7 +56,7 @@ export default function HistorialTab({
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -16, transition: { duration: 0.2 } }}
-                  transition={{ delay: i * 0.04, type: 'spring', stiffness: 220, damping: 22 }}
+                  transition={{ delay: Math.min(i, TOPE_ESCALONADO) * 0.04, type: 'spring', stiffness: 220, damping: 22 }}
                 >
                   <button type="button" className="progreso-sesion-info" onClick={() => navigate(`/sesion/${sesion.id}/resumen`)}>
                     <div className="progreso-fecha-badge">

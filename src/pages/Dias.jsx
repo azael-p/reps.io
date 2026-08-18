@@ -105,7 +105,7 @@ export default function Dias() {
               onClick={() => navigate(`/programas/${programaId}/${d.id}`)}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05, type: 'spring', stiffness: 200, damping: 22 }}
+              transition={{ delay: Math.min(i, 8) * 0.05, type: 'spring', stiffness: 200, damping: 22 }}
               whileHover={{ y: -2, transition: { duration: 0.15 } }}
             >
               <div className="crud-card-main">

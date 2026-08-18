@@ -119,7 +119,7 @@ export default function Entrenar() {
                 onClick={() => seleccionarPrograma(p.id)}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05, type: 'spring', stiffness: 240, damping: 22 }}
+                transition={{ delay: Math.min(i, 8) * 0.05, type: 'spring', stiffness: 240, damping: 22 }}
                 whileTap={{ scale: 0.97 }}
               >
                 <span className="entrenar-opcion-nombre">{p.nombre}</span>
@@ -154,7 +154,7 @@ export default function Entrenar() {
               onClick={() => setDiaId(d.id)}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04, type: 'spring', stiffness: 240, damping: 22 }}
+              transition={{ delay: Math.min(i, 8) * 0.04, type: 'spring', stiffness: 240, damping: 22 }}
               whileTap={{ scale: 0.97 }}
             >
               <div className="entrenar-opcion-text-wrap">
