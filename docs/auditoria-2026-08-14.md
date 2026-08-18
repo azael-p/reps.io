@@ -56,22 +56,43 @@ fixes de código, se completaron las dos acciones que vivían fuera del repo:
 la migración de datos del #19 (`scripts/backfillStats.js --aplicar` sobre
 producción, tras verificar que los 33 PR huérfanos se reproducían desde el
 historial y que ni el calendario ni el volumen perdían entradas) y la
-restricción de la API key del #26 en la GCP Console. La CSP del #8 pasó de
+restricción de la API key del #26 en la GCP Console. También se reparó una
+sesión completada que había quedado sin `resumen` (caso legacy del #16,
+anterior a su fix): conservaba sus 23 registros, así que se reconstruyó desde
+ellos y se recalcularon los agregados — la sesión del 2026-05-25 volvió al
+historial y al volumen. Queda una sola sesión sin `resumen`
+(`OOEm8KA1WbBp7ybM4DkI`), completada con **cero registros**: no hay nada que
+reconstruir, y se dejó como está en vez de borrarla. La CSP del #8 pasó de
 `Report-Only` a enforcing tras tres rondas de verificación en producción que
 destaparon 4 violaciones reales, dos de las cuales habrían roto el login.
 
 **Seguimientos abiertos** (anotados dentro de la resolución de su bug, no
 son hallazgos nuevos):
 
-- `programaNombre` cae a `'–'` en el historial si se borra el programa
-  (seguimiento del #9). `diaNombre` sí sobrevive. Cerrarlo exige denormalizar
-  un campo más en el `resumen` de sesiones completadas y migrar el historial.
+- ~~`programaNombre` cae a `'–'` en el historial~~ — **cerrado 2026-08-18.**
+  `buildResumen()` lo denormaliza igual que `diaNombre`, y
+  `enrichSesionesConPrograma()` cae a él si el programa (o el día) ya no
+  existe. Backfilleado sobre las 24 sesiones que tenían resumen con
+  `scripts/backfillProgramaNombre.js`; ninguna resultó irrecuperable porque
+  todos los días y programas seguían vivos al correrlo. Al implementarlo se
+  descubrió que el `?? '–'` al armar el mapa de días dejaba ese valor siempre
+  definido, así que el fallback al resumen no se habría activado nunca: se
+  quitó, y hay un test que falla si vuelve.
 - El límite de 5 `timerPresets` sigue siendo solo del cliente (#24):
   las rules no pueden contar documentos de una colección sin cambiar el
   modelo de datos. Impacto cosmético.
-- 8 vulnerabilidades de `npm audit` sin resolver (#18): todas vía
-  `firebase-admin`, que requiere un major. Solo afectan a `scripts/`
-  corriendo local con service account.
+- **`npm audit` (#18): de 8 a 6, todas `moderate` (2026-08-18).** Se subió
+  `firebase-admin` de 13 a 14 — el major que la auditoría había dejado
+  fuera. El breaking change real es que la API namespaced
+  (`admin.credential`, `admin.firestore()`, `admin.auth()`) ya no existe en
+  el default export ESM, así que los 4 scripts de `scripts/` se migraron a
+  la API modular (`firebase-admin/app`, `/firestore`, `/auth`).
+  **Verificación:** se capturó el output de dry-run de los 4 scripts con la
+  versión anterior y se comparó contra el de la nueva — idéntico byte a
+  byte. Importaba porque `backfillStats.js` hace escrituras masivas sobre
+  producción. Las 6 restantes vienen de `uuid` vía `@google-cloud/storage`;
+  `npm` solo ofrece "arreglarlas" bajando a `firebase-admin@10`, que es
+  peor. Siguen siendo dev-only.
 
 ---
 
