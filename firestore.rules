@@ -66,20 +66,23 @@ service cloud.firestore {
       match /stats/{statDoc} {
         allow read, delete: if request.auth != null && request.auth.uid == userId;
 
-        // ultimaSesionId/actualizadoEn: agregados por agregarSesionAResumenGlobalBlind
-        // (statsGlobal.js), corre en cada sesión completada. actualizadoEn requiere
-        // campoTocado() porque `== request.time` solo es cierto en el write que lo fija;
-        // sin el guard, un update posterior que no lo toque (ej.
-        // aplicarSesionAResumenGlobal) fallaría al comparar el timestamp preservado
-        // contra el request.time actual.
+        // ultimaSesionId/ultimoDiaId/actualizadoEn: agregados por
+        // agregarSesionAResumenGlobalBlind (statsGlobal.js), corre en cada
+        // sesión completada. actualizadoEn requiere campoTocado() porque
+        // `== request.time` solo es cierto en el write que lo fija; sin el
+        // guard, un update posterior que no lo toque (ej.
+        // aplicarSesionAResumenGlobal) fallaría al comparar el timestamp
+        // preservado contra el request.time actual.
         allow create: if request.auth != null && request.auth.uid == userId
-          && request.resource.data.keys().hasOnly(['diasEntrenados', 'volumenPorSesion', 'ultimaSesionId', 'actualizadoEn'])
+          && request.resource.data.keys().hasOnly(['diasEntrenados', 'volumenPorSesion', 'ultimaSesionId', 'ultimoDiaId', 'actualizadoEn'])
           && (!('ultimaSesionId' in request.resource.data) || request.resource.data.ultimaSesionId is string)
+          && (!('ultimoDiaId' in request.resource.data) || request.resource.data.ultimoDiaId is string)
           && (!('actualizadoEn' in request.resource.data) || request.resource.data.actualizadoEn == request.time);
 
         allow update: if request.auth != null && request.auth.uid == userId
-          && request.resource.data.keys().hasOnly(['diasEntrenados', 'volumenPorSesion', 'ultimaSesionId', 'actualizadoEn'])
+          && request.resource.data.keys().hasOnly(['diasEntrenados', 'volumenPorSesion', 'ultimaSesionId', 'ultimoDiaId', 'actualizadoEn'])
           && (!('ultimaSesionId' in request.resource.data) || request.resource.data.ultimaSesionId is string)
+          && (!('ultimoDiaId' in request.resource.data) || request.resource.data.ultimoDiaId is string)
           && (!campoTocado('actualizadoEn') || request.resource.data.actualizadoEn == request.time);
       }
 
