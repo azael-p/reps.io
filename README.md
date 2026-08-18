@@ -138,7 +138,7 @@ ejerciciosCatalogo/{id}      ← catálogo global, solo lectura desde el cliente
 sesiones/{id}
   usuarioId, diaId, fecha, nota, completada
   resumen: {                 ← denormalizado al completar
-    diaNombre, volumenTotal,
+    diaNombre, programaNombre, volumenTotal,
     ejercicios: [{ ejercicioId, catalogoId, nombre, grupoMuscular, series: [...] }]
   }
 
@@ -158,6 +158,8 @@ usuarios/{uid}/stats/global
 usuarios/{uid}/statsEjercicios/{catalogoId|slug}
   nombre, grupoMuscular, catalogoId, pr, ultimaVez, puntos[]
 ```
+
+`diaNombre` y `programaNombre` se guardan denormalizados a propósito: si el día o el programa se borran después, el historial sigue mostrando el nombre correcto en vez de `–`. `programaNombre` se validó como **opcional** en las reglas porque los resúmenes anteriores a esa denormalización no lo traen.
 
 Las reglas ([firestore.rules](firestore.rules)) validan la propiedad por `usuarioId`, los campos permitidos en cada `create` (`hasOnly`) y los campos que cada `update` puede tocar (`diff().affectedKeys()`). El catálogo global es de solo lectura (`allow write: if false`); se puebla vía Admin SDK desde `scripts/`.
 
@@ -184,15 +186,18 @@ Las sesiones antiguas sin `resumen` se ignoran en los gráficos.
 
 **Impacto de los agregados** (usuario con ~200 sesiones): Progreso ~200 → ~21 lecturas, SesionActiva ~200 → ~6, Home (sin cache) ~200 → 1.
 
-Diseño completo en [docs/paginacion-diseno.md](docs/paginacion-diseno.md).
+## Auditoría
+
+[docs/auditoria-2026-08-14.md](docs/auditoria-2026-08-14.md) es la bitácora de la auditoría de código de agosto 2026: **26 hallazgos, todos cerrados** (seguridad, costo de lecturas, bugs de historial). Se conserva porque registra el *porqué* de decisiones que el código no explica solo, y qué se verificó y no hace falta volver a revisar. Los commits la referencian por número en el scope, ej. `fix(9): ...` cierra el hallazgo #9.
 
 ## Scripts de mantenimiento
 
-Corren con Admin SDK y requieren `scripts/serviceAccount.json` (gitignorado). Todos aceptan dry-run por defecto:
+Corren con `firebase-admin` 14 (API modular: `firebase-admin/app` + `firebase-admin/firestore`, no el default export legacy) y requieren `scripts/serviceAccount.json` (gitignorado). Los backfills son **dry-run por defecto** e idempotentes: sin `--aplicar` no escriben nada:
 
 | Script | Qué hace |
 |---|---|
 | `node scripts/backfillStats.js [--aplicar]` | Construye `stats/global` y `statsEjercicios` para usuarios pre-migración |
+| `node scripts/backfillProgramaNombre.js [--aplicar]` | Denormaliza `programaNombre` en `sesiones.resumen`. Solo puede reparar sesiones cuyo día y programa sigan existiendo; las demás las reporta aparte en vez de inventar un valor |
 | `node scripts/migrarSesiones.js [--aplicar]` | Normaliza nombres de ejercicios contra el catálogo |
 | `npm run reporte` | Reporte de actividad (read-only). Flags: `--dias=N`, `--sin-detalle`, `--sin-conteo-sesiones` |
 
@@ -225,7 +230,7 @@ npm run lint        # ESLint (también corre en CI)
 | Páginas (`Progreso` 21 + `Progreso.render` 9, `Entrenar` 14, `EjerciciosDia` 10, `SesionActiva` 10, `Dias` 9, `Home` 9, `Programas` 8, `ResumenSesion` 8, `Login` 6, `SerieForm` 4) | 108 |
 | Componentes (`SeleccionarEjercicio` 18, `ui` 15, `SwipeToDelete` 11, `Calendario` 9, `Toast` 9, `BottomNav` 8, `UpdateBanner` 7, `ErrorBoundary` 6, `LazyPanel` 4, `Credit` 2, `PageLoader` 1) | 90 |
 | Timer (`useTimer` 21, `useWakeLock` 17, `TimerActivo` 11, `TimerConfig` 8, página `Timer` 6, `TimerFin` 4) | 67 |
-| Scripts (`reporte/transformar` 25) | 25 |
+| Scripts (`reporte-actividad/transformar` 25) | 25 |
 | Hooks (`useKeyboardShortcut` 8, `useLongPress` 7, `useEliminarConUndo` 5) | 20 |
 
 Sin cobertura hoy: `App.jsx`, `UserContext.jsx`, `utils/`, `firebase/{analytics,catalogo,config,errores,softDelete}.js`, `components/{DesktopSidebar,DnDList,Onboarding,PullToRefresh}.jsx` y los subcomponentes de `pages/progreso/`.

@@ -1,18 +1,38 @@
 # Auditoría de reps.io — 14 de agosto de 2026
 
+> **✅ CERRADA el 2026-08-18. Los 26 hallazgos están resueltos.**
+>
+> Este documento ya no es un plan de trabajo: es la **bitácora** de esa auditoría.
+> Se conserva por lo que no está en el código — el *porqué* de cada decisión (ver
+> la sección "Resolución" dentro de cada hallazgo), el apéndice de lo que se
+> verificó y no hace falta volver a revisar, y los seguimientos que siguen
+> abiertos. Los commits lo referencian por número de hallazgo en el scope, ej.
+> `fix(9): ...` cierra el #9.
+>
+> **Seguimientos vivos** (deuda conocida y aceptada, no resuelta):
+> - **#24** — el límite de 5 `timerPresets` sigue siendo solo del cliente; las
+>   rules no pueden contar documentos sin cambiar el modelo de datos. Cosmético.
+> - **#18** — quedan 6 vulnerabilidades `moderate` de `npm audit`, todas de `uuid`
+>   vía `@google-cloud/storage`. Son dev-only y la única "solución" que ofrece
+>   `npm` es bajar a `firebase-admin@10`, que es peor.
+> - **Dato de producción:** la sesión `OOEm8KA1WbBp7ybM4DkI` quedó sin `resumen`
+>   a propósito — se completó con cero registros, así que no hay nada que
+>   reconstruir. No es un bug pendiente: no intentar "arreglarla".
+
 Análisis completo del código: bugs, seguridad y deuda técnica. Todos los hallazgos
 fueron verificados leyendo el código; cada uno cita `archivo:línea` y transcribe el
 fragmento relevante.
 
-**Estado base al momento de la auditoría:**
+**Estado base al momento de la auditoría (14 de agosto, antes de cualquier fix):**
 
 - `npm run test:run` → 41 archivos, 347 tests, **todos pasan**
 - `npm run lint` → **0 errores**, 7 warnings (`react-hooks/set-state-in-effect`)
 - `npm audit` → 20 vulnerabilidades (1 crítica, 9 altas, 9 moderadas, 1 baja)
 - Cero `TODO`/`FIXME`/`HACK` en `src/` y `scripts/`
 
-Esta auditoría es **solo diagnóstico**: no se modificó código de la app, ni reglas,
-ni configuración.
+La auditoría **original** fue solo diagnóstico: no modificó código, reglas ni
+configuración. Todo lo que se cambió después está registrado en la sección
+"Resolución" del hallazgo correspondiente, con su fecha.
 
 ---
 
