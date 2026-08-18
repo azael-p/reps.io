@@ -1,6 +1,6 @@
 // Genera un reporte de actividad (sesiones registradas por usuario y cuándo,
 // usuarios activos, salud básica de adopción) a partir de fuentes baratas:
-//   - Firebase Auth (admin.auth().listUsers())        → alta, último login
+//   - Firebase Auth (getAuth().listUsers())        → alta, último login
 //   - usuarios/{uid}/stats/global.diasEntrenados        → días entrenados (1 lectura/usuario)
 //   - sesiones (count() agregado, opcional)             → total exacto de sesiones
 //
@@ -19,7 +19,9 @@
 //   actividad-<fecha>.json / actividad-<fecha>.html
 //   ultimo.json / ultimo.html   (siempre apuntan a la corrida más reciente)
 
-import admin from 'firebase-admin'
+import { initializeApp, cert } from 'firebase-admin/app'
+import { getFirestore } from 'firebase-admin/firestore'
+import { getAuth } from 'firebase-admin/auth'
 import { createRequire } from 'module'
 import { mkdir, writeFile } from 'fs/promises'
 import { fileURLToPath } from 'url'
@@ -29,9 +31,9 @@ const require = createRequire(import.meta.url)
 const serviceAccount = require('./serviceAccount.json')
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) })
-const db = admin.firestore()
-const auth = admin.auth()
+initializeApp({ credential: cert(serviceAccount) })
+const db = getFirestore()
+const auth = getAuth()
 
 const argDias = process.argv.find(a => a.startsWith('--dias='))
 const DIAS = argDias ? parseInt(argDias.split('=')[1], 10) : 30

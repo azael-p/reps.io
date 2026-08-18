@@ -12,14 +12,15 @@
 //
 // Idempotente: reconstruye desde cero en cada corrida.
 
-import admin from 'firebase-admin'
+import { initializeApp, cert } from 'firebase-admin/app'
+import { getFirestore } from 'firebase-admin/firestore'
 import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
 const serviceAccount = require('./serviceAccount.json')
 
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) })
-const db = admin.firestore()
+initializeApp({ credential: cert(serviceAccount) })
+const db = getFirestore()
 
 const APLICAR = process.argv.includes('--aplicar')
 const MAX_VOLUMEN = 200
