@@ -76,7 +76,7 @@ npm run preview  # preview del build
 npm run lint     # ESLint
 npm run test     # tests en watch
 npm run test:run # tests, una sola pasada
-npm run reporte  # reporte de actividad (requiere scripts/serviceAccount.json)
+npm run reporte  # reporte de actividad + detalle por usuario (requiere scripts/serviceAccount.json)
 ```
 
 ## Arquitectura de la app
@@ -194,11 +194,22 @@ Corren con Admin SDK y requieren `scripts/serviceAccount.json` (gitignorado). To
 |---|---|
 | `node scripts/backfillStats.js [--aplicar]` | Construye `stats/global` y `statsEjercicios` para usuarios pre-migración |
 | `node scripts/migrarSesiones.js [--aplicar]` | Normaliza nombres de ejercicios contra el catálogo |
-| `npm run reporte` | Reporte de actividad (read-only). Flags: `--dias=N`, `--sin-conteo-sesiones` |
+| `npm run reporte` | Reporte de actividad (read-only). Flags: `--dias=N`, `--sin-detalle`, `--sin-conteo-sesiones` |
+
+### Reporte de actividad
+
+`npm run reporte` escribe `scripts/reportes/ultimo.{json,html}` (gitignorado: contiene PII). El HTML es un único archivo autocontenido — CSS y JS inline, sin red — que se abre con doble click.
+
+- **Índice**: tiles de adopción, gráfico de días entrenados y tabla de usuarios. Sale de Auth + `usuarios/{uid}/stats/global`.
+- **Detalle por usuario**: se llega clickeando una fila (URL `#/u/<uid>`, así el back del browser y el recargar funcionan). Muestra las rutinas guardadas (programas → días → ejercicios) y el historial de sesiones con el desglose de series de cada ejercicio.
+
+El detalle sale de 4 queries globales (`sesiones` completadas, `programas`, `dias`, `ejerciciosDia`) que se agrupan por `usuarioId` en memoria — no hay una query por usuario. Las series salen del campo `resumen` de cada sesión, nunca de `registros`. `--sin-detalle` salta esas queries y deja el reporte agregado de siempre.
+
+El código vive en [scripts/reporte/](scripts/reporte/): `carga.js` (Firebase), `transformar.js` (funciones puras), `html.js` y `cliente.js` (el JS de la página, como string).
 
 ## Testing
 
-**347 tests** en **41 archivos**, colocados junto al código que testean (`Foo.jsx` + `Foo.test.jsx`). Setup en [src/test/setup.js](src/test/setup.js).
+**428 tests** en **45 archivos**, colocados junto al código que testean (`Foo.jsx` + `Foo.test.jsx`). Setup en [src/test/setup.js](src/test/setup.js).
 
 ```bash
 npm run test        # modo watch (re-corre al guardar)
@@ -210,10 +221,11 @@ npm run lint        # ESLint (también corre en CI)
 
 | Área | Tests |
 |---|---|
-| Capa Firebase (`sesiones` 29, `statsEjercicios` 12, `programas` 11, `statsGlobal` 11, `registros` 10, `ejerciciosDia` 8, `dias` 7, `auth` 6, `timerPresets` 5, `peso` 4) | 103 |
-| Timer (`useTimer` 15, `TimerActivo` 11, `useWakeLock` 10, `TimerConfig` 8, `TimerFin` 4, página `Timer` 6) | 54 |
-| Componentes (`ui` 15, `SeleccionarEjercicio` 15, `SwipeToDelete` 11, `Calendario` 9, `Toast` 9, `BottomNav` 8, `ErrorBoundary` 6, `UpdateBanner` 6, `LazyPanel` 4, `Credit` 2, `PageLoader` 1) | 86 |
-| Páginas (`Progreso` 16 + `Progreso.render` 6, `Entrenar` 9, `Home` 9, `Dias` 8, `EjerciciosDia` 7, `Programas` 7, `SesionActiva` 7, `Login` 6, `ResumenSesion` 5, `SerieForm` 4) | 84 |
+| Capa Firebase (`statsGlobal` 24, `statsEjercicios` 19, `sesiones` 15, `programas` 12, `auth` 10, `ejerciciosDia` 8, `dias` 7, `limpieza` 5, `timerPresets` 5, `eliminarSesion` 4, `peso` 4, `completarSesion` 3, `registros` 2) | 118 |
+| Páginas (`Progreso` 21 + `Progreso.render` 9, `Entrenar` 14, `EjerciciosDia` 10, `SesionActiva` 10, `Dias` 9, `Home` 9, `Programas` 8, `ResumenSesion` 8, `Login` 6, `SerieForm` 4) | 108 |
+| Componentes (`SeleccionarEjercicio` 18, `ui` 15, `SwipeToDelete` 11, `Calendario` 9, `Toast` 9, `BottomNav` 8, `UpdateBanner` 7, `ErrorBoundary` 6, `LazyPanel` 4, `Credit` 2, `PageLoader` 1) | 90 |
+| Timer (`useTimer` 21, `useWakeLock` 17, `TimerActivo` 11, `TimerConfig` 8, página `Timer` 6, `TimerFin` 4) | 67 |
+| Scripts (`reporte/transformar` 25) | 25 |
 | Hooks (`useKeyboardShortcut` 8, `useLongPress` 7, `useEliminarConUndo` 5) | 20 |
 
 Sin cobertura hoy: `App.jsx`, `UserContext.jsx`, `utils/`, `firebase/{analytics,catalogo,config,errores,softDelete}.js`, `components/{DesktopSidebar,DnDList,Onboarding,PullToRefresh}.jsx` y los subcomponentes de `pages/progreso/`.

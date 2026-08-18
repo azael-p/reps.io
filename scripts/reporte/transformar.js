@@ -70,6 +70,111 @@ export function agregarSerieDiaria(usuariosReporte, dias) {
   return serie
 }
 
+const porOrden = (a, b) => (a.orden ?? 0) - (b.orden ?? 0)
+const vivos = docs => docs.filter(d => !d.eliminadoEn)
+
+function agruparPor(docs, clave) {
+  const map = new Map()
+  for (const d of docs) {
+    const k = d[clave]
+    if (!map.has(k)) map.set(k, [])
+    map.get(k).push(d)
+  }
+  return map
+}
+
+// Índice diaId → nombres de día y programa, sobre TODOS los días (incluidos
+// los soft-deleted): una sesión de un día borrado igual tiene que mostrar su
+// nombre. Mismo criterio que enrichSesionesConPrograma en src/firebase/sesiones.js:
+// programaNombre queda undefined si el programa ya no existe, y ahí el caller
+// cae al nombre denormalizado en el resumen.
+export function indexarDiaAPrograma(programas, dias) {
+  const nombrePrograma = new Map(programas.map(p => [p.id, p.nombre]))
+  return new Map(dias.map(d => [d.id, {
+    diaNombre: d.nombre,
+    programaNombre: nombrePrograma.get(d.programaId),
+  }]))
+}
+
+export function resolverNombresSesion(sesion, diaAPrograma) {
+  const ref = diaAPrograma.get(sesion.diaId)
+  return {
+    diaNombre: ref?.diaNombre ?? sesion.resumen?.diaNombre ?? '–',
+    programaNombre: ref?.programaNombre ?? sesion.resumen?.programaNombre ?? '–',
+  }
+}
+
+// Rutinas guardadas: programas → días → ejercicios, unidos por FK. Los docs con
+// `eliminadoEn` se excluyen (igual que en la app, que filtra en cliente).
+export function construirArbolProgramas(uid, { programas, dias, ejerciciosDia }) {
+  const ejerciciosPorDia = agruparPor(vivos(ejerciciosDia), 'diaId')
+  const diasPorPrograma = agruparPor(vivos(dias), 'programaId')
+
+  return vivos(programas)
+    .filter(p => p.usuarioId === uid)
+    .sort(porOrden)
+    .map(p => ({
+      id: p.id,
+      nombre: p.nombre,
+      dias: (diasPorPrograma.get(p.id) ?? []).sort(porOrden).map(d => ({
+        id: d.id,
+        nombre: d.nombre,
+        ejercicios: (ejerciciosPorDia.get(d.id) ?? []).sort(porOrden).map(e => ({
+          nombre: e.nombre,
+          grupoMuscular: e.grupoMuscular ?? null,
+          esCustom: e.esCustom === true,
+          seriesEsperadas: e.seriesEsperadas ?? null,
+          repsEsperadas: e.repsEsperadas ?? null,
+        })),
+      })),
+    }))
+}
+
+// Historial de sesiones completadas, desc por fecha. Todo sale del campo
+// `resumen`; las sesiones viejas que no lo tienen se marcan con sinResumen
+// en vez de reconstruirse desde `registros`.
+export function construirSesionesUsuario(uid, sesiones, diaAPrograma) {
+  return sesiones
+    .filter(s => s.usuarioId === uid)
+    .sort((a, b) => (b.fechaMs ?? 0) - (a.fechaMs ?? 0))
+    .map(s => {
+      const ejercicios = (s.resumen?.ejercicios ?? []).map(e => ({
+        nombre: e.nombre,
+        grupoMuscular: e.grupoMuscular ?? null,
+        series: [...(e.series ?? [])]
+          .sort((x, y) => (x.numeroSerie ?? 0) - (y.numeroSerie ?? 0))
+          .map(x => ({
+            numeroSerie: x.numeroSerie ?? null,
+            pesoUsado: x.pesoUsado ?? null,
+            repsHechas: x.repsHechas ?? null,
+          })),
+      }))
+
+      return {
+        id: s.id,
+        fechaMs: s.fechaMs,
+        fecha: s.fechaMs !== null ? formatearFecha(s.fechaMs) : null,
+        ...resolverNombresSesion(s, diaAPrograma),
+        volumenTotal: s.resumen?.volumenTotal ?? 0,
+        nota: s.nota || null,
+        totalSeries: ejercicios.reduce((acc, e) => acc + e.series.length, 0),
+        ejercicios,
+        sinResumen: !s.resumen,
+      }
+    })
+}
+
+export function construirDetalleUsuario(uid, crudo, diaAPrograma) {
+  const eliminados = [...crudo.programas, ...crudo.dias, ...crudo.ejerciciosDia]
+    .filter(d => d.usuarioId === uid && d.eliminadoEn).length
+
+  return {
+    sesiones: construirSesionesUsuario(uid, crudo.sesiones, diaAPrograma),
+    programas: construirArbolProgramas(uid, crudo),
+    eliminados,
+  }
+}
+
 export function construirResumenGlobal(usuariosReporte, authMap, fsMap) {
   const cutoff7 = Date.now() - 7 * DIA_MS
   const cutoff30 = Date.now() - 30 * DIA_MS

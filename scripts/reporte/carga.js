@@ -49,3 +49,32 @@ export async function contarSesiones(uid) {
     .get()
   return snap.data().count
 }
+
+function docsPlanos(snap) {
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+// Carga cruda para la vista de detalle: 4 queries que traen cada colección
+// entera y se agrupan por usuarioId en memoria (el Admin SDK ignora las rules,
+// así que no hace falta una query por usuario). No se lee `registros`: el
+// campo `resumen` de cada sesión ya tiene el desglose completo de series.
+export async function cargarDetalleGlobal() {
+  const [sesiones, programas, dias, ejerciciosDia] = await Promise.all([
+    db.collection('sesiones').where('completada', '==', true).get(),
+    db.collection('programas').get(),
+    db.collection('dias').get(),
+    db.collection('ejerciciosDia').get(),
+  ])
+
+  return {
+    // `fecha` es un Timestamp del SDK: se aplana a ms acá para que todo lo que
+    // sigue (transformar + payload JSON) trabaje con datos serializables.
+    sesiones: sesiones.docs.map(d => {
+      const { fecha, ...resto } = d.data()
+      return { id: d.id, ...resto, fechaMs: fecha?.toMillis?.() ?? null }
+    }),
+    programas: docsPlanos(programas),
+    dias: docsPlanos(dias),
+    ejerciciosDia: docsPlanos(ejerciciosDia),
+  }
+}
