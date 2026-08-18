@@ -12,6 +12,7 @@ import { useUser } from '../context/UserContext'
 import { logEvento } from '../firebase/analytics'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
+import { useSyncStatus } from '../hooks/useSyncStatus'
 import { parsePeso } from '../utils/stats'
 import Confetti from './sesion-activa/Confetti'
 import ListaEjerciciosDesktop from './sesion-activa/ListaEjerciciosDesktop'
@@ -28,6 +29,10 @@ export default function SesionActiva() {
   const navigate = useNavigate()
   const { usuario } = useUser()
   const { show } = useToast()
+  const syncStatus = useSyncStatus(sesionId)
+  const syncLabel = syncStatus.estado === 'offline' ? 'Sin conexión'
+    : syncStatus.estado === 'pendiente' ? `${syncStatus.pendientes} serie${syncStatus.pendientes === 1 ? '' : 's'} sin sincronizar`
+    : 'En línea'
 
   const [ejercicios, setEjercicios] = useState([])
   const [ejIdx, setEjIdx] = useState(0)
@@ -357,6 +362,7 @@ export default function SesionActiva() {
               <span style={{ color: 'var(--text-mute)', fontWeight: 400 }}> · </span>
               <span className="num" style={{ color: 'var(--orange)', fontWeight: 700 }}>{seriesCompletadas}</span>
               <span style={{ color: 'var(--text-mute)', fontWeight: 400 }}>/{seriesTotales} series</span>
+              <span className={`sa-sync-dot sa-sync-dot--${syncStatus.estado}`} role="img" aria-label={syncLabel} title={syncLabel} />
             </span>
             <motion.button className="sa-cancelar-btn" onClick={cancelarSesion} whileTap={BTN_TAP}>
               Cancelar sesión

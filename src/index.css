@@ -1559,6 +1559,13 @@ select:focus-visible {
 .sa-progress-fill { height: 100%; background: var(--orange-grad); box-shadow: 0 0 12px rgba(240, 153, 123, 0.6); }
 .sa-header-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; }
 .sa-ejercicio-counter { font-size: 0.85rem; color: var(--text-mute); }
+.sa-sync-dot {
+  display: inline-block; width: 8px; height: 8px; margin-left: 6px;
+  border-radius: 50%; vertical-align: middle;
+  background: var(--green); transition: background 0.2s;
+}
+.sa-sync-dot--pendiente { background: var(--orange); }
+.sa-sync-dot--offline { background: var(--danger); }
 .sa-terminar-btn {
   background: var(--bg-card);
   border: 1px solid var(--border);

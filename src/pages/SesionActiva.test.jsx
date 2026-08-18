@@ -54,6 +54,8 @@ vi.mock('../components/Toast', () => ({
 vi.mock('../hooks/useKeyboardShortcut', () => ({
   useKeyboardShortcut: vi.fn(),
 }))
+const mockUseSyncStatus = vi.hoisted(() => vi.fn(() => ({ estado: 'online', pendientes: 0 })))
+vi.mock('../hooks/useSyncStatus', () => ({ useSyncStatus: mockUseSyncStatus }))
 
 import { getDoc } from 'firebase/firestore'
 import { getEjerciciosDia } from '../firebase/ejerciciosDia'
@@ -283,5 +285,38 @@ describe('SesionActiva — el peso se arrastra a la serie siguiente', () => {
 
     await screen.findByRole('button', { name: /Completar serie 1/ })
     expect(inputPeso()).toHaveValue('')
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('SesionActiva — punto de sincronización en el header', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'dia1', completada: false }) })
+    getEjerciciosDia.mockResolvedValue([EJ1])
+    getRegistrosSesion.mockResolvedValue([])
+  })
+
+  it('en línea: punto verde sin aviso de pendientes', async () => {
+    mockUseSyncStatus.mockReturnValue({ estado: 'online', pendientes: 0 })
+    renderSesion()
+    const dot = await screen.findByRole('img', { name: 'En línea' })
+    expect(dot).toHaveClass('sa-sync-dot--online')
+  })
+
+  it('sin conexión: punto rojo', async () => {
+    mockUseSyncStatus.mockReturnValue({ estado: 'offline', pendientes: 0 })
+    renderSesion()
+    const dot = await screen.findByRole('img', { name: 'Sin conexión' })
+    expect(dot).toHaveClass('sa-sync-dot--offline')
+  })
+
+  it('con pendientes: punto naranja con la cantidad en el label', async () => {
+    mockUseSyncStatus.mockReturnValue({ estado: 'pendiente', pendientes: 2 })
+    renderSesion()
+    const dot = await screen.findByRole('img', { name: '2 series sin sincronizar' })
+    expect(dot).toHaveClass('sa-sync-dot--pendiente')
   })
 })

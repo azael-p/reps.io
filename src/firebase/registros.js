@@ -1,5 +1,5 @@
 import { db, auth } from './config'
-import { collection, updateDoc, setDoc, doc, query, where, getDocs } from 'firebase/firestore'
+import { collection, updateDoc, setDoc, doc, query, where, getDocs, onSnapshot } from 'firebase/firestore'
 
 // No await-ea el ACK del servidor: con persistentLocalCache la escritura ya
 // se aplicó al cache local al llamar setDoc, así que el id es usable de
@@ -31,4 +31,21 @@ export async function getRegistrosSesion(sesionId) {
     where('sesionId', '==', sesionId),
   ))
   return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.numeroSerie - b.numeroSerie)
+}
+
+// Escucha en vivo cuántos registros de la sesión todavía no confirmó el
+// servidor (metadata.hasPendingWrites), para el indicador de sincronización
+// del header. Acotado a esta sesión — no es una escucha global de la
+// colección. Devuelve el unsubscribe.
+export function escucharPendientesSesion(sesionId, onCambio) {
+  return onSnapshot(
+    query(
+      collection(db, 'registros'),
+      where('usuarioId', '==', auth.currentUser.uid),
+      where('sesionId', '==', sesionId),
+    ),
+    { includeMetadataChanges: true },
+    snap => onCambio(snap.docs.filter(d => d.metadata.hasPendingWrites).length),
+    e => console.error(e),
+  )
 }
