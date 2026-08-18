@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
 import { CornerUpLeft } from 'lucide-react'
 
 const BTN_TAP = { scale: 0.96 }
@@ -19,13 +19,19 @@ export default function SerieFooter({
       >
         {guardando ? <span className="spinner" /> : esUltimaSerie && esUltimoEjercicio ? 'Finalizar entrenamiento ✓' : esUltimaSerie ? 'Siguiente ejercicio →' : `Completar serie ${serieActual} →`}
       </motion.button>
-      <AnimatePresence>
-        {hayHistorial && (
-          <motion.button className="sa-volver-btn" onClick={onVolver} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} transition={{ duration: 0.2 }} whileTap={BTN_TAP}>
-            <CornerUpLeft size={15} style={{ flexShrink: 0 }} /> Corregir serie anterior
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {/* El espacio se reserva siempre (visibility, no montaje condicional):
+          que el botón aparezca recién en la serie 2 no debe correr el CTA
+          principal, que es justo lo que el usuario está por tocar de nuevo. */}
+      <motion.button
+        className="sa-volver-btn"
+        onClick={onVolver}
+        style={{ visibility: hayHistorial ? 'visible' : 'hidden' }}
+        animate={{ opacity: hayHistorial ? 1 : 0 }}
+        transition={{ duration: 0.2 }}
+        whileTap={BTN_TAP}
+      >
+        <CornerUpLeft size={15} style={{ flexShrink: 0 }} /> Corregir serie anterior
+      </motion.button>
     </div>
   )
 }
