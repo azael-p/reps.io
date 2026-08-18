@@ -22,6 +22,7 @@ import {
   esMismoEjercicio,
   getSesionesPaginadas,
   eliminarSesion,
+  enrichSesionesConPrograma,
 } from './sesiones'
 
 // ---------------------------------------------------------------------------
@@ -129,5 +130,67 @@ describe('eliminarSesion', () => {
     expect(externo.delete).toHaveBeenCalledTimes(3)
     expect(externo.commit).not.toHaveBeenCalled()
     expect(mockWriteBatch).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('enrichSesionesConPrograma', () => {
+  const snap = (docs) => ({ docs: docs.map(d => ({ id: d.id, data: () => d })) })
+
+  // 1ª query: programas del usuario. 2ª: días por programaId (chunks de 30).
+  function mockColecciones({ programas, dias }) {
+    mockGetDocs.mockReset()
+    mockGetDocs
+      .mockResolvedValueOnce(snap(programas))
+      .mockResolvedValue(snap(dias))
+  }
+
+  const sesion = (resumen) => ({ id: 's1', diaId: 'd1', resumen })
+
+  it('usa los nombres vivos cuando el día y el programa existen', async () => {
+    mockColecciones({
+      programas: [{ id: 'p1', nombre: 'PPL' }],
+      dias: [{ id: 'd1', nombre: 'Push', programaId: 'p1' }],
+    })
+    const [r] = await enrichSesionesConPrograma('u1', [sesion({ diaNombre: 'viejo', programaNombre: 'viejo' })])
+    expect(r.diaNombre).toBe('Push')
+    expect(r.programaNombre).toBe('PPL')
+  })
+
+  it('cae al programaNombre del resumen si el programa fue borrado', async () => {
+    // El día sigue vivo pero su programa ya no está en la colección.
+    mockColecciones({
+      programas: [{ id: 'pOtro', nombre: 'Otro' }],
+      dias: [{ id: 'd1', nombre: 'Push', programaId: 'p1' }],
+    })
+    const [r] = await enrichSesionesConPrograma('u1', [sesion({ diaNombre: 'Push', programaNombre: 'PPL' })])
+    expect(r.programaNombre).toBe('PPL')
+  })
+
+  it('cae al resumen para ambos nombres si el día también fue borrado', async () => {
+    mockColecciones({
+      programas: [{ id: 'p1', nombre: 'PPL' }],
+      dias: [],
+    })
+    const [r] = await enrichSesionesConPrograma('u1', [sesion({ diaNombre: 'Push', programaNombre: 'PPL' })])
+    expect(r.diaNombre).toBe('Push')
+    expect(r.programaNombre).toBe('PPL')
+  })
+
+  it('muestra – si el resumen es legacy y no trae programaNombre', async () => {
+    mockColecciones({
+      programas: [{ id: 'pOtro', nombre: 'Otro' }],
+      dias: [{ id: 'd1', nombre: 'Push', programaId: 'p1' }],
+    })
+    const [r] = await enrichSesionesConPrograma('u1', [sesion({ diaNombre: 'Push' })])
+    expect(r.programaNombre).toBe('–')
+  })
+
+  it('sin programas, igual conserva los nombres denormalizados', async () => {
+    mockColecciones({ programas: [], dias: [] })
+    const [r] = await enrichSesionesConPrograma('u1', [sesion({ diaNombre: 'Push', programaNombre: 'PPL' })])
+    expect(r.diaNombre).toBe('Push')
+    expect(r.programaNombre).toBe('PPL')
   })
 })

@@ -15,7 +15,7 @@ import { logEvento } from '../firebase/analytics'
 import { useDesktop } from '../hooks/useDesktop'
 import { useLongPress } from '../hooks/useLongPress'
 
-function buildResumen(regs, diaNombre) {
+function buildResumen(regs, diaNombre, programaNombre = '') {
   const ejerciciosMap = {}
   for (const r of regs) {
     if (!ejerciciosMap[r.ejercicioId]) {
@@ -39,6 +39,9 @@ function buildResumen(regs, diaNombre) {
   return {
     volumenTotal: regs.reduce((acc, r) => acc + (r.pesoUsado || 0) * (r.repsHechas || 0), 0),
     diaNombre,
+    // Denormalizado por el mismo motivo que diaNombre: si después se borra el
+    // programa, el historial conserva su nombre en vez de mostrar '–'.
+    programaNombre,
     ejercicios: Object.values(ejerciciosMap),
   }
 }
@@ -69,6 +72,7 @@ export default function ResumenSesion() {
   const { show } = useToast()
   const [registros, setRegistros] = useState([])
   const [diaNombre, setDiaNombre] = useState('')
+  const [programaNombre, setProgramaNombre] = useState('')
   const [nota, setNota] = useState('')
   const [guardandoNota, setGuardandoNota] = useState(false)
   const [notaGuardada, setNotaGuardada] = useState(false)
@@ -94,11 +98,21 @@ export default function ResumenSesion() {
       setFechaSesion(sesionData.fecha ?? null)
       setRegistros(regs)
       const diaSnap = await getDoc(doc(db, 'dias', sesionData.diaId))
-      const diaNombreVal = diaSnap.data()?.nombre ?? ''
+      const diaData = diaSnap.data()
+      const diaNombreVal = diaData?.nombre ?? ''
       setDiaNombre(diaNombreVal)
 
+      // Si la sesión ya lo tiene denormalizado, no se lee el programa: en el
+      // camino frecuente (abrir una sesión ya resumida) esto es 0 lecturas
+      // extra. Solo las sesiones nuevas o legacy pagan el getDoc.
+      const programaNombreVal = sesionData.resumen?.programaNombre
+        ?? (diaData?.programaId
+          ? (await getDoc(doc(db, 'programas', diaData.programaId))).data()?.nombre ?? ''
+          : '')
+      setProgramaNombre(programaNombreVal)
+
       if (!sesionData.completada) {
-        const resumen = buildResumen(regs, diaNombreVal)
+        const resumen = buildResumen(regs, diaNombreVal, programaNombreVal)
         // No se espera el ACK del servidor: con persistentLocalCache la
         // escritura ya se aplicó al cache local al llamar esta función, y
         // sin red la promesa de commit() puede no resolver nunca — esperarla
@@ -113,7 +127,7 @@ export default function ResumenSesion() {
         // historial pero queda fuera del volumen, el calendario y los PR, y
         // ningún fallback la recupera (solo reconstruyen si falta el doc
         // entero). Mismo criterio no-bloqueante que la rama de arriba.
-        const resumen = buildResumen(regs, diaNombreVal)
+        const resumen = buildResumen(regs, diaNombreVal, programaNombreVal)
         const reparar = Promise.all([
           backfillResumen(sesionId, resumen),
           usuario?.id ? aplicarSesionAResumenGlobal(usuario.id, { sesionId, fecha: sesionData.fecha, resumen }) : null,
@@ -181,7 +195,7 @@ export default function ResumenSesion() {
       // actualiza al llamar la escritura, no al resolver su promesa).
       const regs = await getRegistrosSesion(sesionId)
       setRegistros(regs)
-      const resumen = buildResumen(regs, diaNombre)
+      const resumen = buildResumen(regs, diaNombre, programaNombre)
       backfillResumen(sesionId, resumen).catch(e => console.error(e))
       if (usuario?.id && fechaSesion) {
         aplicarSesionAResumenGlobal(usuario.id, { sesionId, fecha: fechaSesion, resumen }).catch(e => console.error(e))

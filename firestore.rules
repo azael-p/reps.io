@@ -41,6 +41,9 @@ service cloud.firestore {
       return r is map
         && r.volumenTotal is number && r.volumenTotal >= 0
         && r.diaNombre is string && r.diaNombre.size() <= 300
+        // Opcional: los resumenes anteriores a la denormalizacion de
+        // programaNombre no lo traen, y deben seguir pasando la validacion.
+        && (!('programaNombre' in r) || (r.programaNombre is string && r.programaNombre.size() <= 300))
         && r.ejercicios is list && r.ejercicios.size() <= 100;
     }
 

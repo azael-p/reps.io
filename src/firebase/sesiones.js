@@ -13,7 +13,7 @@ export async function enrichSesionesConPrograma(usuarioId, sesiones) {
   programasSnap.docs.forEach(d => { programasMap[d.id] = d.data().nombre; programaIds.push(d.id) })
 
   if (programaIds.length === 0) {
-    return sesiones.map(s => ({ ...s, diaNombre: s.resumen?.diaNombre ?? '–', programaNombre: '–' }))
+    return sesiones.map(s => ({ ...s, diaNombre: s.resumen?.diaNombre ?? '–', programaNombre: s.resumen?.programaNombre ?? '–' }))
   }
 
   // 2. Load dias by programaId in chunks of 30 (Firestore 'in' limit)
@@ -28,14 +28,16 @@ export async function enrichSesionesConPrograma(usuarioId, sesiones) {
     ))
     diasSnap.docs.forEach(d => {
       const data = d.data()
-      diaToPrograma[d.id] = { diaNombre: data.nombre, programaNombre: programasMap[data.programaId] ?? '–' }
+      // Sin `?? '–'`: si el programa fue borrado esto queda undefined, y así
+      // el fallback al nombre denormalizado en el resumen sí se activa.
+      diaToPrograma[d.id] = { diaNombre: data.nombre, programaNombre: programasMap[data.programaId] }
     })
   }))
 
   return sesiones.map(s => ({
     ...s,
     diaNombre: diaToPrograma[s.diaId]?.diaNombre ?? s.resumen?.diaNombre ?? '–',
-    programaNombre: diaToPrograma[s.diaId]?.programaNombre ?? '–',
+    programaNombre: diaToPrograma[s.diaId]?.programaNombre ?? s.resumen?.programaNombre ?? '–',
   }))
 }
 
