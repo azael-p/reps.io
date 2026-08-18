@@ -44,9 +44,9 @@ function ToastItem({ toast, onDismiss }) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 40, scale: 0.95 }}
+      initial={{ opacity: 0, y: -40, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 20, scale: 0.95 }}
+      exit={{ opacity: 0, y: -20, scale: 0.95 }}
       transition={{ type: 'spring', stiffness: 300, damping: 22 }}
       style={{
         display: 'flex',
@@ -139,14 +139,24 @@ export function ToastProvider({ children }) {
   return (
     <ToastCtx.Provider value={{ show, dismiss }}>
       {children}
+      {/* Anclados arriba, no abajo. A bottom:80 se superponían 45px con el
+          botón "Completar serie" de SesionActiva — el CTA más tocado de la
+          app — y elementFromPoint sobre el botón devolvía el toast: el tap
+          se lo comía el aviso. Justo aparecen cuando falla la sincronización,
+          o sea con mala señal, o sea en el gimnasio. Arriba también quedan
+          fuera del alcance del pulgar, que es donde conviene un aviso que no
+          se debe tocar por accidente. */}
       <div style={{
         position: 'fixed',
-        bottom: 80,
+        top: 0,
         left: 0, right: 0,
         zIndex: 1000,
         pointerEvents: 'none',
         padding: '0 16px',
-        paddingBottom: 'env(safe-area-inset-bottom)',
+        paddingTop: 'max(12px, env(safe-area-inset-top))',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
       }}>
         <AnimatePresence>
           {toasts.map(t => (
