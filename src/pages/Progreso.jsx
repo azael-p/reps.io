@@ -330,7 +330,7 @@ export default function Progreso() {
         )
       ) : (
         <>
-          <div className="progreso-tabs">
+          <div className="progreso-tabs" role="tablist" aria-label="Vistas de progreso">
             {TABS.map(t => {
               const activo = tab === t
               return (
@@ -339,7 +339,10 @@ export default function Progreso() {
                   className="progreso-tab"
                   onClick={() => setTab(t)}
                   whileTap={{ scale: 0.97 }}
-                  aria-pressed={activo}
+                  role="tab"
+                  id={`tab-${t}`}
+                  aria-selected={activo}
+                  aria-controls="progreso-panel"
                 >
                   <span className="progreso-tab-label" style={{ color: activo ? 'var(--orange)' : 'var(--text-mute)' }}>{t}</span>
                   {activo && (
@@ -361,6 +364,9 @@ export default function Progreso() {
           ) : (
             <motion.div
               key={tab}
+              id="progreso-panel"
+              role="tabpanel"
+              aria-labelledby={`tab-${tab}`}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.18 }}

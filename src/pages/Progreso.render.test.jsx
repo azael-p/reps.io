@@ -135,7 +135,7 @@ describe('Progreso — tabs', () => {
     const user = userEvent.setup()
     renderPage()
     await screen.findByText(/Cero sesiones/)
-    await user.click(screen.getByRole('button', { name: 'Rachas' }))
+    await user.click(screen.getByRole('tab', { name: 'Rachas' }))
     expect(await screen.findByText('Entrená para empezar a generar rachas.')).toBeInTheDocument()
   })
 })
@@ -147,7 +147,7 @@ describe('Progreso — fallo al cargar el peso corporal', () => {
     const user = userEvent.setup()
     renderPage()
 
-    await user.click(await screen.findByRole('button', { name: 'Peso' }))
+    await user.click(await screen.findByRole('tab', { name: 'Peso' }))
 
     await waitFor(() => {
       expect(showMock).toHaveBeenCalledWith(expect.objectContaining({
@@ -164,7 +164,7 @@ describe('Progreso — registrar peso con coma decimal', () => {
     const user = userEvent.setup()
     renderPage()
 
-    await user.click(await screen.findByRole('button', { name: 'Peso' }))
+    await user.click(await screen.findByRole('tab', { name: 'Peso' }))
     await user.click(await screen.findByRole('button', { name: /registrar peso/i }))
     await user.type(screen.getByPlaceholderText('Ej: 78'), '78,5')
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
