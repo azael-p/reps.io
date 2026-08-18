@@ -39,7 +39,7 @@
           { "key": "X-Frame-Options", "value": "DENY" },
           { "key": "Content-Security-Policy", "value": "frame-ancestors 'none'" },
           { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=(), payment=(), usb=()" },
-          { "key": "Content-Security-Policy-Report-Only", "value": "default-src 'self'; script-src 'self' https://www.googletagmanager.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com; worker-src 'self'; frame-src https://reps-io.firebaseapp.com https://apis.google.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" }
+          { "key": "Content-Security-Policy-Report-Only", "value": "default-src 'self'; script-src 'self' https://www.googletagmanager.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.googleapis.com https://fonts.gstatic.com https://*.firebaseio.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com; worker-src 'self'; frame-src https://reps-io.firebaseapp.com https://apis.google.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" }
         ]
       }
     ]

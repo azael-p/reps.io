@@ -640,8 +640,16 @@ los reemplaza).
     motivaba el truco. Verificado sobre `dist/index.html`: cero atributos de
     evento inline.
 
-    Con las 3 cerradas, falta una segunda ronda de verificación en
-    producción antes de promover a enforcing.
+  - **Segunda ronda (2026-08-17):** las 3 anteriores confirmadas cerradas.
+    Apareció una cuarta que la primera ronda tapaba: `workbox` (el service
+    worker) hace `fetch()` a `https://fonts.gstatic.com` para su
+    `runtimeCaching` de webfonts ([`vite.config.js`](../vite.config.js)), y
+    un `fetch()` cae bajo `connect-src`, no bajo `font-src` — que sí tenía
+    el origen. El `sw.js` recibe los mismos headers que el resto (el bloque
+    `"source": "**"` lo matchea), así que hereda la política. Las hojas de
+    estilo (`fonts.googleapis.com`) no daban error porque ya las cubría el
+    comodín `https://*.googleapis.com`. Se agregó `https://fonts.gstatic.com`
+    a `connect-src`.
   - `photoURL` (guardado en `usuarios/{uid}` desde el perfil de Google, ver
     `handleFirstLogin` en `auth.js`) se verificó que no se renderiza en
     ningún `<img>` del código actual, así que `img-src` no necesitó incluir
