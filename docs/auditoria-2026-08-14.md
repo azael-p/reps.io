@@ -38,7 +38,7 @@ ni configuración.
 | 16 | 🟡 media | `ResumenSesion.jsx:106-108` | Backfillea el resumen pero no los agregados — **✅ resuelto 2026-08-17** |
 | 17 | 🟡 media | varios | Errores tragados en silencio y promesas flotantes — **✅ resuelto 2026-08-17** |
 | 18 | 🟡 media | `npm audit` | 20 vulnerabilidades; `npm audit fix` resuelve la mayoría sin breaking changes — **✅ resuelto 2026-08-17** |
-| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores — **#19–#25 ✅ resueltos 2026-08-17** (#19 requiere correr `scripts/backfillStats.js`) |
+| 19–26 | 🟢 baja | ver sección | `statsDocId`, DST, código muerto, `localStorage`, accesibilidad, reglas menores, API key — **✅ todos resueltos** (#19–#25 el 2026-08-17, #26 el 2026-08-18) |
 
 Los tres primeros son los que **rompen datos de usuarios reales** y deberían ir
 primero. El #4, #5 y #8 son los de mejor relación esfuerzo/impacto.
@@ -50,6 +50,28 @@ abajo). De paso se detectó y arregló el mismo patrón del #1 en
 esta tabla. El bug #4 también quedó resuelto (ver su propia sección de
 Resolución): mitad como efecto colateral del fix del #2, mitad con un fix
 separado en `programas.js`.
+
+**Cierre (2026-08-18): los 26 hallazgos están resueltos.** Además de los
+fixes de código, se completaron las dos acciones que vivían fuera del repo:
+la migración de datos del #19 (`scripts/backfillStats.js --aplicar` sobre
+producción, tras verificar que los 33 PR huérfanos se reproducían desde el
+historial y que ni el calendario ni el volumen perdían entradas) y la
+restricción de la API key del #26 en la GCP Console. La CSP del #8 pasó de
+`Report-Only` a enforcing tras tres rondas de verificación en producción que
+destaparon 4 violaciones reales, dos de las cuales habrían roto el login.
+
+**Seguimientos abiertos** (anotados dentro de la resolución de su bug, no
+son hallazgos nuevos):
+
+- `programaNombre` cae a `'–'` en el historial si se borra el programa
+  (seguimiento del #9). `diaNombre` sí sobrevive. Cerrarlo exige denormalizar
+  un campo más en el `resumen` de sesiones completadas y migrar el historial.
+- El límite de 5 `timerPresets` sigue siendo solo del cliente (#24):
+  las rules no pueden contar documentos de una colección sin cambiar el
+  modelo de datos. Impacto cosmético.
+- 8 vulnerabilidades de `npm audit` sin resolver (#18): todas vía
+  `firebase-admin`, que requiere un major. Solo afectan a `scripts/`
+  corriendo local con service account.
 
 ---
 
@@ -1627,6 +1649,24 @@ no se introdujo ningún parser de argumentos nuevo.
 La API key en el bundle es esperada y no es un secreto, pero conviene restringirla
 en la GCP Console por HTTP referrer (`reps-io.web.app`) para limitar el abuso de
 cuota de Identity Toolkit desde otros orígenes.
+
+**Resolución (2026-08-18):** aplicado en la GCP Console (no hay cambio de
+código: es configuración del proyecto, fuera del repo). En la clave
+"Browser key (auto created by Firebase)", *Restricciones de aplicaciones*
+pasó de **Ninguno** a **Sitios web**, con tres referrers:
+
+- `https://reps-io.web.app/*` — la app.
+- `https://reps-io.firebaseapp.com/*` — **imprescindible**: es el
+  `authDomain` que usa el SDK de Firebase Auth para el flujo de
+  `signInWithPopup`. Sin él la restricción rompe el login. Es el mismo
+  dominio que la verificación de la CSP obligó a sumar a `frame-src`
+  (ver bug #8): dos mecanismos distintos, misma causa de fondo.
+- `http://localhost:5173/*` — para que siga funcionando `npm run dev`.
+
+Las *restricciones de API* (25 APIs habilitadas) se dejaron como estaban:
+son un eje distinto (qué APIs puede llamar la clave, no desde dónde) y no
+formaban parte de este hallazgo. Verificado tras la propagación: login
+correcto en una ventana de incógnito.
 
 **Nota operativa:** `scripts/serviceAccount.json` existe en el working dir (2,4 KB,
 clave privada de Admin SDK con bypass total de las reglas). Está correctamente
