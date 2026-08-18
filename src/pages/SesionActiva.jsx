@@ -330,8 +330,7 @@ export default function SesionActiva() {
 
   const serieFormProps = {
     ejercicio, pesoUsado, setPesoUsado, repsHechas, setRepsHechas, ultimoPeso,
-    mostrarNota, setMostrarNota, nota, setNota,
-    ejIdx, serieIdx, tabRef, refPR, refAnterior, serieActual,
+    mostrarNota, nota, setNota,
   }
 
   const footerProps = {
@@ -384,6 +383,7 @@ export default function SesionActiva() {
               ejIdx={ejIdx} serieIdx={serieIdx} ejercicio={ejercicio}
               serieActual={serieActual} totalSeries={totalSeries}
               tabRef={tabRef} setTabRef={setTabRef} refAnterior={refAnterior} refPR={refPR}
+              mostrarNota={mostrarNota} setMostrarNota={setMostrarNota}
             />
             <SerieForm {...serieFormProps} />
             <SerieFooter {...footerProps} footerClassName="sa-footer-desktop" />
@@ -396,6 +396,7 @@ export default function SesionActiva() {
               ejIdx={ejIdx} serieIdx={serieIdx} ejercicio={ejercicio}
               serieActual={serieActual} totalSeries={totalSeries}
               tabRef={tabRef} setTabRef={setTabRef} refAnterior={refAnterior} refPR={refPR}
+              mostrarNota={mostrarNota} setMostrarNota={setMostrarNota}
             />
             <SerieForm {...serieFormProps} />
           </div>

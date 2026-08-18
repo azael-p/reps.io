@@ -1,10 +1,11 @@
 import { motion, AnimatePresence } from 'motion/react'
-import { Badge } from '../../components/ui'
+import { StickyNote } from 'lucide-react'
 import ReferenciaCard from './ReferenciaCard'
 
 export default function EjercicioInfo({
   ejIdx, serieIdx, ejercicio, serieActual, totalSeries,
   tabRef, setTabRef, refAnterior, refPR,
+  mostrarNota, setMostrarNota,
 }) {
   return (
     <AnimatePresence mode="wait">
@@ -18,7 +19,17 @@ export default function EjercicioInfo({
       >
         <div className="sa-titulo-row">
           <h1 className="sa-ejercicio-nombre">{ejercicio.nombre}</h1>
-          <Badge color="orange">{ejercicio.grupoMuscular}</Badge>
+          <span className="sa-ejercicio-grupo">{ejercicio.grupoMuscular}</span>
+          <motion.button
+            type="button"
+            className={`sa-nota-icon-btn ${mostrarNota ? 'sa-nota-icon-btn--activa' : ''}`}
+            onClick={() => setMostrarNota(m => !m)}
+            aria-label={mostrarNota ? 'Ocultar nota' : 'Agregar nota a esta serie'}
+            aria-pressed={mostrarNota}
+            whileTap={{ scale: 0.92 }}
+          >
+            <StickyNote size={18} strokeWidth={1.8} />
+          </motion.button>
         </div>
         <div className="sa-serie-row">
           <p className="sa-serie-label" aria-live="polite">
@@ -33,7 +44,7 @@ export default function EjercicioInfo({
             ))}
           </div>
         </div>
-        <ReferenciaCard tabRef={tabRef} setTabRef={setTabRef} refAnterior={refAnterior} refPR={refPR} />
+        <ReferenciaCard tabRef={tabRef} setTabRef={setTabRef} refAnterior={refAnterior} refPR={refPR} serieActual={serieActual} />
       </motion.div>
     </AnimatePresence>
   )

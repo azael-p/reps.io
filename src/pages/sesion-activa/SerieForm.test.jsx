@@ -10,10 +10,9 @@ vi.mock('motion/react', async (importOriginal) => {
 
 const EJERCICIO = { id: 'ej1', repsEsperadas: 10 }
 
-function SerieFormFixture({ pesoInicial = '', repsInicial = '', ejercicio = EJERCICIO }) {
+function SerieFormFixture({ pesoInicial = '', repsInicial = '', ejercicio = EJERCICIO, mostrarNota = false }) {
   const [pesoUsado, setPesoUsado] = useState(pesoInicial)
   const [repsHechas, setRepsHechas] = useState(repsInicial)
-  const [mostrarNota, setMostrarNota] = useState(false)
   const [nota, setNota] = useState('')
   return (
     <SerieForm
@@ -21,9 +20,8 @@ function SerieFormFixture({ pesoInicial = '', repsInicial = '', ejercicio = EJER
       pesoUsado={pesoUsado} setPesoUsado={setPesoUsado}
       repsHechas={repsHechas} setRepsHechas={setRepsHechas}
       ultimoPeso={{}}
-      mostrarNota={mostrarNota} setMostrarNota={setMostrarNota}
+      mostrarNota={mostrarNota}
       nota={nota} setNota={setNota}
-      ejIdx={0} serieIdx={0} tabRef={null} refPR={null} refAnterior={null} serieActual={1}
     />
   )
 }
@@ -72,5 +70,21 @@ describe('SerieForm — stepper de peso/reps', () => {
     fireEvent.pointerUp(btn, { pointerId: 1 })
     expect(screen.getByLabelText('Repeticiones').value).toBe('1')
     vi.useRealTimers()
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('SerieForm — nota', () => {
+  it('sin mostrarNota, no renderiza el textarea (el toggle vive en EjercicioInfo)', () => {
+    render(<SerieFormFixture mostrarNota={false} />)
+    expect(screen.queryByPlaceholderText('Nota para esta serie...')).not.toBeInTheDocument()
+  })
+
+  it('con mostrarNota, muestra el textarea y permite escribir', () => {
+    render(<SerieFormFixture mostrarNota />)
+    const textarea = screen.getByPlaceholderText('Nota para esta serie...')
+    fireEvent.change(textarea, { target: { value: 'pesado hoy' } })
+    expect(textarea.value).toBe('pesado hoy')
   })
 })

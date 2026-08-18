@@ -7,13 +7,8 @@ const BTN_TAP_SMALL = { scale: 0.92 }
 
 export default function SerieForm({
   ejercicio, pesoUsado, setPesoUsado, repsHechas, setRepsHechas, ultimoPeso,
-  mostrarNota, setMostrarNota, nota, setNota,
-  ejIdx, serieIdx, tabRef, refPR, refAnterior, serieActual,
+  mostrarNota, nota, setNota,
 }) {
-  const serieRef = tabRef === 'pr'
-    ? refPR?.series?.find(s => s.numeroSerie === serieActual)
-    : refAnterior?.series?.find(s => s.numeroSerie === serieActual)
-
   const restarPesoPress = useLongPress(() => setPesoUsado(p => String(Math.round(Math.max(0, (parsePeso(p) || 0) - 2.5) * 10) / 10)))
   const sumarPesoPress = useLongPress(() => setPesoUsado(p => String(Math.round(((parsePeso(p) || 0) + 2.5) * 10) / 10)))
   const restarRepsPress = useLongPress(() => setRepsHechas(r => String(Math.max(1, (Number(r) || ejercicio.repsEsperadas) - 1))))
@@ -43,33 +38,11 @@ export default function SerieForm({
         </div>
       </div>
 
-      <AnimatePresence mode="wait">
-        {mostrarNota ? (
+      <AnimatePresence>
+        {mostrarNota && (
           <motion.textarea key="textarea" className="sa-nota-input" placeholder="Nota para esta serie..." value={nota} onChange={e => setNota(e.target.value)} rows={2} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} autoFocus />
-        ) : (
-          <motion.button key="addNoteBtn" className="sa-nota-btn" onClick={() => setMostrarNota(true)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} whileTap={{ scale: 0.97 }}>+ Nota</motion.button>
         )}
       </AnimatePresence>
-
-      {serieRef && (
-        <motion.div
-          key={`ref-serie-${ejIdx}-${serieIdx}-${tabRef}`}
-          className={`sa-ref-serie-card ${tabRef === 'pr' ? 'sa-ref-serie-card--pr' : ''}`}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-        >
-          <span className="sa-ref-serie-icon">{tabRef === 'pr' ? '🏆' : '🎯'}</span>
-          <div style={{ flex: 1 }}>
-            <span className={`sa-ref-serie-label ${tabRef === 'pr' ? 'sa-ref-serie-label--pr' : ''}`}>
-              {tabRef === 'pr' ? 'PR personal' : 'Última vez'} — serie {serieActual}
-            </span>
-            <span className="sa-ref-serie-valor">
-              {serieRef.pesoUsado > 0 ? `${serieRef.pesoUsado} kg` : 'Sin peso'} × {serieRef.repsHechas} reps
-            </span>
-          </div>
-        </motion.div>
-      )}
     </>
   )
 }
