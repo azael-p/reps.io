@@ -7,9 +7,10 @@ export default function ChipsFiltro({ values, selected, onChange }) {
         <motion.button
           key={v}
           style={{
-            padding: '6px 12px',
+            padding: '10px 14px',
+            minHeight: '40px',
             borderRadius: '20px',
-            fontSize: '0.78rem',
+            fontSize: '0.8rem',
             fontWeight: 600,
             whiteSpace: 'nowrap',
             flexShrink: 0,

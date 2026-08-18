@@ -97,8 +97,9 @@ function ToastItem({ toast, onDismiss }) {
         onClick={(e) => { e.stopPropagation(); onDismiss(toast.id) }}
         style={{
           background: 'none', border: 'none',
-          padding: 4, cursor: 'pointer',
+          width: 40, height: 40, margin: -8, cursor: 'pointer',
           color: 'var(--text-mute)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}
         aria-label="Cerrar"
       >
