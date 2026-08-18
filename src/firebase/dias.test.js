@@ -15,12 +15,13 @@ vi.mock('firebase/firestore', () => ({
   query: vi.fn((...args) => args),
   where: vi.fn(),
   getDocs: vi.fn(),
+  getDoc: vi.fn(),
   writeBatch: vi.fn(() => mockBatch),
 }))
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { getDocs, updateDoc, writeBatch } from 'firebase/firestore'
-import { getDias, marcarDiaParaEliminar, desmarcarDiaParaEliminar, eliminarDiaDefinitivo as eliminarDia } from './dias'
+import { getDocs, getDoc, updateDoc, writeBatch } from 'firebase/firestore'
+import { getDias, marcarDiaParaEliminar, desmarcarDiaParaEliminar, eliminarDiaDefinitivo as eliminarDia, getProximoDiaSugerido } from './dias'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -90,6 +91,58 @@ describe('getDias — soft-delete filter', () => {
     })
     const result = await getDias('prog1')
     expect(result[0].id).toBe('d1')
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('getProximoDiaSugerido', () => {
+  const mkDoc = (id, data) => ({ id, data: () => data })
+
+  it('sugiere el siguiente día del programa, en orden', async () => {
+    getDoc.mockResolvedValueOnce({ exists: () => true, data: () => ({ programaId: 'prog1' }) })
+    getDocs.mockResolvedValueOnce({
+      docs: [
+        mkDoc('d1', { nombre: 'Push', orden: 1 }),
+        mkDoc('d2', { nombre: 'Pull', orden: 2 }),
+        mkDoc('d3', { nombre: 'Legs', orden: 3 }),
+      ],
+    })
+    const r = await getProximoDiaSugerido('d1')
+    expect(r).toEqual({ dia: { id: 'd2', nombre: 'Pull', orden: 2 }, programaId: 'prog1', numero: 2 })
+  })
+
+  it('da la vuelta al primer día cuando el último entrenado era el final del programa', async () => {
+    getDoc.mockResolvedValueOnce({ exists: () => true, data: () => ({ programaId: 'prog1' }) })
+    getDocs.mockResolvedValueOnce({
+      docs: [
+        mkDoc('d1', { nombre: 'Push', orden: 1 }),
+        mkDoc('d2', { nombre: 'Pull', orden: 2 }),
+      ],
+    })
+    const r = await getProximoDiaSugerido('d2')
+    expect(r.dia.id).toBe('d1')
+    expect(r.numero).toBe(1)
+  })
+
+  it('devuelve null si el día ya no existe (borrado definitivo)', async () => {
+    getDoc.mockResolvedValueOnce({ exists: () => false })
+    expect(await getProximoDiaSugerido('d1')).toBeNull()
+  })
+
+  it('devuelve null si el día está en soft-delete', async () => {
+    getDoc.mockResolvedValueOnce({ exists: () => true, data: () => ({ programaId: 'prog1', eliminadoEn: 123 }) })
+    expect(await getProximoDiaSugerido('d1')).toBeNull()
+  })
+
+  it('devuelve null sin ultimoDiaId', async () => {
+    expect(await getProximoDiaSugerido(null)).toBeNull()
+    expect(getDoc).not.toHaveBeenCalled()
+  })
+
+  it('devuelve null ante un error (offline, etc.) en vez de romper el flujo', async () => {
+    getDoc.mockRejectedValueOnce(new Error('offline'))
+    expect(await getProximoDiaSugerido('d1')).toBeNull()
   })
 })
 

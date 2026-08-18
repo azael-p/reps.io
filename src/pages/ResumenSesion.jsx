@@ -118,7 +118,7 @@ export default function ResumenSesion() {
         // escritura ya se aplicó al cache local al llamar esta función, y
         // sin red la promesa de commit() puede no resolver nunca — esperarla
         // acá dejaría el spinner girando para siempre.
-        completarSesionConAgregados(sesionId, { usuarioId: usuario?.id, fecha: sesionData.fecha, resumen })
+        completarSesionConAgregados(sesionId, { usuarioId: usuario?.id, fecha: sesionData.fecha, resumen, diaId: sesionData.diaId })
           .catch(e => {
             console.error(e)
             show({ message: 'No se pudo confirmar la sesión con el servidor. Se sincronizará cuando haya conexión.', variant: 'warning', duration: 5000 })

@@ -30,10 +30,10 @@ describe('completarSesionConAgregados', () => {
     const fecha = new Date()
     const resumen = { volumenTotal: 100, ejercicios: [] }
 
-    await completarSesionConAgregados('ses1', { usuarioId: 'user1', fecha, resumen })
+    await completarSesionConAgregados('ses1', { usuarioId: 'user1', fecha, resumen, diaId: 'dia1' })
 
     expect(completarSesion).toHaveBeenCalledWith('ses1', resumen, mockBatch)
-    expect(agregarSesionAResumenGlobalBlind).toHaveBeenCalledWith(mockBatch, 'user1', { sesionId: 'ses1', fecha, resumen })
+    expect(agregarSesionAResumenGlobalBlind).toHaveBeenCalledWith(mockBatch, 'user1', { sesionId: 'ses1', fecha, resumen, diaId: 'dia1' })
     expect(aplicarSesionAStats).toHaveBeenCalledWith('user1', { sesionId: 'ses1', fecha, resumen }, mockBatch)
     expect(mockBatchCommit).toHaveBeenCalledOnce()
   })

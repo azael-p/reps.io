@@ -42,6 +42,8 @@ export function buildResumenGlobal(sesiones) {
   return {
     diasEntrenados: [...dias].sort((a, b) => a - b),
     volumenPorSesion: volumen.sort((a, b) => a.fecha - b.fecha).slice(-MAX_VOLUMEN),
+    // `sesiones` viene ordenada desc por fecha (getSesionesConResumen).
+    ultimoDiaId: sesiones[0]?.diaId ?? null,
   }
 }
 
@@ -95,9 +97,10 @@ export async function getResumenGlobalConFallback(uid) {
 // (ver aplicarSesionAResumenGlobal más abajo, que sí necesita leer para
 // poder REEMPLAZAR una entrada existente por sesionId). arrayUnion dedupea
 // por igualdad exacta de valor — sirve para altas, no para ediciones.
-export function agregarSesionAResumenGlobalBlind(batch, uid, { sesionId, fecha, resumen }) {
+export function agregarSesionAResumenGlobalBlind(batch, uid, { sesionId, fecha, resumen, diaId }) {
   const e = epochDia(fecha)
   const campos = { ultimaSesionId: sesionId, actualizadoEn: serverTimestamp() }
+  if (diaId) campos.ultimoDiaId = diaId
   if (e !== null) campos.diasEntrenados = arrayUnion(e)
   if (resumen?.volumenTotal > 0) {
     campos.volumenPorSesion = arrayUnion({

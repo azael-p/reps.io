@@ -17,7 +17,8 @@ vi.mock('firebase/firestore', () => ({
 }))
 
 vi.mock('../firebase/programas', () => ({ getProgramas: vi.fn() }))
-vi.mock('../firebase/dias', () => ({ getDias: vi.fn() }))
+vi.mock('../firebase/dias', () => ({ getDias: vi.fn(), getProximoDiaSugerido: vi.fn() }))
+vi.mock('../firebase/statsGlobal', () => ({ getResumenGlobalConFallback: vi.fn() }))
 vi.mock('../firebase/sesiones', () => ({ crearSesion: vi.fn(), eliminarSesion: vi.fn() }))
 
 const mockShow = vi.fn()
@@ -31,7 +32,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { getDoc } from 'firebase/firestore'
 import { getProgramas } from '../firebase/programas'
-import { getDias } from '../firebase/dias'
+import { getDias, getProximoDiaSugerido } from '../firebase/dias'
+import { getResumenGlobalConFallback } from '../firebase/statsGlobal'
 import { crearSesion, eliminarSesion } from '../firebase/sesiones'
 import Entrenar from './Entrenar'
 
@@ -60,6 +62,8 @@ beforeEach(() => {
   localStorage.clear()
   getProgramas.mockResolvedValue([PROGRAMA])
   getDias.mockResolvedValue([DIA])
+  getResumenGlobalConFallback.mockResolvedValue({ diasEntrenados: [], ultimoDiaId: null })
+  getProximoDiaSugerido.mockResolvedValue(null)
 })
 
 // ---------------------------------------------------------------------------
@@ -185,6 +189,50 @@ describe('Entrenar — empezar() con sesión activa guardada en localStorage', (
     await waitFor(() => {
       expect(crearSesion).toHaveBeenCalledWith('user1', 'dia1')
     })
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('Entrenar — autoselección con un solo programa', () => {
+  it('muestra los días del único programa sin tener que elegirlo primero', async () => {
+    renderPage()
+    await screen.findByText('Día de pecho')
+    expect(getDias).toHaveBeenCalledWith('prog1')
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('Entrenar — sugerencia "Seguir"', () => {
+  const PROGRAMA2 = { id: 'prog2', nombre: 'PPL2' }
+  const DIA_SUGERIDO = { id: 'dia2', nombre: 'Día de espalda' }
+
+  beforeEach(() => {
+    // Dos programas: sin esto la autoselección ya deja todo listo y no se
+    // puede distinguir el efecto de la sugerencia.
+    getProgramas.mockResolvedValue([PROGRAMA, PROGRAMA2])
+    getDias.mockImplementation(id => Promise.resolve(id === 'prog2' ? [DIA_SUGERIDO] : [DIA]))
+    getResumenGlobalConFallback.mockResolvedValue({ diasEntrenados: [], ultimoDiaId: 'algun-dia' })
+    getProximoDiaSugerido.mockResolvedValue({ dia: DIA_SUGERIDO, programaId: 'prog2', numero: 3 })
+  })
+
+  it('un tap sobre "Seguir" preselecciona programa y día, dejando "Empezar" como único paso restante', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByText('Día de espalda'))
+
+    expect(getDias).toHaveBeenCalledWith('prog2')
+    expect(screen.getByText('Empezar entrenamiento')).toBeInTheDocument()
+  })
+
+  it('no se muestra si no hay último día entrenado', async () => {
+    getResumenGlobalConFallback.mockResolvedValue({ diasEntrenados: [], ultimoDiaId: null })
+    getProximoDiaSugerido.mockResolvedValue(null)
+    renderPage()
+    await screen.findByText('PPL')
+    expect(screen.queryByText(/^Seguir:/)).not.toBeInTheDocument()
   })
 })
 

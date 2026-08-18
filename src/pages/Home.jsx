@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { useUser } from '../context/UserContext'
 import { useNavigate } from 'react-router-dom'
 import { getResumenGlobalConFallback } from '../firebase/statsGlobal'
+import { getProximoDiaSugerido } from '../firebase/dias'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import Calendario from '../components/Calendario'
@@ -11,6 +12,7 @@ import PullToRefresh from '../components/PullToRefresh'
 import Credit from '../components/Credit'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
+import { useIniciarSesion } from '../hooks/useIniciarSesion'
 import { Layers, Zap, TrendingUp, ChevronRight, LogOut } from 'lucide-react'
 
 const ICON_STYLE = { color: 'rgba(255,255,255,0.95)', strokeWidth: 1.8 }
@@ -65,14 +67,17 @@ export default function Home() {
   const [fechas, setFechas] = useState([])
   const [cargandoCal, setCargandoCal] = useState(true)
   const [sesionPendiente, setSesionPendiente] = useState(null)
+  const [sugerenciaDia, setSugerenciaDia] = useState(null)
   const [onboardingDone, setOnboardingDone] = useState(
     () => localStorage.getItem(`onboarding_${usuario?.id}`) === '1'
   )
   const mountedRef = useRef(true)
+  const iniciarSesion = useIniciarSesion()
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false } }, [])
 
   const recargar = useCallback(async () => {
     const cacheKey = `calendario_${usuario.id}`
+    let ultimoDiaId = null
     try {
       const cached = localStorage.getItem(cacheKey)
       if (cached) {
@@ -81,28 +86,50 @@ export default function Home() {
         if (mountedRef.current) setCargandoCal(false)
       }
       // 1 lectura: el agregado resumenGlobal reemplaza la descarga de sesiones.
-      const { diasEntrenados } = await getResumenGlobalConFallback(usuario.id)
+      const resumen = await getResumenGlobalConFallback(usuario.id)
+      ultimoDiaId = resumen.ultimoDiaId ?? null
       if (mountedRef.current) {
-        setFechas(diasEntrenados)
-        localStorage.setItem(cacheKey, JSON.stringify({ fechas: diasEntrenados }))
+        setFechas(resumen.diasEntrenados)
+        localStorage.setItem(cacheKey, JSON.stringify({ fechas: resumen.diasEntrenados }))
         if (!cached) setCargandoCal(false)
       }
     } catch (e) { console.error(e); if (mountedRef.current) setCargandoCal(false) }
 
+    let hayPendiente = false
     try {
       const stored = localStorage.getItem(`sesion_activa_${usuario.id}`)
-      if (!stored) return
-      const snap = await getDoc(doc(db, 'sesiones', stored))
-      if (!snap.exists() || snap.data().completada) {
-        localStorage.removeItem(`sesion_activa_${usuario.id}`)
-        return
+      if (stored) {
+        const snap = await getDoc(doc(db, 'sesiones', stored))
+        if (!snap.exists() || snap.data().completada) {
+          localStorage.removeItem(`sesion_activa_${usuario.id}`)
+        } else {
+          hayPendiente = true
+          const diaSnap = await getDoc(doc(db, 'dias', snap.data().diaId))
+          if (mountedRef.current) setSesionPendiente({ sesionId: stored, diaNombre: diaSnap.data()?.nombre ?? 'Entrenamiento' })
+        }
       }
-      const diaSnap = await getDoc(doc(db, 'dias', snap.data().diaId))
-      if (mountedRef.current) setSesionPendiente({ sesionId: stored, diaNombre: diaSnap.data()?.nombre ?? 'Entrenamiento' })
     } catch (e) { console.error(e) }
+
+    // La sesión sin terminar tiene prioridad: mientras exista, no tiene
+    // sentido ofrecer un atajo para *empezar* una sesión nueva.
+    if (ultimoDiaId && !hayPendiente) {
+      try {
+        const s = await getProximoDiaSugerido(ultimoDiaId)
+        if (mountedRef.current && s) setSugerenciaDia(s)
+      } catch (e) { console.error(e) }
+    }
   }, [usuario])
 
   useEffect(() => { setCargandoCal(true); recargar() }, [recargar]) // eslint-disable-line
+
+  // Con un día sugerido y sin sesión pendiente, "Entrenar hoy" salta directo
+  // a esa sesión en vez de pasar por /entrenar — de Home a entrenando en 1 tap.
+  const secciones = SECCIONES.map(sec => {
+    if (sec.ruta === '/entrenar' && sugerenciaDia) {
+      return { ...sec, sub: `Seguir: ${sugerenciaDia.dia.nombre}`, onClick: () => iniciarSesion(sugerenciaDia.dia.id) }
+    }
+    return { ...sec, onClick: () => navigate(sec.ruta) }
+  })
 
   return (
     <motion.div
@@ -159,12 +186,12 @@ export default function Home() {
           {/* Left column: section cards */}
           <div className="home-desktop-left">
             <div className="home-secciones">
-              {SECCIONES.map((sec, i) => (
+              {secciones.map((sec, i) => (
                 <motion.button
                   key={sec.ruta}
                   className="home-seccion-card"
                   style={{ '--sec-border': sec.borderToken, '--sec-gradient': sec.gradient, '--sec-glow': `radial-gradient(circle at 50% 0%, ${sec.glow}, transparent 70%)` }}
-                  onClick={() => navigate(sec.ruta)}
+                  onClick={sec.onClick}
                   initial={{ opacity: 0, y: 24, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ delay: 0.1 + i * 0.08, type: 'spring', stiffness: 200, damping: 22 }}
@@ -256,12 +283,12 @@ export default function Home() {
           </AnimatePresence>
 
           <div className="home-secciones">
-            {SECCIONES.map((sec, i) => (
+            {secciones.map((sec, i) => (
               <motion.button
                 key={sec.ruta}
                 className="home-seccion-card"
                 style={{ '--sec-border': sec.borderToken, '--sec-gradient': sec.gradient, '--sec-glow': `radial-gradient(circle at 50% 0%, ${sec.glow}, transparent 70%)` }}
-                onClick={() => navigate(sec.ruta)}
+                onClick={sec.onClick}
                 initial={{ opacity: 0, y: 24, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ delay: 0.1 + i * 0.08, type: 'spring', stiffness: 200, damping: 22 }}

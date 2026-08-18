@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { useUser } from '../context/UserContext'
 import { getProgramas } from '../firebase/programas'
-import { getDias } from '../firebase/dias'
-import { crearSesion, eliminarSesion } from '../firebase/sesiones'
+import { getDias, getProximoDiaSugerido } from '../firebase/dias'
+import { eliminarSesion } from '../firebase/sesiones'
+import { getResumenGlobalConFallback } from '../firebase/statsGlobal'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { Header, EmptyState, ListSkeleton, PageWrapper, Modal } from '../components/ui'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
+import { useIniciarSesion } from '../hooks/useIniciarSesion'
 
 // Footer de "Empezar" (~90px) + BottomNav (64px) + aire: sin esto el último día
 // de la lista queda debajo de las dos capas fijas.
@@ -20,6 +22,7 @@ export default function Entrenar() {
   const { usuario } = useUser()
   const { show } = useToast()
   const navigate = useNavigate()
+  const iniciarSesion = useIniciarSesion()
   const [programas, setProgramas] = useState([])
   const [dias, setDias] = useState([])
   const [programaId, setProgramaId] = useState(null)
@@ -29,10 +32,28 @@ export default function Entrenar() {
   const [errorMsg, setErrorMsg] = useState('')
   const [conflicto, setConflicto] = useState(null)
   const [descartando, setDescartando] = useState(false)
+  const [sugerencia, setSugerencia] = useState(null)
 
   useEffect(() => {
     if (!usuario?.id) return
-    getProgramas(usuario.id).then(p => { setProgramas(p); setCargando(false) }).catch(e => { console.error(e); setErrorMsg('Error al cargar programas'); setCargando(false) })
+    getProgramas(usuario.id).then(p => {
+      setProgramas(p)
+      setCargando(false)
+      // Con un solo programa, elegirlo no decide nada: nos ahorramos el tap.
+      if (p.length === 1) {
+        const id = p[0].id
+        setProgramaId(id)
+        getDias(id).then(setDias).catch(e => { console.error(e); setErrorMsg('Error al cargar los días') })
+      }
+    }).catch(e => { console.error(e); setErrorMsg('Error al cargar programas'); setCargando(false) })
+  }, [usuario?.id])
+
+  useEffect(() => {
+    if (!usuario?.id) return
+    getResumenGlobalConFallback(usuario.id)
+      .then(({ ultimoDiaId }) => ultimoDiaId ? getProximoDiaSugerido(ultimoDiaId) : null)
+      .then(s => { if (s) setSugerencia(s) })
+      .catch(e => console.error(e))
   }, [usuario?.id])
 
   async function seleccionarPrograma(id) {
@@ -42,19 +63,15 @@ export default function Entrenar() {
     try { setDias(await getDias(id)) } catch (e) { console.error(e); setErrorMsg('Error al cargar los días') }
   }
 
-  async function crearYNavegar() {
+  function crearYNavegar() {
     try {
-      const { id: sesionId, listo } = crearSesion(usuario.id, diaId)
-      localStorage.setItem(`sesion_activa_${usuario.id}`, sesionId)
-      // No se espera el ACK del servidor para navegar: el id ya es válido
-      // en el cache local. Un fallo eventual se avisa por toast, sin volver
-      // a esta pantalla.
-      listo.catch(e => {
-        console.error(e)
-        show({ message: 'La sesión se guardará cuando vuelva la conexión.', variant: 'warning' })
-      })
-      navigate(`/sesion/${sesionId}`)
+      iniciarSesion(diaId)
     } catch (e) { console.error(e); setErrorMsg('Error al crear la sesión'); setIniciando(false) }
+  }
+
+  async function aceptarSugerencia() {
+    await seleccionarPrograma(sugerencia.programaId)
+    setDiaId(sugerencia.dia.id)
   }
 
   async function empezar() {
@@ -180,6 +197,21 @@ export default function Entrenar() {
     <EmptyState mensaje="Este programa no tiene días" icon="📅" sub="Agregá días al programa antes de entrenar" action={{ label: 'Agregar día', onClick: () => navigate(`/programas/${programaId}`) }} />
   ) : null
 
+  const sugerenciaBanner = !cargando && sugerencia && !diaId ? (
+    <div className="entrenar-seccion" style={{ paddingBottom: 0 }}>
+      <motion.button
+        className="entrenar-sugerencia-btn"
+        onClick={aceptarSugerencia}
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileTap={{ scale: 0.97 }}
+      >
+        <span className="entrenar-sugerencia-label">Seguir: Día {sugerencia.numero}</span>
+        <span className="entrenar-sugerencia-nombre">{sugerencia.dia.nombre}</span>
+      </motion.button>
+    </div>
+  ) : null
+
   const empezarBtn = (
     <motion.button
       className="entrenar-empezar-btn"
@@ -205,6 +237,8 @@ export default function Entrenar() {
         accent="var(--orange)"
         onBack={() => navigate('/home')}
       />
+
+      {sugerenciaBanner}
 
       {cargando ? (
         <div style={{ padding: '14px 14px 0' }}>

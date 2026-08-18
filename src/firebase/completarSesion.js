@@ -11,11 +11,11 @@ import { aplicarSesionAStats } from './statsEjercicios'
 // aplicó las escrituras al cache local al construir el batch; el commit()
 // solo resuelve cuando llega el ACK del servidor, que puede tardar
 // indefinidamente sin red.
-export async function completarSesionConAgregados(sesionId, { usuarioId, fecha, resumen }) {
+export async function completarSesionConAgregados(sesionId, { usuarioId, fecha, resumen, diaId }) {
   const batch = writeBatch(db)
   completarSesion(sesionId, resumen, batch)
   if (usuarioId) {
-    agregarSesionAResumenGlobalBlind(batch, usuarioId, { sesionId, fecha, resumen })
+    agregarSesionAResumenGlobalBlind(batch, usuarioId, { sesionId, fecha, resumen, diaId })
     // Solo lecturas (getDoc) antes de este punto — resuelven del cache local
     // incluso sin red, no se cuelgan.
     await aplicarSesionAStats(usuarioId, { sesionId, fecha, resumen }, batch)

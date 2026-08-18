@@ -22,6 +22,8 @@ vi.mock('firebase/firestore', () => ({
   getDoc: vi.fn(),
 }))
 vi.mock('../firebase/statsGlobal', () => ({ getResumenGlobalConFallback: vi.fn() }))
+vi.mock('../firebase/dias', () => ({ getProximoDiaSugerido: vi.fn() }))
+vi.mock('../firebase/sesiones', () => ({ crearSesion: vi.fn() }))
 
 vi.mock('../components/Calendario', () => ({ default: () => <div data-testid="calendario" /> }))
 vi.mock('../components/PullToRefresh', () => ({ default: ({ children }) => children }))
@@ -39,6 +41,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { getDoc } from 'firebase/firestore'
 import { getResumenGlobalConFallback } from '../firebase/statsGlobal'
+import { getProximoDiaSugerido } from '../firebase/dias'
+import { crearSesion } from '../firebase/sesiones'
 import Home from './Home'
 
 function renderPage() {
@@ -59,6 +63,7 @@ beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('onboarding_user1', '1')
   getResumenGlobalConFallback.mockResolvedValue({ diasEntrenados: [], volumenPorSesion: [] })
+  getProximoDiaSugerido.mockResolvedValue(null)
 })
 
 // ---------------------------------------------------------------------------
@@ -104,6 +109,45 @@ describe('Home — sesión pendiente', () => {
       expect(localStorage.getItem('sesion_activa_user1')).toBeNull()
     })
     expect(screen.queryByText('Push')).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('Home — atajo "Seguir" en la card de Entrenar hoy', () => {
+  it('con un día sugerido, un tap crea la sesión y navega directo sin pasar por /entrenar', async () => {
+    getResumenGlobalConFallback.mockResolvedValue({ diasEntrenados: [], ultimoDiaId: 'dia1' })
+    getProximoDiaSugerido.mockResolvedValue({ dia: { id: 'dia1', nombre: 'Pierna' }, programaId: 'prog1', numero: 3 })
+    crearSesion.mockReturnValue({ id: 'nueva-sesion', listo: Promise.resolve() })
+    const user = userEvent.setup()
+    renderPage()
+
+    await screen.findByText('Seguir: Pierna')
+    await user.click(screen.getByText('Seguir: Pierna'))
+
+    expect(crearSesion).toHaveBeenCalledWith('user1', 'dia1')
+    await screen.findByTestId('sesion-activa')
+  })
+
+  it('sin día sugerido, la card se comporta como siempre (navega a /entrenar)', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('Entrenar hoy')
+    await user.click(screen.getByText('Entrenar hoy'))
+    expect(crearSesion).not.toHaveBeenCalled()
+  })
+
+  it('con una sesión pendiente, no calcula ni muestra la sugerencia', async () => {
+    localStorage.setItem('sesion_activa_user1', 'ses1')
+    getDoc
+      .mockResolvedValueOnce({ exists: () => true, data: () => ({ diaId: 'dia1', completada: false }) })
+      .mockResolvedValueOnce({ exists: () => true, data: () => ({ nombre: 'Push' }) })
+    getResumenGlobalConFallback.mockResolvedValue({ diasEntrenados: [], ultimoDiaId: 'dia1' })
+    renderPage()
+
+    await screen.findByText('Push')
+    expect(getProximoDiaSugerido).not.toHaveBeenCalled()
+    expect(screen.getByText('Iniciar sesión')).toBeInTheDocument()
   })
 })
 

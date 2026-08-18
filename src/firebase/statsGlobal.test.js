@@ -65,6 +65,18 @@ describe('buildResumenGlobal', () => {
     expect(r.diasEntrenados).toEqual([E(2026, 6, 10), E(2026, 6, 12)])
     expect(r.volumenPorSesion.map(v => v.sesionId)).toEqual(['s1', 's2'])
   })
+
+  it('toma ultimoDiaId de la primera sesión (vienen ordenadas desc por fecha)', () => {
+    const sesiones = [
+      { id: 's2', diaId: 'dia-reciente', fecha: DIA(2026, 6, 12), resumen: {} },
+      { id: 's1', diaId: 'dia-viejo', fecha: DIA(2026, 6, 10), resumen: {} },
+    ]
+    expect(buildResumenGlobal(sesiones).ultimoDiaId).toBe('dia-reciente')
+  })
+
+  it('sin sesiones, ultimoDiaId es null', () => {
+    expect(buildResumenGlobal([]).ultimoDiaId).toBeNull()
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -95,7 +107,7 @@ describe('getResumenGlobalConFallback', () => {
     mockGetDoc.mockResolvedValue({ exists: () => false })
     getSesionesConResumen.mockResolvedValue([])
     const r = await getResumenGlobalConFallback('user1')
-    expect(r).toEqual({ diasEntrenados: [], volumenPorSesion: [] })
+    expect(r).toEqual({ diasEntrenados: [], volumenPorSesion: [], ultimoDiaId: null })
     expect(mockSetDoc).not.toHaveBeenCalled()
   })
 })
@@ -211,7 +223,7 @@ describe('agregarSesionAResumenGlobalBlind', () => {
   it('escribe con arrayUnion y merge, sin leer el doc antes (no puede pisar historial)', () => {
     const batch = { set: mockBatchSet }
     agregarSesionAResumenGlobalBlind(batch, 'user1', {
-      sesionId: 's2', fecha: DIA(2026, 6, 12), resumen: { volumenTotal: 500, diaNombre: 'Pull' },
+      sesionId: 's2', fecha: DIA(2026, 6, 12), resumen: { volumenTotal: 500, diaNombre: 'Pull' }, diaId: 'dia1',
     })
     expect(mockGetDoc).not.toHaveBeenCalled()
     expect(mockBatchSet).toHaveBeenCalledOnce()
@@ -220,7 +232,17 @@ describe('agregarSesionAResumenGlobalBlind', () => {
     expect(campos.diasEntrenados).toEqual({ __arrayUnion: [E(2026, 6, 12)] })
     expect(campos.volumenPorSesion).toEqual({ __arrayUnion: [{ sesionId: 's2', fecha: E(2026, 6, 12), volumen: 500, diaNombre: 'Pull' }] })
     expect(campos.ultimaSesionId).toBe('s2')
+    expect(campos.ultimoDiaId).toBe('dia1')
     expect(opts).toEqual({ merge: true })
+  })
+
+  it('sin diaId, no agrega el campo (compatibilidad con callers que todavía no lo pasan)', () => {
+    const batch = { set: mockBatchSet }
+    agregarSesionAResumenGlobalBlind(batch, 'user1', {
+      sesionId: 's2', fecha: DIA(2026, 6, 12), resumen: { volumenTotal: 500 },
+    })
+    const campos = mockBatchSet.mock.calls[0][1]
+    expect(campos.ultimoDiaId).toBeUndefined()
   })
 })
 
