@@ -75,6 +75,23 @@ describe('SerieForm — stepper de peso/reps', () => {
 
 // ---------------------------------------------------------------------------
 
+describe('SerieForm — tamaño de fuente del input de peso', () => {
+  it('con un peso de hasta 4 caracteres usa el tamaño grande', () => {
+    render(<SerieFormFixture pesoInicial="82.5" />)
+    expect(screen.getByLabelText('Peso (kg)').className).toBe('sa-input-big')
+  })
+
+  it('con un peso de 5 caracteres achica la fuente (sa-input-big--md)', () => {
+    render(<SerieFormFixture pesoInicial="100.5" />)
+    expect(screen.getByLabelText('Peso (kg)').className).toContain('sa-input-big--md')
+  })
+
+  it('con un peso de 6+ caracteres achica más la fuente (sa-input-big--sm), ej. "100.25"', () => {
+    render(<SerieFormFixture pesoInicial="100.25" />)
+    expect(screen.getByLabelText('Peso (kg)').className).toContain('sa-input-big--sm')
+  })
+})
+
 describe('SerieForm — nota', () => {
   it('sin mostrarNota, no renderiza el textarea (el toggle vive en EjercicioInfo)', () => {
     render(<SerieFormFixture mostrarNota={false} />)

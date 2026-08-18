@@ -1681,7 +1681,7 @@ select:focus-visible {
   font-family: inherit; text-align: left;
 }
 .sa-input-big {
-  padding: 16px 12px;
+  padding: 16px 6px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-top: 1px solid var(--highlight);
@@ -1693,6 +1693,12 @@ select:focus-visible {
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
+/* Entre los dos steppers de 44px el input queda con muy poco ancho real
+   (~65px en un mobile de 375px) — a 1.6rem un peso de 3 dígitos o con
+   decimales ("100.25") no entraba entero. SerieForm.jsx elige estas clases
+   según la longitud del valor tipeado. */
+.sa-input-big--md { font-size: 1.28rem; }
+.sa-input-big--sm { font-size: 1.05rem; }
 .sa-nota-input {
   padding: 12px;
   background: var(--bg-card);

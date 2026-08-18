@@ -5,6 +5,16 @@ import { parsePeso, sanitizarPeso } from '../../utils/stats'
 const INPUT_FOCUS = { borderColor: 'var(--orange)', boxShadow: '0 0 0 4px var(--orange-glow)' }
 const BTN_TAP_SMALL = { scale: 0.92 }
 
+// El input de peso/reps queda muy angosto entre los steppers ± — a partir de
+// cierto largo (pesos de 3 dígitos o con decimales, ej. "100.25") el número
+// no entraba entero a 1.6rem. Achica la fuente en pasos según lo tipeado.
+function claseInputSerie(valor) {
+  const largo = valor ? valor.length : 0
+  if (largo >= 6) return 'sa-input-big sa-input-big--sm'
+  if (largo >= 5) return 'sa-input-big sa-input-big--md'
+  return 'sa-input-big'
+}
+
 export default function SerieForm({
   ejercicio, pesoUsado, setPesoUsado, repsHechas, setRepsHechas, ultimoPeso,
   mostrarNota, nota, setNota,
@@ -21,7 +31,7 @@ export default function SerieForm({
           <label className="sa-input-label">Peso (kg)</label>
           <div className="sa-stepper">
             <motion.button className="sa-stepper-btn" aria-label="Restar 2,5 kg" {...restarPesoPress} whileTap={BTN_TAP_SMALL}>−</motion.button>
-            <motion.input className="sa-input-big" type="text" inputMode="decimal" placeholder={ultimoPeso[ejercicio.id] ? String(ultimoPeso[ejercicio.id]) : ''} value={pesoUsado} onChange={e => setPesoUsado(sanitizarPeso(e.target.value))} aria-label="Peso (kg)" whileFocus={INPUT_FOCUS} />
+            <motion.input className={claseInputSerie(pesoUsado)} type="text" inputMode="decimal" placeholder={ultimoPeso[ejercicio.id] ? String(ultimoPeso[ejercicio.id]) : ''} value={pesoUsado} onChange={e => setPesoUsado(sanitizarPeso(e.target.value))} aria-label="Peso (kg)" whileFocus={INPUT_FOCUS} />
             <motion.button className="sa-stepper-btn" aria-label="Sumar 2,5 kg" {...sumarPesoPress} whileTap={BTN_TAP_SMALL}>+</motion.button>
           </div>
           {ultimoPeso[ejercicio.id] && !pesoUsado && (
@@ -32,7 +42,7 @@ export default function SerieForm({
           <label className="sa-input-label">Reps</label>
           <div className="sa-stepper">
             <motion.button className="sa-stepper-btn" aria-label="Restar una repetición" {...restarRepsPress} whileTap={BTN_TAP_SMALL}>−</motion.button>
-            <motion.input className="sa-input-big" type="number" inputMode="numeric" placeholder={String(ejercicio.repsEsperadas)} value={repsHechas} onChange={e => setRepsHechas(e.target.value)} aria-label="Repeticiones" whileFocus={INPUT_FOCUS} />
+            <motion.input className={claseInputSerie(repsHechas)} type="number" inputMode="numeric" placeholder={String(ejercicio.repsEsperadas)} value={repsHechas} onChange={e => setRepsHechas(e.target.value)} aria-label="Repeticiones" whileFocus={INPUT_FOCUS} />
             <motion.button className="sa-stepper-btn" aria-label="Sumar una repetición" {...sumarRepsPress} whileTap={BTN_TAP_SMALL}>+</motion.button>
           </div>
         </div>
