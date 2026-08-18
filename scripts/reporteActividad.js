@@ -23,8 +23,7 @@
 //                                                              (solo aplica con --sin-detalle)
 //
 // Salida en scripts/reportes/ (gitignored, contiene PII de usuarios):
-//   actividad-<fecha>.json / actividad-<fecha>.html
-//   ultimo.json / ultimo.html   (siempre apuntan a la corrida más reciente)
+//   ultimo.json / ultimo.html   — cada corrida los sobreescribe.
 
 import { mkdir, writeFile } from 'fs/promises'
 import { fileURLToPath } from 'url'
@@ -131,19 +130,16 @@ async function main() {
 
   const dirReportes = path.join(__dirname, 'reportes')
   await mkdir(dirReportes, { recursive: true })
-  const fecha = formatearFecha(Date.now())
   const json = JSON.stringify(payload, null, 2)
   const html = renderizarHTML(payload)
 
   await Promise.all([
-    writeFile(path.join(dirReportes, `actividad-${fecha}.json`), json),
-    writeFile(path.join(dirReportes, `actividad-${fecha}.html`), html),
     writeFile(path.join(dirReportes, 'ultimo.json'), json),
     writeFile(path.join(dirReportes, 'ultimo.html'), html),
   ])
 
   const kb = Math.round(Buffer.byteLength(html) / 1024)
-  console.log(`\nReporte escrito en scripts/reportes/ (actividad-${fecha}.* y ultimo.*, HTML ${kb} kB)`)
+  console.log(`\nReporte escrito en scripts/reportes/ultimo.{json,html} (HTML ${kb} kB)`)
   process.exit(0)
 }
 

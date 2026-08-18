@@ -198,7 +198,7 @@ Corren con Admin SDK y requieren `scripts/serviceAccount.json` (gitignorado). To
 
 ### Reporte de actividad
 
-`npm run reporte` escribe `scripts/reportes/ultimo.{json,html}` (gitignorado: contiene PII). El HTML es un único archivo autocontenido — CSS y JS inline, sin red — que se abre con doble click.
+`npm run reporte` escribe `scripts/reportes/ultimo.{json,html}` (gitignorado: contiene PII); cada corrida los sobreescribe, no se acumulan snapshots. El HTML es un único archivo autocontenido — CSS y JS inline, sin red — que se abre con doble click.
 
 - **Índice**: tiles de adopción, gráfico de días entrenados y tabla de usuarios. Sale de Auth + `usuarios/{uid}/stats/global`.
 - **Detalle por usuario**: se llega clickeando una fila (URL `#/u/<uid>`, así el back del browser y el recargar funcionan). Muestra las rutinas guardadas (programas → días → ejercicios) y el historial de sesiones con el desglose de series de cada ejercicio.
