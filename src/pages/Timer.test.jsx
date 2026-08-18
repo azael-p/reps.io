@@ -3,6 +3,11 @@
 const wakeLock = vi.hoisted(() => ({ activar: vi.fn(), liberar: vi.fn() }))
 vi.mock('../components/timer/useWakeLock', () => ({ useWakeLock: () => wakeLock }))
 
+const mockSetTimerActivo = vi.hoisted(() => vi.fn())
+vi.mock('../context/TimerActivoContext', () => ({
+  useTimerActivo: () => ({ setTimerActivo: mockSetTimerActivo }),
+}))
+
 vi.mock('../components/timer/TimerConfig', () => ({
   default: ({ onIniciar }) => (
     <button onClick={() => onIniciar({ calentamiento: 1, trabajo: 1, descanso: 1, enfriamiento: 1, sets: 1 })}>
@@ -87,5 +92,30 @@ describe('Timer — máquina de estados', () => {
     const total = Number(screen.getByTestId('tiempo-total').textContent)
     expect(total).toBeGreaterThanOrEqual(3)
     expect(total).toBeLessThan(10)
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('Timer — sincroniza TimerActivoContext (para el guard del BottomNav)', () => {
+  it('marca timerActivo=true al iniciar y false al llegar a fin', () => {
+    iniciar()
+    expect(mockSetTimerActivo).toHaveBeenLastCalledWith(true)
+
+    act(() => { vi.advanceTimersByTime(4000) })
+    expect(mockSetTimerActivo).toHaveBeenLastCalledWith(false)
+  })
+
+  it('marca timerActivo=false al terminar manualmente', () => {
+    iniciar()
+    fireEvent.click(screen.getByText('terminar-mock'))
+    expect(mockSetTimerActivo).toHaveBeenLastCalledWith(false)
+  })
+
+  it('resetea timerActivo a false al desmontar', () => {
+    const { unmount } = render(<Timer />)
+    fireEvent.click(screen.getByText('iniciar-mock'))
+    unmount()
+    expect(mockSetTimerActivo).toHaveBeenLastCalledWith(false)
   })
 })

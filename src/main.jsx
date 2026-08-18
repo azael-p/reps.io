@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { MotionConfig } from 'motion/react'
 import { ToastProvider } from './components/Toast'
+import { TimerActivoProvider } from './context/TimerActivoContext'
 import { registrarListenersErrores } from './firebase/errores'
 import { initSentry } from './sentry'
 import './index.css'
@@ -26,7 +27,9 @@ createRoot(document.getElementById('root')).render(
           que hace que Framer respete prefers-reduced-motion del sistema. */}
       <MotionConfig reducedMotion="user">
         <ToastProvider>
-          <App />
+          <TimerActivoProvider>
+            <App />
+          </TimerActivoProvider>
         </ToastProvider>
       </MotionConfig>
     </BrowserRouter>

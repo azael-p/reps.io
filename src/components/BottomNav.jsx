@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { Home, Zap, Layers, TrendingUp, Timer } from 'lucide-react'
+import { useTimerActivo } from '../context/TimerActivoContext'
+import { ConfirmDialog } from './ui'
 
 const TABS = [
   { label: 'Inicio',    Icon: Home,        ruta: '/home' },
@@ -15,6 +18,8 @@ const RUTAS_NAV = ['/home', '/entrenar', '/programas', '/progreso', '/timer']
 export default function BottomNav() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  const { timerActivo } = useTimerActivo()
+  const [destinoPendiente, setDestinoPendiente] = useState(null)
 
   const visible = RUTAS_NAV.includes(pathname) || pathname.startsWith('/programas/')
 
@@ -23,6 +28,16 @@ export default function BottomNav() {
   const activa = (ruta) => {
     if (ruta === '/programas') return pathname.startsWith('/programas')
     return pathname === ruta
+  }
+
+  function irA(ruta) {
+    // Salir de /timer con el timer corriendo pierde la fase y el tiempo
+    // transcurrido (no se persiste en ningún lado) — se confirma antes.
+    if (timerActivo && pathname === '/timer' && ruta !== '/timer') {
+      setDestinoPendiente(ruta)
+      return
+    }
+    navigate(ruta)
   }
 
   return (
@@ -40,7 +55,7 @@ export default function BottomNav() {
             <motion.button
               key={t.ruta}
               className="bottom-nav-tab"
-              onClick={() => navigate(t.ruta)}
+              onClick={() => irA(t.ruta)}
               whileTap={{ scale: 0.92 }}
             >
               {active && (
@@ -70,6 +85,17 @@ export default function BottomNav() {
           )
         })}
       </motion.nav>
+      <ConfirmDialog
+        open={!!destinoPendiente}
+        data={{
+          titulo: '¿Salir del timer?',
+          descripcion: 'Vas a perder el tiempo transcurrido.',
+          confirmLabel: 'Salir',
+          cancelLabel: 'Seguir',
+          onConfirm: () => navigate(destinoPendiente),
+        }}
+        onClose={() => setDestinoPendiente(null)}
+      />
     </>
   )
 }
