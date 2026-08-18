@@ -9,6 +9,8 @@ import { Header, Modal, ListSkeleton, EmptyState, ErrorState, PageWrapper, Badge
 import { useToast } from '../components/Toast'
 import { useEliminarConUndo } from '../hooks/useEliminarConUndo'
 import DnDList from '../components/DnDList'
+import SwipeToDelete from '../components/SwipeToDelete'
+import PullToRefresh from '../components/PullToRefresh'
 import { GripVertical, Pencil, Trash2, Dumbbell } from 'lucide-react'
 
 export default function EjerciciosDia() {
@@ -95,6 +97,7 @@ export default function EjerciciosDia() {
         )}
       </AnimatePresence>
       <PageWrapper>
+      <PullToRefresh onRefresh={cargar}>
       <Header
         titulo={dia?.nombre ?? '...'}
         subtitulo="Ejercicios"
@@ -128,39 +131,41 @@ export default function EjerciciosDia() {
             }
           }}
           renderItem={(e, i) => ({ dragHandleProps }) => (
-            <motion.div
-              className="ejercicios-card"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
-              layout
-            >
-              <div className="ejercicios-card-top">
-                <span className="crud-drag-handle" {...dragHandleProps}><GripVertical size={16} /></span>
-                <span className="ejercicios-card-num">{String(i + 1).padStart(2, '0')}</span>
-                <Badge color="green">{e.grupoMuscular}</Badge>
-              </div>
-              <span className="ejercicios-card-nombre">{e.nombre}</span>
-              <div className="ejercicios-series-wrap">
-                <div className="ejercicios-serie-badge">
-                  <span className="ejercicios-serie-num num">{e.seriesEsperadas}</span>
-                  <span className="ejercicios-serie-txt">series</span>
+            <SwipeToDelete onDelete={() => eliminar(e)}>
+              <motion.div
+                className="ejercicios-card"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
+                layout
+              >
+                <div className="ejercicios-card-top">
+                  <span className="crud-drag-handle" data-dnd-handle {...dragHandleProps}><GripVertical size={16} /></span>
+                  <span className="ejercicios-card-num">{String(i + 1).padStart(2, '0')}</span>
+                  <Badge color="green">{e.grupoMuscular}</Badge>
                 </div>
-                <span className="ejercicios-serie-x">×</span>
-                <div className="ejercicios-serie-badge">
-                  <span className="ejercicios-serie-num num">{e.repsEsperadas}</span>
-                  <span className="ejercicios-serie-txt">reps</span>
+                <span className="ejercicios-card-nombre">{e.nombre}</span>
+                <div className="ejercicios-series-wrap">
+                  <div className="ejercicios-serie-badge">
+                    <span className="ejercicios-serie-num num">{e.seriesEsperadas}</span>
+                    <span className="ejercicios-serie-txt">series</span>
+                  </div>
+                  <span className="ejercicios-serie-x">×</span>
+                  <div className="ejercicios-serie-badge">
+                    <span className="ejercicios-serie-num num">{e.repsEsperadas}</span>
+                    <span className="ejercicios-serie-txt">reps</span>
+                  </div>
                 </div>
-              </div>
-              <div className="crud-acciones">
-                <motion.button className="crud-accion-btn" onClick={() => abrirEditar(e)} whileTap={{ scale: 0.96 }}>
-                  <Pencil size={14} /><span>Editar</span>
-                </motion.button>
-                <motion.button className="crud-accion-btn crud-accion-eliminar" onClick={() => eliminar(e)} whileTap={{ scale: 0.96 }}>
-                  <Trash2 size={14} /><span>Eliminar</span>
-                </motion.button>
-              </div>
-            </motion.div>
+                <div className="crud-acciones" data-skip-swipe>
+                  <motion.button className="crud-accion-btn" onClick={() => abrirEditar(e)} whileTap={{ scale: 0.96 }}>
+                    <Pencil size={14} /><span>Editar</span>
+                  </motion.button>
+                  <motion.button className="crud-accion-btn crud-accion-eliminar" onClick={() => eliminar(e)} whileTap={{ scale: 0.96 }}>
+                    <Trash2 size={14} /><span>Eliminar</span>
+                  </motion.button>
+                </div>
+              </motion.div>
+            </SwipeToDelete>
           )}
           className="crud-lista"
         />
@@ -184,6 +189,7 @@ export default function EjerciciosDia() {
           <motion.button className="crud-save-btn" onClick={guardarEdicion} whileTap={{ scale: 0.97 }}>Guardar</motion.button>
         </div>
       </Modal>
+      </PullToRefresh>
     </PageWrapper>
     </>
   )

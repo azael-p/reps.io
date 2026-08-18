@@ -9,6 +9,7 @@ import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
 import { useEliminarConUndo } from '../hooks/useEliminarConUndo'
 import DnDList from '../components/DnDList'
 import SwipeToDelete from '../components/SwipeToDelete'
+import PullToRefresh from '../components/PullToRefresh'
 import { useDesktop } from '../hooks/useDesktop'
 import { GripVertical, Pencil, Trash2, ChevronRight, Layers } from 'lucide-react'
 
@@ -74,6 +75,7 @@ export default function Programas() {
 
   return (
     <PageWrapper>
+      <PullToRefresh onRefresh={cargar}>
       <Header
         titulo="Mis programas"
         subtitulo="Tus rutinas"
@@ -188,6 +190,7 @@ export default function Programas() {
           </motion.button>
         </div>
       </Modal>
+      </PullToRefresh>
     </PageWrapper>
   )
 }

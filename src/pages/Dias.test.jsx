@@ -59,6 +59,7 @@ function renderPage(programaId = 'prog1') {
       <Routes>
         <Route path="/programas" element={<div data-testid="programas-page" />} />
         <Route path="/programas/:programaId" element={<Dias />} />
+        <Route path="/programas/:programaId/:diaId" element={<div data-testid="ejercicios-dia-page" />} />
       </Routes>
     </MemoryRouter>
   )
@@ -194,6 +195,34 @@ describe('Dias — editar', () => {
     })
   })
 })
+
+describe('Dias — tocar la tarjeta (swipe-to-delete envuelve la tarjeta, #19)', () => {
+  beforeEach(() => {
+    getDias.mockResolvedValue([{ id: 'd1', nombre: 'Día 1 - Pecho', orden: 0 }])
+  })
+
+  it('un tap (sin swipe) navega a los ejercicios del día', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByText('Día 1 - Pecho'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('ejercicios-dia-page')).toBeInTheDocument()
+    })
+  })
+
+  it('tocar "Eliminar" sigue funcionando (no lo intercepta el swipe)', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('Día 1 - Pecho')
+    await user.click(screen.getByRole('button', { name: /eliminar/i }))
+
+    expect(marcarDiaParaEliminar).toHaveBeenCalledWith('d1')
+    expect(screen.queryByTestId('ejercicios-dia-page')).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
 
 describe('Dias — fallo al reordenar', () => {
   beforeEach(() => {

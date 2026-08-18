@@ -9,6 +9,8 @@ import { useToast } from '../components/Toast'
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut'
 import { useEliminarConUndo } from '../hooks/useEliminarConUndo'
 import DnDList from '../components/DnDList'
+import SwipeToDelete from '../components/SwipeToDelete'
+import PullToRefresh from '../components/PullToRefresh'
 import { useDesktop } from '../hooks/useDesktop'
 import { GripVertical, Pencil, Trash2, ChevronRight, CalendarDays } from 'lucide-react'
 
@@ -81,6 +83,7 @@ export default function Dias() {
 
   return (
     <PageWrapper>
+      <PullToRefresh onRefresh={cargar}>
       <Header
         titulo={programa?.nombre ?? '...'}
         subtitulo="Programa"
@@ -141,31 +144,32 @@ export default function Dias() {
             }
           }}
           renderItem={(d, i) => ({ dragHandleProps }) => (
-            <motion.div
-              className="crud-card"
-              onClick={() => navigate(`/programas/${programaId}/${d.id}`)}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
-              layout
-            >
-              <div className="crud-card-main">
-                <span className="crud-drag-handle" {...dragHandleProps}><GripVertical size={16} /></span>
-                <div style={{ flex: 1 }}>
-                  <span className="crud-card-eyebrow">Día {i + 1}</span>
-                  <span className="crud-card-nombre">{d.nombre}</span>
+            <SwipeToDelete onDelete={() => eliminar(d)} onClick={() => navigate(`/programas/${programaId}/${d.id}`)}>
+              <motion.div
+                className="crud-card"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
+                layout
+              >
+                <div className="crud-card-main">
+                  <span className="crud-drag-handle" data-dnd-handle {...dragHandleProps}><GripVertical size={16} /></span>
+                  <div style={{ flex: 1 }}>
+                    <span className="crud-card-eyebrow">Día {i + 1}</span>
+                    <span className="crud-card-nombre">{d.nombre}</span>
+                  </div>
+                  <ChevronRight size={16} color="var(--text-dim)" style={{ flexShrink: 0 }} />
                 </div>
-                <ChevronRight size={16} color="var(--text-dim)" style={{ flexShrink: 0 }} />
-              </div>
-              <div className="crud-acciones" onClick={e => e.stopPropagation()}>
-                <motion.button className="crud-accion-btn" onClick={() => abrirEditar(d)} whileTap={{ scale: 0.96 }}>
-                  <Pencil size={14} /><span>Renombrar</span>
-                </motion.button>
-                <motion.button className="crud-accion-btn crud-accion-eliminar" onClick={() => eliminar(d)} whileTap={{ scale: 0.96 }}>
-                  <Trash2 size={14} /><span>Eliminar</span>
-                </motion.button>
-              </div>
-            </motion.div>
+                <div className="crud-acciones" data-skip-swipe onClick={e => e.stopPropagation()}>
+                  <motion.button className="crud-accion-btn" onClick={() => abrirEditar(d)} whileTap={{ scale: 0.96 }}>
+                    <Pencil size={14} /><span>Renombrar</span>
+                  </motion.button>
+                  <motion.button className="crud-accion-btn crud-accion-eliminar" onClick={() => eliminar(d)} whileTap={{ scale: 0.96 }}>
+                    <Trash2 size={14} /><span>Eliminar</span>
+                  </motion.button>
+                </div>
+              </motion.div>
+            </SwipeToDelete>
           )}
           className="crud-lista"
         />
@@ -195,6 +199,7 @@ export default function Dias() {
           </motion.button>
         </div>
       </Modal>
+      </PullToRefresh>
     </PageWrapper>
   )
 }
