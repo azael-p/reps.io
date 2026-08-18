@@ -628,9 +628,20 @@ los reemplaza).
     Programas con la consola abierta. Aparecieron 3 violaciones; 2 quedaron
     resueltas sumando `https://apis.google.com` a `script-src` y una
     directiva `frame-src https://reps-io.firebaseapp.com https://apis.google.com`
-    (ver la corrección de más abajo). Queda una tercera pendiente de
-    identificar (ejecución de un script inline), así que la política **sigue
-    en Report-Only** — no se promueve a enforcing hasta cerrarla.
+    (ver la corrección de más abajo). La tercera era el atributo
+    `onload="this.onload=null;this.rel='stylesheet'"` del `<link rel=preload>`
+    de las fuentes en `index.html` — el truco habitual de cargar CSS sin
+    bloquear el render. `script-src` no cubre atributos de evento inline
+    salvo con `'unsafe-hashes'`, y un hash tampoco alcanza para ellos, así
+    que en vez de debilitar la política se movió el swap
+    `preload`→`stylesheet` a [`main.jsx`](../src/main.jsx) (el `<link>` ahora
+    lleva `id="font-css"`). El `preload` sigue disparando la descarga durante
+    el parseo del HTML, así que no se pierde el beneficio de performance que
+    motivaba el truco. Verificado sobre `dist/index.html`: cero atributos de
+    evento inline.
+
+    Con las 3 cerradas, falta una segunda ronda de verificación en
+    producción antes de promover a enforcing.
   - `photoURL` (guardado en `usuarios/{uid}` desde el perfil de Google, ver
     `handleFirstLogin` en `auth.js`) se verificó que no se renderiza en
     ningún `<img>` del código actual, así que `img-src` no necesitó incluir

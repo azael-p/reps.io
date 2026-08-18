@@ -28,7 +28,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+    <!-- El swap preload→stylesheet se hace desde main.jsx: un atributo de evento
+         inline lo bloquea la CSP (script-src no los cubre sin 'unsafe-hashes'). -->
+    <link id="font-css" rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap" />
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap" /></noscript>
     <title>Reps.io — Tu gym tracker personal</title>
     <script type="application/ld+json">
