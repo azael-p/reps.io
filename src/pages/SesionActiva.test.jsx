@@ -42,8 +42,13 @@ vi.mock('../components/ui', () => ({
   ConfirmDialog: () => null,
   Badge: ({ children }) => <span>{children}</span>,
 }))
+// Estables entre renders: `cargar` depende de `show`, así que un vi.fn() nuevo
+// por render re-dispara su efecto y resetea la posición y los inputs. En la app
+// real `show` es estable (useCallback en ToastProvider).
+const mockShow = vi.fn()
+const mockDismiss = vi.fn()
 vi.mock('../components/Toast', () => ({
-  useToast: () => ({ show: vi.fn(), dismiss: vi.fn() }),
+  useToast: () => ({ show: mockShow, dismiss: mockDismiss }),
   ToastProvider: ({ children }) => children,
 }))
 vi.mock('../hooks/useKeyboardShortcut', () => ({
@@ -52,7 +57,7 @@ vi.mock('../hooks/useKeyboardShortcut', () => ({
 
 import { getDoc } from 'firebase/firestore'
 import { getEjerciciosDia } from '../firebase/ejerciciosDia'
-import { getRegistrosSesion } from '../firebase/registros'
+import { getRegistrosSesion, agregarRegistro } from '../firebase/registros'
 import { getStatsEjerciciosConFallback } from '../firebase/statsEjercicios'
 import SesionActiva from './SesionActiva'
 
@@ -211,5 +216,70 @@ describe('SesionActiva — "última vez" y PR desde statsEjercicios (cruce por c
     await waitFor(() => {
       expect(screen.getByText(/Primera vez con este ejercicio/)).toBeInTheDocument()
     })
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('SesionActiva — el peso se arrastra a la serie siguiente', () => {
+  const EJ2 = { id: 'ej2', catalogoId: 'remo-barra', nombre: 'Remo con barra', grupoMuscular: 'Espalda', seriesEsperadas: 2, repsEsperadas: 10, orden: 2 }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'dia1', completada: false }) })
+    getRegistrosSesion.mockResolvedValue([])
+    getStatsEjerciciosConFallback.mockResolvedValue([])
+    agregarRegistro.mockReturnValue({ id: 'reg1', listo: Promise.resolve() })
+  })
+
+  const inputPeso = () => screen.getByLabelText('Peso (kg)')
+
+  // El bug: ultimoPesoRef se sincronizaba en un efecto (post-commit) pero
+  // avanzar() lo lee sincrónicamente en el mismo handler, así que la serie 2
+  // arrancaba vacía y un tap sin reescribir el peso guardaba 0 kg.
+  it('la serie 2 arranca con el peso de la serie 1, no vacía', async () => {
+    const user = userEvent.setup()
+    getEjerciciosDia.mockResolvedValue([EJ1])
+    renderSesion()
+    await waitFor(() => expect(getEjerciciosDia).toHaveBeenCalled())
+
+    await user.clear(inputPeso())
+    await user.type(inputPeso(), '60')
+    await user.click(screen.getByRole('button', { name: /Completar serie 1/ }))
+
+    await screen.findByRole('button', { name: /Completar serie 2/ })
+    expect(inputPeso()).toHaveValue(60)
+  })
+
+  it('guarda el peso escrito en la serie 2, no 0, si se completa sin reescribirlo', async () => {
+    const user = userEvent.setup()
+    getEjerciciosDia.mockResolvedValue([EJ1])
+    renderSesion()
+    await waitFor(() => expect(getEjerciciosDia).toHaveBeenCalled())
+
+    await user.clear(inputPeso())
+    await user.type(inputPeso(), '60')
+    await user.click(screen.getByRole('button', { name: /Completar serie 1/ }))
+    await screen.findByRole('button', { name: /Completar serie 2/ })
+    // Sin tocar el input: es exactamente el gesto que generaba los ceros.
+    await user.click(screen.getByRole('button', { name: /Completar serie 2/ }))
+
+    await waitFor(() => expect(agregarRegistro).toHaveBeenCalledTimes(2))
+    expect(agregarRegistro.mock.calls[1][0]).toMatchObject({ numeroSerie: 2, pesoUsado: 60 })
+  })
+
+  it('al pasar al ejercicio siguiente no arrastra el peso del anterior', async () => {
+    const user = userEvent.setup()
+    getEjerciciosDia.mockResolvedValue([{ ...EJ1, seriesEsperadas: 1 }, EJ2])
+    renderSesion()
+    await waitFor(() => expect(getEjerciciosDia).toHaveBeenCalled())
+
+    await user.clear(inputPeso())
+    await user.type(inputPeso(), '60')
+    await user.click(screen.getByRole('button', { name: /Siguiente ejercicio/ }))
+
+    await screen.findByRole('button', { name: /Completar serie 1/ })
+    expect(inputPeso()).toHaveValue(null)
   })
 })

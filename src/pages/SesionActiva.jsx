@@ -230,7 +230,13 @@ export default function SesionActiva() {
       }
     } catch (e) { console.error(e); setGuardando(false); show({ variant: 'error', message: 'No se pudo guardar. Intentá de nuevo.' }); return }
     setHistorial(h => [...h, { ejIdx, serieIdx, registroId, repsHechas, pesoUsado, nota }])
-    setUltimoPeso(prev => ({ ...prev, [ejercicio.id]: pesoUsado }))
+    // El efecto que sincroniza ultimoPesoRef corre después del commit, pero
+    // avanzar() se llama sincrónicamente más abajo y lo lee para prefillear la
+    // serie siguiente: sin actualizar el ref acá, esa serie arranca con el
+    // campo de peso vacío y completarla sin reescribirlo guarda 0 kg.
+    const ultimoPesoActualizado = { ...ultimoPesoRef.current, [ejercicio.id]: pesoUsado }
+    ultimoPesoRef.current = ultimoPesoActualizado
+    setUltimoPeso(ultimoPesoActualizado)
     logEvento('serie_completada', {
       ejercicio: ejercicio.nombre,
       grupo_muscular: ejercicio.grupoMuscular,
