@@ -249,7 +249,9 @@ describe('SesionActiva — el peso se arrastra a la serie siguiente', () => {
     await user.click(screen.getByRole('button', { name: /Completar serie 1/ }))
 
     await screen.findByRole('button', { name: /Completar serie 2/ })
-    expect(inputPeso()).toHaveValue(60)
+    // String y no número: el campo es type="text" + inputMode="decimal" para
+    // no perder la coma decimal (type="number" descartaba "82," y guardaba 0).
+    expect(inputPeso()).toHaveValue('60')
   })
 
   it('guarda el peso escrito en la serie 2, no 0, si se completa sin reescribirlo', async () => {
@@ -280,6 +282,6 @@ describe('SesionActiva — el peso se arrastra a la serie siguiente', () => {
     await user.click(screen.getByRole('button', { name: /Siguiente ejercicio/ }))
 
     await screen.findByRole('button', { name: /Completar serie 1/ })
-    expect(inputPeso()).toHaveValue(null)
+    expect(inputPeso()).toHaveValue('')
   })
 })

@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react'
 import { useLongPress } from '../../hooks/useLongPress'
+import { parsePeso, sanitizarPeso } from '../../utils/stats'
 
 const INPUT_FOCUS = { borderColor: 'var(--orange)', boxShadow: '0 0 0 4px var(--orange-glow)' }
 const BTN_TAP_SMALL = { scale: 0.92 }
@@ -13,8 +14,8 @@ export default function SerieForm({
     ? refPR?.series?.find(s => s.numeroSerie === serieActual)
     : refAnterior?.series?.find(s => s.numeroSerie === serieActual)
 
-  const restarPesoPress = useLongPress(() => setPesoUsado(p => String(Math.round(Math.max(0, (Number(p) || 0) - 2.5) * 10) / 10)))
-  const sumarPesoPress = useLongPress(() => setPesoUsado(p => String(Math.round(((Number(p) || 0) + 2.5) * 10) / 10)))
+  const restarPesoPress = useLongPress(() => setPesoUsado(p => String(Math.round(Math.max(0, (parsePeso(p) || 0) - 2.5) * 10) / 10)))
+  const sumarPesoPress = useLongPress(() => setPesoUsado(p => String(Math.round(((parsePeso(p) || 0) + 2.5) * 10) / 10)))
   const restarRepsPress = useLongPress(() => setRepsHechas(r => String(Math.max(1, (Number(r) || ejercicio.repsEsperadas) - 1))))
   const sumarRepsPress = useLongPress(() => setRepsHechas(r => String((Number(r) || ejercicio.repsEsperadas) + 1)))
 
@@ -25,7 +26,7 @@ export default function SerieForm({
           <label className="sa-input-label">Peso (kg)</label>
           <div className="sa-stepper">
             <motion.button className="sa-stepper-btn" aria-label="Restar 2,5 kg" {...restarPesoPress} whileTap={BTN_TAP_SMALL}>−</motion.button>
-            <motion.input className="sa-input-big" type="number" inputMode="decimal" placeholder={ultimoPeso[ejercicio.id] ? String(ultimoPeso[ejercicio.id]) : ''} value={pesoUsado} onChange={e => setPesoUsado(e.target.value)} aria-label="Peso (kg)" whileFocus={INPUT_FOCUS} />
+            <motion.input className="sa-input-big" type="text" inputMode="decimal" placeholder={ultimoPeso[ejercicio.id] ? String(ultimoPeso[ejercicio.id]) : ''} value={pesoUsado} onChange={e => setPesoUsado(sanitizarPeso(e.target.value))} aria-label="Peso (kg)" whileFocus={INPUT_FOCUS} />
             <motion.button className="sa-stepper-btn" aria-label="Sumar 2,5 kg" {...sumarPesoPress} whileTap={BTN_TAP_SMALL}>+</motion.button>
           </div>
           {ultimoPeso[ejercicio.id] && !pesoUsado && (

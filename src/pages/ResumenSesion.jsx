@@ -14,6 +14,7 @@ import { useToast } from '../components/Toast'
 import { logEvento } from '../firebase/analytics'
 import { useDesktop } from '../hooks/useDesktop'
 import { useLongPress } from '../hooks/useLongPress'
+import { parsePeso, sanitizarPeso } from '../utils/stats'
 
 function buildResumen(regs, diaNombre, programaNombre = '') {
   const ejerciciosMap = {}
@@ -182,7 +183,7 @@ export default function ResumenSesion() {
     // (mismo motivo que en cargar()). Cada una reporta su propio fallo por
     // toast en vez de encadenarse detrás de un único await bloqueante.
     editarRegistro(idEditado, {
-      pesoUsado: Number(editPeso) || 0,
+      pesoUsado: parsePeso(editPeso) || 0,
       repsHechas: Number(editReps),
     }).catch(e => {
       console.error(e)
@@ -222,8 +223,8 @@ export default function ResumenSesion() {
 
   const totalVolumen = registros.reduce((acc, r) => acc + r.pesoUsado * r.repsHechas, 0)
 
-  const restarEditPesoPress = useLongPress(() => setEditPeso(p => String(Math.round(Math.max(0, (Number(p) || 0) - 2.5) * 10) / 10)))
-  const sumarEditPesoPress = useLongPress(() => setEditPeso(p => String(Math.round(((Number(p) || 0) + 2.5) * 10) / 10)))
+  const restarEditPesoPress = useLongPress(() => setEditPeso(p => String(Math.round(Math.max(0, (parsePeso(p) || 0) - 2.5) * 10) / 10)))
+  const sumarEditPesoPress = useLongPress(() => setEditPeso(p => String(Math.round(((parsePeso(p) || 0) + 2.5) * 10) / 10)))
   const restarEditRepsPress = useLongPress(() => setEditReps(r => String(Math.max(1, (Number(r) || 1) - 1))))
   const sumarEditRepsPress = useLongPress(() => setEditReps(r => String((Number(r) || 1) + 1)))
 
@@ -388,8 +389,8 @@ export default function ResumenSesion() {
               <motion.button className="resumen-stepper-btn" aria-label="Restar 2,5 kg" {...restarEditPesoPress} whileTap={{ scale: 0.92 }}>−</motion.button>
               <input
                 className="resumen-input-num"
-                type="number" inputMode="decimal" placeholder="0"
-                value={editPeso} onChange={e => setEditPeso(e.target.value)}
+                type="text" inputMode="decimal" placeholder="0"
+                value={editPeso} onChange={e => setEditPeso(sanitizarPeso(e.target.value))}
                 autoFocus
               />
               <motion.button className="resumen-stepper-btn" aria-label="Sumar 2,5 kg" {...sumarEditPesoPress} whileTap={{ scale: 0.92 }}>+</motion.button>

@@ -7,6 +7,19 @@ export function parsePeso(input) {
   return Number(String(input).replace(',', '.'))
 }
 
+// Lo que se deja tipear en un campo de peso. Los campos usan type="text" en vez
+// de type="number" justamente para no perder la coma: con type="number" el
+// navegador descarta "82," y el estado queda vacío, así que la serie terminaba
+// guardándose con 0 kg sin ningún aviso. Acá filtramos a mano: dígitos y un
+// solo separador decimal.
+export function sanitizarPeso(input) {
+  const limpio = String(input).replace(/[^\d.,]/g, '')
+  const partes = limpio.split(/[.,]/)
+  if (partes.length <= 1) return limpio
+  const separador = limpio.match(/[.,]/)[0]
+  return `${partes[0]}${separador}${partes.slice(1).join('')}`
+}
+
 export function calcular1RM(peso, reps) {
   if (!peso || !reps || reps <= 1) return peso
   return Math.round(peso * (1 + reps / 30))

@@ -12,6 +12,7 @@ import { useUser } from '../context/UserContext'
 import { logEvento } from '../firebase/analytics'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
+import { parsePeso } from '../utils/stats'
 import Confetti from './sesion-activa/Confetti'
 import ListaEjerciciosDesktop from './sesion-activa/ListaEjerciciosDesktop'
 import EjercicioInfo from './sesion-activa/EjercicioInfo'
@@ -206,7 +207,7 @@ export default function SesionActiva() {
     try {
       if (pendingId) {
         editarRegistro(pendingId, {
-          pesoUsado: Number(pesoUsado) || 0,
+          pesoUsado: parsePeso(pesoUsado) || 0,
           repsHechas: Number(repsHechas),
           nota,
         }).catch(onFalloSync)
@@ -222,7 +223,7 @@ export default function SesionActiva() {
           numeroSerie: serieActual,
           repsEsperadas: ejercicio.repsEsperadas,
           repsHechas: Number(repsHechas),
-          pesoUsado: Number(pesoUsado) || 0,
+          pesoUsado: parsePeso(pesoUsado) || 0,
           nota,
         })
         registroId = id
@@ -241,7 +242,7 @@ export default function SesionActiva() {
       ejercicio: ejercicio.nombre,
       grupo_muscular: ejercicio.grupoMuscular,
       numero_serie: serieActual,
-      peso: Number(pesoUsado) || 0,
+      peso: parsePeso(pesoUsado) || 0,
       reps: Number(repsHechas),
     })
     setGuardando(false)
