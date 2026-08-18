@@ -205,7 +205,7 @@ Corren con Admin SDK y requieren `scripts/serviceAccount.json` (gitignorado). To
 
 El detalle sale de 4 queries globales (`sesiones` completadas, `programas`, `dias`, `ejerciciosDia`) que se agrupan por `usuarioId` en memoria — no hay una query por usuario. Las series salen del campo `resumen` de cada sesión, nunca de `registros`. `--sin-detalle` salta esas queries y deja el reporte agregado de siempre.
 
-El código vive en [scripts/reporte/](scripts/reporte/): `carga.js` (Firebase), `transformar.js` (funciones puras), `html.js` y `cliente.js` (el JS de la página, como string).
+El código vive en [scripts/reporte-actividad/](scripts/reporte-actividad/): `carga.js` (Firebase), `transformar.js` (funciones puras), `html.js` y `cliente.js` (el JS de la página, como string).
 
 ## Testing
 

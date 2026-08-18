@@ -33,12 +33,12 @@ import path from 'path'
 import {
   cargarUsuariosAuth, cargarUsuariosFirestore, cargarStatsGlobal,
   contarSesiones, cargarDetalleGlobal,
-} from './reporte/carga.js'
+} from './reporte-actividad/carga.js'
 import {
   calcularStreaks, formatearFecha, agregarSerieDiaria, construirResumenGlobal,
   indexarDiaAPrograma, construirDetalleUsuario,
-} from './reporte/transformar.js'
-import { renderizarHTML } from './reporte/html.js'
+} from './reporte-actividad/transformar.js'
+import { renderizarHTML } from './reporte-actividad/html.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
