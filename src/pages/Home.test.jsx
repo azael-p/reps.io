@@ -91,6 +91,17 @@ describe('Home — render básico', () => {
 
 // ---------------------------------------------------------------------------
 
+describe('Home — saludo según la hora (#25)', () => {
+  it('entre las 6 y las 12 saluda "Buen día"', async () => {
+    const getHours = vi.spyOn(Date.prototype, 'getHours').mockReturnValue(9)
+    renderPage()
+    expect(await screen.findByText(/Buen día, Azael/)).toBeInTheDocument()
+    getHours.mockRestore()
+  })
+})
+
+// ---------------------------------------------------------------------------
+
 describe('Home — sesión pendiente', () => {
   it('muestra el banner cuando hay una sesión activa sin completar', async () => {
     localStorage.setItem('sesion_activa_user1', 'ses1')

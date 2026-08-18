@@ -19,7 +19,7 @@ const ICON_STYLE = { color: 'rgba(255,255,255,0.95)', strokeWidth: 1.8 }
 
 function getGreeting(nombre) {
   const hour = new Date().getHours()
-  const timeGreeting = hour < 6 ? 'Buenas noches' : hour < 12 ? 'Buenas, ¿qué tal?' : hour < 19 ? 'Hola' : 'Buenas noches'
+  const timeGreeting = hour < 6 ? 'Buenas noches' : hour < 12 ? 'Buen día' : hour < 19 ? 'Hola' : 'Buenas noches'
   return nombre ? `${timeGreeting}, ${nombre}` : timeGreeting
 }
 
