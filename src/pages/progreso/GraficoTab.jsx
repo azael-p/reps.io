@@ -93,7 +93,11 @@ export default function GraficoTab({
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                    <XAxis dataKey="xKey" tickFormatter={v => String(v).split('#')[0]} tick={{ fill: 'var(--text-dim)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    {/* Sin minTickGap las fechas se pisan entre sí apenas hay
+                        una decena de sesiones; en 390px de ancho quedaban
+                        ilegibles. Recharts descarta los ticks intermedios que
+                        no entran y conserva el primero y el último. */}
+                    <XAxis dataKey="xKey" tickFormatter={v => String(v).split('#')[0]} tick={{ fill: 'var(--text-dim)', fontSize: 11 }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={28} />
                     <YAxis tick={{ fill: 'var(--text-dim)', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip
                       contentStyle={{
