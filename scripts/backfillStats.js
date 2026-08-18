@@ -13,7 +13,7 @@
 // Idempotente: reconstruye desde cero en cada corrida.
 
 import { initializeApp, cert } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
+import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
@@ -117,9 +117,14 @@ async function main() {
         })
       }
     }
+    const ultima = sesiones[sesiones.length - 1] // sesiones viene ordenada asc
     const resumenGlobal = {
       diasEntrenados: [...dias].sort((a, b) => a - b),
       volumenPorSesion: volumen.slice(-MAX_VOLUMEN),
+      // Réplica de agregarSesionAResumenGlobalBlind (statsGlobal.js): sin
+      // esto, un set() sin merge pisa estos campos (los borra) en cada
+      // corrida del script.
+      ...(ultima ? { ultimaSesionId: ultima.id, ultimoDiaId: ultima.diaId ?? null, actualizadoEn: FieldValue.serverTimestamp() } : {}),
     }
 
     // statsEjercicios
