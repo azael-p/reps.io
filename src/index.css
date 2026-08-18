@@ -592,10 +592,12 @@ select:focus-visible {
   font-size: 0.95rem; font-weight: 800; color: #fff;
   flex-shrink: 0;
 }
+/* Se apoya SOBRE el BottomNav, no encima: anclado a bottom:0 con z-index 51
+   cubría los 64px del nav y los cinco tabs quedaban intocables — un tap en
+   "Inicio" disparaba "Empezar entrenamiento". El nav mide 64px + safe-area. */
 .entrenar-footer {
-  position: fixed; bottom: 0; left: 0; right: 0;
+  position: fixed; bottom: calc(64px + env(safe-area-inset-bottom)); left: 0; right: 0;
   padding: 14px 16px;
-  padding-bottom: max(14px, env(safe-area-inset-bottom));
   background: linear-gradient(180deg, transparent, var(--bg) 30%);
   z-index: 51;
 }

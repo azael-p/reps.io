@@ -11,6 +11,10 @@ import { Header, EmptyState, ListSkeleton, PageWrapper, Modal } from '../compone
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
 
+// Footer de "Empezar" (~90px) + BottomNav (64px) + aire: sin esto el último día
+// de la lista queda debajo de las dos capas fijas.
+const PADDING_INFERIOR_MOBILE = '190px'
+
 export default function Entrenar() {
   const isDesktop = useDesktop()
   const { usuario } = useUser()
@@ -194,7 +198,7 @@ export default function Entrenar() {
   )
 
   return (
-    <PageWrapper style={isDesktop ? {} : { paddingBottom: '120px' }}>
+    <PageWrapper style={isDesktop ? {} : { paddingBottom: PADDING_INFERIOR_MOBILE }}>
       <Header
         titulo="Entrenar hoy"
         subtitulo="Iniciar sesión"
