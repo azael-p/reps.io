@@ -650,6 +650,19 @@ los reemplaza).
     estilo (`fonts.googleapis.com`) no daban error porque ya las cubría el
     comodín `https://*.googleapis.com`. Se agregó `https://fonts.gstatic.com`
     a `connect-src`.
+  - **Promovida a enforcing (2026-08-17).** Tercera ronda de verificación
+    (login → Progreso → Home, en incógnito) sin ninguna violación, así que
+    `Content-Security-Policy-Report-Only` se eliminó y su política completa
+    pasó al header `Content-Security-Policy`, que hasta ahora solo llevaba
+    `frame-ancestors 'none'`. **Se fusionaron en uno solo** — dejar los dos
+    headers habría hecho que el navegador aplicara ambas políticas por
+    separado (la intersección), no la unión. `X-Frame-Options: DENY` se
+    conserva aparte para navegadores viejos. Con esto el ítem #8 queda
+    cerrado por completo: no quedan pasos pendientes.
+
+    **Si algo se rompiera en producción**, el rollback es revertir este
+    cambio (volver el header a `Content-Security-Policy-Report-Only`) y
+    deployar; la política vuelve a solo reportar sin bloquear nada.
   - `photoURL` (guardado en `usuarios/{uid}` desde el perfil de Google, ver
     `handleFirstLogin` en `auth.js`) se verificó que no se renderiza en
     ningún `<img>` del código actual, así que `img-src` no necesitó incluir
