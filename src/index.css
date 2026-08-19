@@ -1167,6 +1167,7 @@ select:focus-visible {
 .home-header { display: flex; justify-content: space-between; align-items: flex-start; flex-shrink: 0; }
 .home-saludo { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
 .home-sub { margin-top: 6px; color: var(--text-mute); font-size: 0.9rem; }
+.home-racha { margin: 6px 0 0; color: var(--orange); font-size: 0.8rem; font-weight: 700; }
 .home-logout-btn {
   background: var(--bg-card);
   border: 1px solid var(--border);

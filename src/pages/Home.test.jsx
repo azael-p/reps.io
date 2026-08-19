@@ -164,6 +164,25 @@ describe('Home — atajo "Seguir" en la card de Entrenar hoy', () => {
 
 // ---------------------------------------------------------------------------
 
+describe('Home — racha visible junto al saludo', () => {
+  it('con días entrenados consecutivos hasta hoy, muestra la racha actual', async () => {
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+    const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1)
+    getResumenGlobalConFallback.mockResolvedValue({ diasEntrenados: [hoy.getTime(), ayer.getTime()] })
+    renderPage()
+    expect(await screen.findByText('🔥 2 días seguidos')).toBeInTheDocument()
+  })
+
+  it('sin días entrenados, no muestra ninguna racha', async () => {
+    getResumenGlobalConFallback.mockResolvedValue({ diasEntrenados: [] })
+    renderPage()
+    await screen.findByText(/, Azael/)
+    expect(screen.queryByText(/días seguidos/)).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+
 describe('Home — logout', () => {
   it('espera el logout y navega al login', async () => {
     logoutMock.mockResolvedValue()

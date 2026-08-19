@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useUser } from '../context/UserContext'
 import { useNavigate } from 'react-router-dom'
@@ -13,6 +13,7 @@ import Credit from '../components/Credit'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
 import { useIniciarSesion } from '../hooks/useIniciarSesion'
+import { calcularStreaks } from '../utils/stats'
 import { Layers, Zap, TrendingUp, ChevronRight, LogOut } from 'lucide-react'
 
 const ICON_STYLE = { color: 'rgba(255,255,255,0.95)', strokeWidth: 1.8 }
@@ -74,6 +75,10 @@ export default function Home() {
   const mountedRef = useRef(true)
   const iniciarSesion = useIniciarSesion()
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false } }, [])
+
+  // Mismo cálculo que Progreso.jsx (calcularStreaks sobre resumenGlobal.diasEntrenados),
+  // reusando `fechas` que Home ya carga para el calendario — sin lecturas nuevas.
+  const streaks = useMemo(() => calcularStreaks(fechas), [fechas])
 
   const recargar = useCallback(async () => {
     const cacheKey = `calendario_${usuario.id}`
@@ -149,6 +154,9 @@ export default function Home() {
         <div>
           <p className="home-saludo">{getGreeting(usuario?.nombre)}</p>
           <p className="home-sub">¿Qué hacemos hoy?</p>
+          {streaks.actual > 0 && (
+            <p className="home-racha">🔥 {streaks.actual} {streaks.actual === 1 ? 'día seguido' : 'días seguidos'}</p>
+          )}
         </div>
         <motion.button
           className="home-logout-btn"
