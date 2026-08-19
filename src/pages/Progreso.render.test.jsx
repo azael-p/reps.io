@@ -173,6 +173,31 @@ describe('Progreso — registrar peso con coma decimal', () => {
   })
 })
 
+describe('Progreso — resumen de un vistazo (mobile)', () => {
+  it('muestra racha actual, mejor racha y días de esta semana sin entrar a ningún tab', async () => {
+    const { getResumenGlobalConFallback } = await import('../firebase/statsGlobal')
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+    const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1)
+    getResumenGlobalConFallback.mockResolvedValue({
+      diasEntrenados: [hoy.getTime(), ayer.getTime()],
+      volumenPorSesion: [],
+    })
+    renderPage()
+
+    const resumen = await screen.findByTestId('progreso-resumen-mini')
+    expect(resumen).toHaveTextContent('2')
+    expect(resumen).toHaveTextContent('Racha actual')
+    expect(resumen).toHaveTextContent('Mejor racha')
+    expect(resumen).toHaveTextContent('Esta semana')
+  })
+
+  it('sin datos, muestra el resumen en cero en vez de no renderizarlo', async () => {
+    renderPage()
+    const resumen = await screen.findByTestId('progreso-resumen-mini')
+    expect(resumen).toBeInTheDocument()
+  })
+})
+
 describe('Progreso — accesibilidad del historial', () => {
   it('la tarjeta de sesión es un botón real (accesible por teclado), no un div con onClick', async () => {
     getSesionesPaginadas.mockResolvedValue({ sesiones: [SESION], ultimoDoc: {}, hayMas: false })

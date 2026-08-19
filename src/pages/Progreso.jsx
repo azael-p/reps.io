@@ -330,6 +330,24 @@ export default function Progreso() {
         )
       ) : (
         <>
+          {!cargando && (
+            <div className="resumen-stats" data-testid="progreso-resumen-mini">
+              <div className="resumen-stat">
+                <span className="resumen-stat-num">{streaks.actual}</span>
+                <span className="resumen-stat-label">Racha actual</span>
+              </div>
+              <div className="resumen-stat-divider" />
+              <div className="resumen-stat">
+                <span className="resumen-stat-num">{streaks.maxima}</span>
+                <span className="resumen-stat-label">Mejor racha</span>
+              </div>
+              <div className="resumen-stat-divider" />
+              <div className="resumen-stat">
+                <span className="resumen-stat-num">{frec.at(-1)?.dias ?? 0}</span>
+                <span className="resumen-stat-label">Esta semana</span>
+              </div>
+            </div>
+          )}
           <div className="progreso-tabs" role="tablist" aria-label="Vistas de progreso">
             {TABS.map(t => {
               const activo = tab === t
