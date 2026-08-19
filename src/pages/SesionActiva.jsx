@@ -312,6 +312,16 @@ export default function SesionActiva() {
         ? { ...entry, pesoUsado: editSeriePeso, repsHechas: editSerieReps }
         : entry
     )))
+    // Corregir la última serie ya hecha de este ejercicio tiene que arrastrar
+    // el peso que prefillea la serie siguiente (y el hint "↳ Última vez"): si
+    // no, la próxima arranca con el valor viejo. Es el mismo motivo por el que
+    // completarSerie mantiene ultimoPesoRef sincronizado a mano.
+    const ultimaSerieHecha = Math.max(...historial.filter(h => h.ejIdx === ejIdxEditado).map(h => h.serieIdx))
+    if (ejIdxEditado === ejIdx && serieIdxEditado === ultimaSerieHecha) {
+      const ultimoPesoActualizado = { ...ultimoPesoRef.current, [ejercicio.id]: editSeriePeso }
+      ultimoPesoRef.current = ultimoPesoActualizado
+      setUltimoPeso(ultimoPesoActualizado)
+    }
     setEditandoSerie(null)
   }
 

@@ -402,6 +402,42 @@ describe('SesionActiva — corrección no lineal (editar una serie ya completada
     expect(screen.getByText(/serie.*3/i)).toBeInTheDocument()
   })
 
+  it('corregir la última serie hecha arrastra el peso sugerido para la siguiente', async () => {
+    const user = userEvent.setup()
+    renderSesion()
+    await screen.findByText(/serie.*3/i)
+
+    await user.click(screen.getByRole('button', { name: 'Editar serie 2' }))
+    const modal = within(screen.getByTestId('modal'))
+    const pesoModal = modal.getByDisplayValue('82.5')
+    await user.clear(pesoModal)
+    await user.type(pesoModal, '85')
+    await user.click(modal.getByRole('button', { name: 'Guardar' }))
+
+    // El hint de "última vez" sale del peso sugerido, y solo se muestra con el
+    // campo vacío: vaciarlo es la forma de leer ese valor desde afuera.
+    await user.clear(screen.getByLabelText('Peso (kg)'))
+
+    expect(await screen.findByText('↳ Última vez: 85kg')).toBeInTheDocument()
+  })
+
+  it('corregir una serie anterior NO cambia el peso sugerido', async () => {
+    const user = userEvent.setup()
+    renderSesion()
+    await screen.findByText(/serie.*3/i)
+
+    await user.click(screen.getByRole('button', { name: 'Editar serie 1' }))
+    const modal = within(screen.getByTestId('modal'))
+    const pesoModal = modal.getByDisplayValue('80')
+    await user.clear(pesoModal)
+    await user.type(pesoModal, '60')
+    await user.click(modal.getByRole('button', { name: 'Guardar' }))
+
+    await user.clear(screen.getByLabelText('Peso (kg)'))
+
+    expect(await screen.findByText('↳ Última vez: 82.5kg')).toBeInTheDocument()
+  })
+
   it('cancelar cierra el modal sin llamar a editarRegistro', async () => {
     const user = userEvent.setup()
     renderSesion()
