@@ -275,7 +275,10 @@ select:focus-visible {
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* CTA grande de página (antes cada uno reinventaba su propio padding/font-size/shadow). */
-.btn-lg { padding: 16px 24px; font-size: 1.05rem; border-radius: var(--r-lg); }
+.btn-lg { padding: 18px 24px; font-size: 17px; font-weight: 700; border-radius: var(--r-lg); }
+.btn-primary.btn-lg { box-shadow: 0 14px 32px rgba(199, 90, 48, 0.45), var(--shadow-inner); }
+.btn-primary-green.btn-lg { box-shadow: 0 14px 32px rgba(12, 122, 95, 0.4), var(--shadow-inner); }
+.btn-primary-blue.btn-lg { box-shadow: 0 14px 32px rgba(14, 90, 160, 0.42), var(--shadow-inner); }
 
 .btn-primary {
   background: var(--orange-grad);
