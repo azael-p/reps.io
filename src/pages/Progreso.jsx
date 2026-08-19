@@ -252,6 +252,7 @@ export default function Progreso() {
             fecha: sesion.fecha,
             ejercicios: sesion.resumen?.ejercicios ?? [],
           })
+          if (usuario?.id) localStorage.removeItem(`calendario_${usuario.id}`)
         } catch (e) {
           console.error(e)
           show({ message: 'No se pudo eliminar la sesión. Intentá de nuevo.', variant: 'error' })
