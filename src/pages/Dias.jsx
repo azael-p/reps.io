@@ -189,7 +189,7 @@ export default function Dias() {
         <div className="crud-modal-btns">
           <motion.button className="crud-cancel-btn" onClick={() => setModal(null)} whileTap={{ scale: 0.97 }}>Cancelar</motion.button>
           <motion.button
-            className="crud-save-btn"
+            className="btn btn-primary-green btn-lg crud-save-btn"
             style={{ opacity: !nombre.trim() || guardando ? 0.5 : 1 }}
             onClick={guardar}
             disabled={!nombre.trim() || guardando}

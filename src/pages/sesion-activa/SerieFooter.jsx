@@ -10,7 +10,7 @@ export default function SerieFooter({
   return (
     <div className={footerClassName}>
       <motion.button
-        className="sa-completar-btn"
+        className="btn btn-primary btn-lg sa-completar-btn"
         onClick={onCompletar}
         disabled={!repsHechas || guardando}
         whileTap={!repsHechas || guardando ? {} : { scale: 0.97 }}

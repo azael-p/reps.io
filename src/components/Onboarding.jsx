@@ -86,7 +86,7 @@ export default function Onboarding({ onCompletar, usuarioId }) {
       </motion.div>
 
       <motion.button
-        className="onboarding-btn"
+        className="btn btn-primary btn-lg onboarding-btn"
         onClick={handleEmpezar}
         whileTap={{ scale: 0.97 }}
         initial={{ opacity: 0 }}

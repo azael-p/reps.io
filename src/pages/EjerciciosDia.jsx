@@ -186,7 +186,7 @@ export default function EjerciciosDia() {
         {errorMsg && <p className="crud-error-msg">{errorMsg}</p>}
         <div className="crud-modal-btns">
           <motion.button className="crud-cancel-btn" onClick={() => setEditando(null)} whileTap={{ scale: 0.97 }}>Cancelar</motion.button>
-          <motion.button className="crud-save-btn" onClick={guardarEdicion} whileTap={{ scale: 0.97 }}>Guardar</motion.button>
+          <motion.button className="btn btn-primary-green btn-lg crud-save-btn" onClick={guardarEdicion} whileTap={{ scale: 0.97 }}>Guardar</motion.button>
         </div>
       </Modal>
       </PullToRefresh>

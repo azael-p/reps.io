@@ -214,7 +214,7 @@ export default function Entrenar() {
 
   const empezarBtn = (
     <motion.button
-      className="entrenar-empezar-btn"
+      className="btn btn-primary btn-lg entrenar-empezar-btn"
       style={{ opacity: iniciando ? 0.7 : 1 }}
       onClick={empezar}
       disabled={iniciando}

@@ -148,7 +148,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
           {errorConfig && <p className="picker-error-msg">{errorConfig}</p>}
 
           <motion.button
-            className="picker-confirmar-btn"
+            className="btn btn-primary-green btn-lg picker-confirmar-btn"
             onClick={confirmar}
             whileTap={{ scale: 0.97 }}
           >

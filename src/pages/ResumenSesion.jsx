@@ -362,7 +362,7 @@ export default function ResumenSesion() {
             transition={{ delay: 0.5 }}
           >
             <motion.button
-              className="resumen-home-btn"
+              className="btn btn-primary btn-lg resumen-home-btn"
               onClick={() => navigate('/progreso')}
               whileTap={{ scale: 0.97 }}
             >
