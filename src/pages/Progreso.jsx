@@ -146,7 +146,7 @@ export default function Progreso() {
   const datosVolumen = useMemo(() => {
     if (!resumenGlobal) return []
     if (tab !== 'Volumen' && !isDesktop) return []
-    return resumenGlobal.volumenPorSesion
+    return (resumenGlobal.volumenPorSesion ?? [])
       .map(d => ({ fecha: formatFechaCorta(d.fecha), volumen: d.volumen }))
       .map((d, i) => ({ ...d, xKey: `${d.fecha}#${i}` }))
   }, [tab, isDesktop, resumenGlobal])

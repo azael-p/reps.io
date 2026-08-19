@@ -363,3 +363,51 @@ describe('getResumenGlobalConFallback — compactación oportunista', () => {
     expect(r.volumenPorSesion).toHaveLength(200)
   })
 })
+
+// ---------------------------------------------------------------------------
+
+// La alta ciega omite volumenPorSesion cuando la sesión no tuvo volumen (todas
+// las series con peso 0: dominadas, abdominales, plancha). Si esa es la PRIMERA
+// sesión del usuario, el doc nace sin ese array — y todo lo que lee el agregado
+// asume que está.
+describe('agregado sin volumenPorSesion (sesión de puro peso corporal)', () => {
+  const sinVolumen = { diasEntrenados: [E(2026, 6, 10)], ultimaSesionId: 's1' }
+
+  it('agregarSesionAResumenGlobalBlind no escribe el campo si el volumen es 0', () => {
+    agregarSesionAResumenGlobalBlind({ set: mockBatchSet }, 'user1', {
+      sesionId: 's1', fecha: DIA(2026, 6, 10), resumen: { volumenTotal: 0, diaNombre: 'Core' },
+    })
+    expect(mockBatchSet.mock.calls[0][1]).not.toHaveProperty('volumenPorSesion')
+  })
+
+  it('getResumenGlobalConFallback devuelve los dos arrays aunque el doc no los traiga', async () => {
+    mockGetDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => sinVolumen,
+      metadata: { fromCache: false },
+    })
+    const r = await getResumenGlobalConFallback('user1')
+    expect(r.volumenPorSesion).toEqual([])
+    expect(r.diasEntrenados).toEqual([E(2026, 6, 10)])
+    expect(r.ultimaSesionId).toBe('s1')
+  })
+
+  it('aplicarSesionAResumenGlobal no tira y agrega la entrada de volumen', async () => {
+    mockGetDoc.mockResolvedValue({ exists: () => true, data: () => sinVolumen })
+    await aplicarSesionAResumenGlobal('user1', {
+      sesionId: 's2', fecha: DIA(2026, 6, 12), resumen: { volumenTotal: 500, diaNombre: 'Pull' },
+    })
+    const escrito = mockSetDoc.mock.calls[0][1]
+    expect(escrito.volumenPorSesion.map(v => v.sesionId)).toEqual(['s2'])
+    expect(escrito.diasEntrenados).toEqual([E(2026, 6, 10), E(2026, 6, 12)])
+  })
+
+  it('removerSesionDeResumenGlobal no tira y saca el día', async () => {
+    mockGetDoc.mockResolvedValue({ exists: () => true, data: () => sinVolumen })
+    mockGetDocs.mockResolvedValue({ docs: [{ id: 's1' }] })
+    await removerSesionDeResumenGlobal('user1', { sesionId: 's1', fecha: DIA(2026, 6, 10) })
+    const escrito = mockSetDoc.mock.calls[0][1]
+    expect(escrito.volumenPorSesion).toEqual([])
+    expect(escrito.diasEntrenados).toEqual([])
+  })
+})

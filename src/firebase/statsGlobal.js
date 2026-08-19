@@ -47,9 +47,22 @@ export function buildResumenGlobal(sesiones) {
   }
 }
 
+// Los dos arrays del agregado son opcionales en Firestore: la alta ciega
+// omite volumenPorSesion cuando la sesión no tuvo volumen (todas las series
+// con peso 0), así que un doc real puede no traerlos. Todo lo que lee el
+// agregado asume arrays, por eso se normalizan acá, en el único punto de
+// entrada, en vez de repetir `?? []` en cada consumidor.
+function normalizarResumen(data) {
+  return {
+    ...data,
+    diasEntrenados: data.diasEntrenados ?? [],
+    volumenPorSesion: data.volumenPorSesion ?? [],
+  }
+}
+
 export async function getResumenGlobal(uid) {
   const snap = await getDoc(statsRef(uid))
-  return snap.exists() ? snap.data() : null
+  return snap.exists() ? normalizarResumen(snap.data()) : null
 }
 
 // Deja volumenPorSesion en <= MAX_VOLUMEN entradas: dedupea por sesionId
@@ -81,9 +94,9 @@ export async function getResumenGlobalConFallback(uid) {
       const volumenPorSesion = compactarVolumen(data.volumenPorSesion)
       // Fire-and-forget: es mantenimiento, no debe demorar el render (bug #1).
       setDoc(statsRef(uid), { volumenPorSesion }, { merge: true }).catch(e => console.error(e))
-      return { ...data, volumenPorSesion }
+      return { ...normalizarResumen(data), volumenPorSesion }
     }
-    return data
+    return normalizarResumen(data)
   }
 
   const sesiones = await getSesionesConResumen(uid)
@@ -131,7 +144,7 @@ export async function aplicarSesionAResumenGlobal(uid, { sesionId, fecha, resume
     return
   }
 
-  const actual = snap.exists() ? snap.data() : { diasEntrenados: [], volumenPorSesion: [] }
+  const actual = snap.exists() ? normalizarResumen(snap.data()) : { diasEntrenados: [], volumenPorSesion: [] }
   const e = epochDia(fecha)
   const dias = new Set(actual.diasEntrenados)
   if (e !== null) dias.add(e)
