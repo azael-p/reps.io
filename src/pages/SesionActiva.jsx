@@ -263,6 +263,22 @@ export default function SesionActiva() {
       peso: parsePeso(pesoUsado) || 0,
       reps: Number(repsHechas),
     })
+    // Récord de volumen en esta serie (peso × reps): compara contra
+    // statsCache (el mejor de ANTES de esta sesión) y contra las series ya
+    // completadas de este mismo ejercicio en la sesión en curso, para
+    // detectar también una segunda mejora dentro de la misma sesión sin
+    // necesitar un ref/estado propio.
+    const volumenSerieActual = (parsePeso(pesoUsado) || 0) * (Number(repsHechas) || 0)
+    if (volumenSerieActual > 0 && statsCache) {
+      const statsEj = statsCache.find(st => esMismoEjercicio(st, ejercicio))
+      const volumenPrevio = (statsEj?.prVolumen && statsEj.prVolumen.sesionId !== sesionId) ? statsEj.prVolumen.volumen : 0
+      const volumenEnEstaSesion = Math.max(0, ...historial
+        .filter(h => h.ejIdx === ejIdx)
+        .map(h => (parsePeso(h.pesoUsado) || 0) * (Number(h.repsHechas) || 0)))
+      if (volumenSerieActual > Math.max(volumenPrevio, volumenEnEstaSesion)) {
+        show({ variant: 'success', message: `🏆 Nuevo récord de volumen en ${ejercicio.nombre}: ${pesoUsado || 0}kg × ${repsHechas}`, duration: 4000 })
+      }
+    }
     setGuardando(false)
     try { navigator.vibrate?.(15) } catch { /* vibración es best-effort, no debe cortar el flujo de guardado */ }
     setCelebrar(true)

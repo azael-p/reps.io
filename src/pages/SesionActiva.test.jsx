@@ -298,6 +298,90 @@ describe('SesionActiva — el peso se arrastra a la serie siguiente', () => {
 
 // ---------------------------------------------------------------------------
 
+describe('SesionActiva — festejo en vivo de récord de volumen (peso × reps)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'dia1', completada: false }) })
+    getRegistrosSesion.mockResolvedValue([])
+    agregarRegistro.mockReturnValue({ id: 'reg1', listo: Promise.resolve() })
+  })
+
+  const inputPeso = () => screen.getByLabelText('Peso (kg)')
+
+  it('completar una serie que supera el prVolumen cacheado dispara el toast de récord', async () => {
+    getEjerciciosDia.mockResolvedValue([EJ1])
+    getStatsEjerciciosConFallback.mockResolvedValue([
+      { id: 'press-banca-plano', catalogoId: 'press-banca-plano', nombre: 'Press Banca', grupoMuscular: 'Pecho', pr: null, ultimaVez: null, puntos: [],
+        prVolumen: { volumen: 500, pesoUsado: 50, repsHechas: 10, fecha: Date.now(), sesionId: 'otra-sesion' } },
+    ])
+    const user = userEvent.setup()
+    renderSesion()
+    await waitFor(() => expect(getEjerciciosDia).toHaveBeenCalled())
+
+    await user.clear(inputPeso())
+    await user.type(inputPeso(), '80') // 80kg × 8 (repsEsperadas de EJ1) = 640 > 500
+    await user.click(screen.getByRole('button', { name: /Completar serie 1/ }))
+
+    await waitFor(() => {
+      expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({
+        variant: 'success',
+        message: '🏆 Nuevo récord de volumen en Press Banca: 80kg × 8',
+      }))
+    })
+  })
+
+  it('completar una serie que NO supera el prVolumen cacheado no dispara el toast de récord', async () => {
+    getEjerciciosDia.mockResolvedValue([EJ1])
+    getStatsEjerciciosConFallback.mockResolvedValue([
+      { id: 'press-banca-plano', catalogoId: 'press-banca-plano', nombre: 'Press Banca', grupoMuscular: 'Pecho', pr: null, ultimaVez: null, puntos: [],
+        prVolumen: { volumen: 10000, pesoUsado: 1000, repsHechas: 10, fecha: Date.now(), sesionId: 'otra-sesion' } },
+    ])
+    const user = userEvent.setup()
+    renderSesion()
+    await waitFor(() => expect(getEjerciciosDia).toHaveBeenCalled())
+
+    await user.clear(inputPeso())
+    await user.type(inputPeso(), '80')
+    await user.click(screen.getByRole('button', { name: /Completar serie 1/ }))
+
+    await waitFor(() => expect(agregarRegistro).toHaveBeenCalled())
+    expect(mockShow).not.toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Nuevo récord de volumen') }))
+  })
+
+  it('una segunda mejora DENTRO de la misma sesión también dispara el toast (compara contra el historial, no solo contra el cache)', async () => {
+    getEjerciciosDia.mockResolvedValue([EJ1])
+    getStatsEjerciciosConFallback.mockResolvedValue([
+      { id: 'press-banca-plano', catalogoId: 'press-banca-plano', nombre: 'Press Banca', grupoMuscular: 'Pecho', pr: null, ultimaVez: null, puntos: [],
+        prVolumen: { volumen: 500, pesoUsado: 50, repsHechas: 10, fecha: Date.now(), sesionId: 'otra-sesion' } },
+    ])
+    const user = userEvent.setup()
+    renderSesion()
+    await waitFor(() => expect(getEjerciciosDia).toHaveBeenCalled())
+
+    // Serie 1: 50kg × 8 = 400, no supera el cache (500) — sin toast de récord.
+    await user.clear(inputPeso())
+    await user.type(inputPeso(), '50')
+    await user.click(screen.getByRole('button', { name: /Completar serie 1/ }))
+    await screen.findByRole('button', { name: /Completar serie 2/ })
+    expect(mockShow).not.toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Nuevo récord de volumen') }))
+
+    // Serie 2: 80kg × 8 = 640, supera tanto el cache (500) como la serie 1 de esta sesión (400).
+    await user.clear(inputPeso())
+    await user.type(inputPeso(), '80')
+    await user.click(screen.getByRole('button', { name: /Completar serie 2/ }))
+
+    await waitFor(() => {
+      expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({
+        variant: 'success',
+        message: '🏆 Nuevo récord de volumen en Press Banca: 80kg × 8',
+      }))
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+
 describe('SesionActiva — feedback háptico al completar serie (#23)', () => {
   beforeEach(() => {
     vi.clearAllMocks()

@@ -93,7 +93,7 @@ service cloud.firestore {
         // así que puntos llega siempre como el array final ya cappeado a
         // MAX_PUNTOS=150 (statsEjercicios.js) -- seguro de validar sin condicional.
         allow create, update: if request.auth != null && request.auth.uid == userId
-          && request.resource.data.keys().hasOnly(['nombre', 'grupoMuscular', 'catalogoId', 'pr', 'ultimaVez', 'puntos'])
+          && request.resource.data.keys().hasOnly(['nombre', 'grupoMuscular', 'catalogoId', 'pr', 'prVolumen', 'ultimaVez', 'puntos'])
           && request.resource.data.puntos is list
           && request.resource.data.puntos.size() <= 150;
       }

@@ -408,7 +408,9 @@ export default function Progreso() {
                   {prReciente ? (
                     <>
                       <span className="progreso-dash-pr-name">{prReciente.nombre}</span>
-                      <span className="progreso-dash-pr-val">{prReciente.maxPeso} kg</span>
+                      <span className="progreso-dash-pr-val">
+                        {prReciente.tipo === 'volumen' ? `${prReciente.pesoUsado} kg × ${prReciente.repsHechas}` : `${prReciente.maxPeso} kg`}
+                      </span>
                       <span className="progreso-dash-sub">{tiempoRelativo(prReciente.fecha)}</span>
                     </>
                   ) : (

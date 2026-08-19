@@ -122,14 +122,24 @@ export function sesionesEsteMes(diasEntrenados) {
   }).length
 }
 
-// El PR más reciente entre todos los ejercicios (por pr.fecha), para el tile
-// "PR reciente" de Progreso. null si ningún ejercicio tiene marca todavía.
+// El PR más reciente entre todos los ejercicios, para el tile "PR reciente"
+// de Progreso. Compara los dos tipos de récord que trackea cada ejercicio —
+// peso máximo (`pr`) y mejor serie por volumen (`prVolumen`), independientes
+// entre sí — y devuelve el que se logró más recientemente (mayor fecha).
+// `tipo` le dice a la UI cuál de las dos formas usar para mostrarlo.
+// null si ningún ejercicio tiene ninguna marca todavía.
 export function prMasReciente(statsEjercicios) {
   let masReciente = null
   for (const ej of statsEjercicios ?? []) {
-    if (!ej.pr) continue
-    if (!masReciente || ej.pr.fecha > masReciente.fecha) {
-      masReciente = { nombre: ej.nombre, maxPeso: ej.pr.maxPeso, fecha: ej.pr.fecha }
+    if (ej.pr && (!masReciente || ej.pr.fecha > masReciente.fecha)) {
+      masReciente = { nombre: ej.nombre, tipo: 'peso', maxPeso: ej.pr.maxPeso, fecha: ej.pr.fecha }
+    }
+    if (ej.prVolumen && (!masReciente || ej.prVolumen.fecha > masReciente.fecha)) {
+      masReciente = {
+        nombre: ej.nombre, tipo: 'volumen',
+        pesoUsado: ej.prVolumen.pesoUsado, repsHechas: ej.prVolumen.repsHechas,
+        fecha: ej.prVolumen.fecha,
+      }
     }
   }
   return masReciente

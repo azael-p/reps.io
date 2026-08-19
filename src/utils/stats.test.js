@@ -100,11 +100,26 @@ describe('prMasReciente', () => {
       { nombre: 'Sentadilla', pr: { maxPeso: 102.5, fecha: 2000 } },
       { nombre: 'Peso Muerto', pr: null },
     ]
-    expect(prMasReciente(statsEjercicios)).toEqual({ nombre: 'Sentadilla', maxPeso: 102.5, fecha: 2000 })
+    expect(prMasReciente(statsEjercicios)).toEqual({ nombre: 'Sentadilla', tipo: 'peso', maxPeso: 102.5, fecha: 2000 })
   })
 
   it('sin ningún PR todavía, devuelve null', () => {
     expect(prMasReciente([{ nombre: 'X', pr: null }])).toBeNull()
     expect(prMasReciente([])).toBeNull()
+  })
+
+  it('compara también contra prVolumen (récord de volumen en una serie) y gana el más reciente de los dos tipos', () => {
+    const statsEjercicios = [
+      { nombre: 'Press Banca', pr: { maxPeso: 80, fecha: 3000 }, prVolumen: { pesoUsado: 70, repsHechas: 8, fecha: 1000 } },
+      { nombre: 'Sentadilla', pr: { maxPeso: 100, fecha: 500 }, prVolumen: { pesoUsado: 100, repsHechas: 11, fecha: 4000 } },
+    ]
+    expect(prMasReciente(statsEjercicios)).toEqual({
+      nombre: 'Sentadilla', tipo: 'volumen', pesoUsado: 100, repsHechas: 11, fecha: 4000,
+    })
+  })
+
+  it('un ejercicio con solo prVolumen (sin pr de peso) igual cuenta', () => {
+    const statsEjercicios = [{ nombre: 'Sentadilla', pr: null, prVolumen: { pesoUsado: 100, repsHechas: 10, fecha: 1000 } }]
+    expect(prMasReciente(statsEjercicios)).toEqual({ nombre: 'Sentadilla', tipo: 'volumen', pesoUsado: 100, repsHechas: 10, fecha: 1000 })
   })
 })

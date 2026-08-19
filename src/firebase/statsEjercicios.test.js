@@ -79,6 +79,9 @@ describe('mergeSesionEnStats', () => {
     expect(r.puntos[0].pesoMax).toBe(100)
     expect(r.puntos[0].oneRm).toBe(Math.round(100 * (1 + 3 / 30)))
     expect(r.puntos[0].volSerie).toBe(800)
+    // prVolumen es un récord independiente del pr de peso máximo: la serie
+    // de mayor volumen (80×10=800) no es la del pr (100×3).
+    expect(r.prVolumen).toEqual({ volumen: 800, pesoUsado: 80, repsHechas: 10, fecha: FECHA1, sesionId: 's1' })
   })
 
   it('una sesión posterior con menos peso actualiza ultimaVez pero conserva el PR', () => {
@@ -97,6 +100,27 @@ describe('mergeSesionEnStats', () => {
     const r = mergeSesionEnStats(base, editada, FECHA1, 's1')
     expect(r.puntos).toHaveLength(1)
     expect(r.puntos[0].pesoMax).toBe(90)
+  })
+
+  it('una serie con más volumen (aunque no supere el pr de peso) genera un nuevo récord de volumen', () => {
+    const base = mergeSesionEnStats(null, EJ, FECHA1, 's1') // mejor volumen previo: 800 (80×10)
+    const masVolumen = { ...EJ, series: [{ numeroSerie: 1, pesoUsado: 90, repsHechas: 10 }] } // 900, y no supera el pr de 100
+    const r = mergeSesionEnStats(base, masVolumen, FECHA2, 's2')
+    expect(r.prVolumen).toEqual({ volumen: 900, pesoUsado: 90, repsHechas: 10, fecha: FECHA2, sesionId: 's2' })
+    expect(r.pr.maxPeso).toBe(100) // el pr de peso no se tocó
+  })
+
+  it('una sesión con menos volumen conserva el récord de volumen anterior', () => {
+    const base = mergeSesionEnStats(null, EJ, FECHA1, 's1') // 800
+    const menosVolumen = { ...EJ, series: [{ numeroSerie: 1, pesoUsado: 50, repsHechas: 5 }] } // 250
+    const r = mergeSesionEnStats(base, menosVolumen, FECHA2, 's2')
+    expect(r.prVolumen).toEqual(base.prVolumen)
+  })
+
+  it('sin peso (series de solo reps, ej. dominadas a cuerpo libre) no genera récord de volumen', () => {
+    const sinPeso = { ...EJ, series: [{ numeroSerie: 1, pesoUsado: 0, repsHechas: 12 }] }
+    const r = mergeSesionEnStats(null, sinPeso, FECHA1, 's1')
+    expect(r.prVolumen).toBeNull()
   })
 })
 

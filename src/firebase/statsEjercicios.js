@@ -6,6 +6,8 @@ import { getSesionesConResumen, esMismoEjercicio } from './sesiones'
 
 // Agregado por ejercicio (usuarios/{uid}/statsEjercicios/{docId}):
 // - pr:        { maxPeso, fecha(ms), sesionId, series }   ← forma que espera la UI
+// - prVolumen: { volumen, pesoUsado, repsHechas, fecha(ms), sesionId } ← mejor
+//   serie por volumen (peso × reps), récord independiente del pr de arriba
 // - ultimaVez: { fecha(ms), sesionId, series }
 // - puntos:    [{ fecha(ms), sesionId, pesoMax, oneRm, volSerie }]  cap 150
 //   (máximos POR SERIE de cada sesión — misma semántica que el gráfico previo)
@@ -42,10 +44,20 @@ function statsDeSesion(ejercicioResumen, fechaMs, sesionId) {
   const series = ejercicioResumen.series ?? []
   const pesoMax = Math.max(0, ...series.map(s => s.pesoUsado || 0))
   const oneRm = Math.max(0, ...series.map(s => calcular1RM(s.pesoUsado || 0, s.repsHechas || 0) || 0))
-  const volSerie = Math.max(0, ...series.map(s => Math.round((s.pesoUsado || 0) * (s.repsHechas || 0))))
+  // La serie con más volumen (peso × reps), guardando también qué peso/reps
+  // la lograron: Math.max sobre los números solos alcanza para el gráfico
+  // "Vol. serie", pero para anunciar un récord ("110kg × 10") hace falta el
+  // par que lo generó, no solo el número.
+  const mejorSerieVolumen = series.reduce((mejor, s) => {
+    const volumen = Math.round((s.pesoUsado || 0) * (s.repsHechas || 0))
+    return volumen > (mejor?.volumen ?? 0)
+      ? { volumen, pesoUsado: s.pesoUsado || 0, repsHechas: s.repsHechas || 0 }
+      : mejor
+  }, null) ?? { volumen: 0, pesoUsado: 0, repsHechas: 0 }
   return {
     pesoMax,
-    punto: { fecha: fechaMs, sesionId, pesoMax, oneRm, volSerie },
+    mejorSerieVolumen,
+    punto: { fecha: fechaMs, sesionId, pesoMax, oneRm, volSerie: mejorSerieVolumen.volumen },
     series,
   }
 }
@@ -59,6 +71,7 @@ export function mergeSesionEnStats(statsPrevio, ejercicioResumen, fechaMs, sesio
     grupoMuscular: ejercicioResumen.grupoMuscular ?? '',
     catalogoId: ejercicioResumen.catalogoId ?? null,
     pr: null,
+    prVolumen: null,
     ultimaVez: null,
     puntos: [],
   }
@@ -66,6 +79,14 @@ export function mergeSesionEnStats(statsPrevio, ejercicioResumen, fechaMs, sesio
   const pr = (s.pesoMax > 0 && (!base.pr || s.pesoMax > base.pr.maxPeso))
     ? { maxPeso: s.pesoMax, fecha: fechaMs, sesionId, series: s.series }
     : base.pr
+
+  // Récord de volumen en UNA serie (peso × reps), independiente del PR de
+  // peso máximo de arriba: una serie puede batir el volumen sin ser el peso
+  // más alto histórico (más reps a menos peso, o el mismo peso con una rep
+  // de más).
+  const prVolumen = (s.mejorSerieVolumen.volumen > 0 && (!base.prVolumen || s.mejorSerieVolumen.volumen > base.prVolumen.volumen))
+    ? { volumen: s.mejorSerieVolumen.volumen, pesoUsado: s.mejorSerieVolumen.pesoUsado, repsHechas: s.mejorSerieVolumen.repsHechas, fecha: fechaMs, sesionId }
+    : base.prVolumen
 
   const ultimaVez = (!base.ultimaVez || fechaMs >= base.ultimaVez.fecha)
     ? { fecha: fechaMs, sesionId, series: s.series }
@@ -76,7 +97,7 @@ export function mergeSesionEnStats(statsPrevio, ejercicioResumen, fechaMs, sesio
     .sort((a, b) => a.fecha - b.fecha)
     .slice(-MAX_PUNTOS)
 
-  return { ...base, catalogoId: base.catalogoId ?? ejercicioResumen.catalogoId ?? null, pr, ultimaVez, puntos }
+  return { ...base, catalogoId: base.catalogoId ?? ejercicioResumen.catalogoId ?? null, pr, prVolumen, ultimaVez, puntos }
 }
 
 export async function getStatsEjercicios(uid) {
@@ -133,7 +154,7 @@ export async function rebuildStatsEjercicios(uid, ejercicios, batch = null, { ex
       nombre: ejercicio.nombre,
       grupoMuscular: ejercicio.grupoMuscular ?? '',
       catalogoId: ejercicio.catalogoId ?? null,
-      pr: null, ultimaVez: null, puntos: [],
+      pr: null, prVolumen: null, ultimaVez: null, puntos: [],
     })
   }
   if (own) await b.commit()
