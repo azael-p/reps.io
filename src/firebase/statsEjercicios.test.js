@@ -122,6 +122,18 @@ describe('mergeSesionEnStats', () => {
     const r = mergeSesionEnStats(null, sinPeso, FECHA1, 's1')
     expect(r.prVolumen).toBeNull()
   })
+
+  it('un doc previo a este campo (sin la clave prVolumen) + una serie a 0kg da prVolumen null, no undefined', () => {
+    // Simula un statsEjercicios real escrito antes de que prVolumen existiera:
+    // la clave ni está presente en el doc, no es que valga null.
+    const docPrevioSinCampo = { nombre: 'Dominadas', grupoMuscular: 'Espalda', catalogoId: 'dominadas', pr: null, ultimaVez: null, puntos: [] }
+    const sinPeso = { ...EJ, nombre: 'Dominadas', series: [{ numeroSerie: 1, pesoUsado: 0, repsHechas: 12 }] }
+    const r = mergeSesionEnStats(docPrevioSinCampo, sinPeso, FECHA1, 's1')
+    // undefined haría que Firestore rechace el set() del doc entero (batch
+    // roto): la clave debe existir con valor null, no faltar.
+    expect(r.prVolumen).toBeNull()
+    expect('prVolumen' in r).toBe(true)
+  })
 })
 
 // ---------------------------------------------------------------------------

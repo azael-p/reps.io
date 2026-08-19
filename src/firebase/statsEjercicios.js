@@ -84,9 +84,16 @@ export function mergeSesionEnStats(statsPrevio, ejercicioResumen, fechaMs, sesio
   // peso máximo de arriba: una serie puede batir el volumen sin ser el peso
   // más alto histórico (más reps a menos peso, o el mismo peso con una rep
   // de más).
+  // `?? null`, no solo `base.prVolumen`: en un doc previo a este campo
+  // (cualquier statsEjercicios existente antes de este cambio), la clave no
+  // existe y `base.prVolumen` es `undefined`, no `null`. Firestore rechaza
+  // sincrónicamente un set() con un campo `undefined` (sin
+  // ignoreUndefinedProperties en config.js), lo que tiraba abajo el batch
+  // entero de completar sesión — justo en el caso común de una serie a 0kg
+  // (ejercicio de peso corporal) sobre un ejercicio ya trackeado antes.
   const prVolumen = (s.mejorSerieVolumen.volumen > 0 && (!base.prVolumen || s.mejorSerieVolumen.volumen > base.prVolumen.volumen))
     ? { volumen: s.mejorSerieVolumen.volumen, pesoUsado: s.mejorSerieVolumen.pesoUsado, repsHechas: s.mejorSerieVolumen.repsHechas, fecha: fechaMs, sesionId }
-    : base.prVolumen
+    : base.prVolumen ?? null
 
   const ultimaVez = (!base.ultimaVez || fechaMs >= base.ultimaVez.fecha)
     ? { fecha: fechaMs, sesionId, series: s.series }
