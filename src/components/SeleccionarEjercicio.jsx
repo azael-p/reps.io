@@ -64,11 +64,19 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
   }, [])
 
   useEffect(() => {
-    if (ejercicioElegido) {
-      window.history.pushState({ pickerLevel: 1 }, '')
-      handlerRef.current = () => setEjercicioElegido(null)
-    } else {
+    if (!ejercicioElegido) {
       handlerRef.current = () => onCerrarRef.current?.()
+      return
+    }
+    window.history.pushState({ pickerLevel: 1 }, '')
+    handlerRef.current = () => setEjercicioElegido(null)
+    return () => {
+      // Si el popstate ya trajo de vuelta a nivel 0 (usuario tocó "atrás"),
+      // esa entrada del historial ya se consumió sola: repetir el back() acá
+      // se comería una pantalla de más al navegar después. Solo hace falta
+      // popearla nosotros cuando se sale del picker SIN pasar por "atrás"
+      // (ej. confirmar() desmonta el componente directamente).
+      if (window.history.state?.pickerLevel === 1) window.history.back()
     }
   }, [ejercicioElegido])
 
