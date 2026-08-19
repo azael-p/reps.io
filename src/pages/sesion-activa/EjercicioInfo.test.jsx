@@ -17,6 +17,7 @@ function renderInfo(props = {}) {
       serieActual={1} totalSeries={3}
       tabRef="ultima" setTabRef={vi.fn()} refAnterior={null} refPR={null}
       mostrarNota={false} setMostrarNota={vi.fn()}
+      onEditarSerie={vi.fn()}
       {...props}
     />
   )
@@ -56,5 +57,28 @@ describe('EjercicioInfo — icono de nota', () => {
     // Se pasa un updater función (m => !m), no un valor fijo — soporta taps rápidos consecutivos.
     const updater = setMostrarNota.mock.calls[0][0]
     expect(updater(false)).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('EjercicioInfo — corrección no lineal (dots de series completadas)', () => {
+  it('solo las series ya completadas son tocables — la activa y las pendientes no', () => {
+    // serieIdx=2, totalSeries=4: series 0 y 1 completadas, 2 activa, 3 pendiente.
+    renderInfo({ serieIdx: 2, totalSeries: 4 })
+    expect(screen.getAllByRole('button', { name: /^Editar serie/ })).toHaveLength(2)
+  })
+
+  it('tocar el dot de una serie completada llama a onEditarSerie con su índice', async () => {
+    const onEditarSerie = vi.fn()
+    const user = userEvent.setup()
+    renderInfo({ serieIdx: 2, totalSeries: 4, onEditarSerie })
+    await user.click(screen.getByRole('button', { name: 'Editar serie 2' }))
+    expect(onEditarSerie).toHaveBeenCalledWith(1)
+  })
+
+  it('sin series completadas (serieIdx=0), no hay ningún dot tocable', () => {
+    renderInfo({ serieIdx: 0, totalSeries: 3 })
+    expect(screen.queryByRole('button', { name: /^Editar serie/ })).not.toBeInTheDocument()
   })
 })

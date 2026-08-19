@@ -7,13 +7,14 @@ import { getEjerciciosDia } from '../firebase/ejerciciosDia'
 import { agregarRegistro, editarRegistro, getRegistrosSesion } from '../firebase/registros'
 import { eliminarSesion, esMismoEjercicio } from '../firebase/sesiones'
 import { getStatsEjerciciosConFallback } from '../firebase/statsEjercicios'
-import { ConfirmDialog, EmptyState } from '../components/ui'
+import { ConfirmDialog, EmptyState, Modal } from '../components/ui'
 import { useUser } from '../context/UserContext'
 import { logEvento } from '../firebase/analytics'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
 import { useSyncStatus } from '../hooks/useSyncStatus'
-import { parsePeso } from '../utils/stats'
+import { useLongPress } from '../hooks/useLongPress'
+import { parsePeso, sanitizarPeso } from '../utils/stats'
 import Confetti from './sesion-activa/Confetti'
 import ListaEjerciciosDesktop from './sesion-activa/ListaEjerciciosDesktop'
 import EjercicioInfo from './sesion-activa/EjercicioInfo'
@@ -54,6 +55,9 @@ export default function SesionActiva() {
   const [cargando, setCargando] = useState(true)
   const [celebrar, setCelebrar] = useState(false)
   const [confirmData, setConfirmData] = useState(null)
+  const [editandoSerie, setEditandoSerie] = useState(null)
+  const [editSeriePeso, setEditSeriePeso] = useState('')
+  const [editSerieReps, setEditSerieReps] = useState('')
   const ultimoPesoRef = useRef(ultimoPeso)
   const celebrarTimeoutRef = useRef(null)
 
@@ -275,6 +279,40 @@ export default function SesionActiva() {
     setMostrarNota(!!prev.nota)
   }
 
+  // Corrección no lineal: tocar el dot de una serie ya completada del
+  // ejercicio actual la edita en el momento (mismo patrón que ResumenSesion),
+  // sin tocar ejIdx/serieIdx ni perder lo que se esté tipeando en la serie
+  // en curso — a diferencia de retroceder(), que solo desanda un paso.
+  function abrirEditarSerie(i) {
+    const entry = historial.find(h => h.ejIdx === ejIdx && h.serieIdx === i)
+    if (!entry) return
+    setEditandoSerie(entry)
+    setEditSeriePeso(entry.pesoUsado)
+    setEditSerieReps(entry.repsHechas)
+  }
+
+  function guardarEdicionSerie() {
+    if (!editSerieReps || !editandoSerie) return
+    const { registroId, ejIdx: ejIdxEditado, serieIdx: serieIdxEditado } = editandoSerie
+    const nuevoPeso = parsePeso(editSeriePeso) || 0
+    const nuevasReps = Number(editSerieReps)
+    editarRegistro(registroId, { pesoUsado: nuevoPeso, repsHechas: nuevasReps }).catch(e => {
+      console.error(e)
+      show({ variant: 'warning', message: 'Se sincronizará cuando haya conexión.' })
+    })
+    setHistorial(h => h.map(entry => (
+      entry.ejIdx === ejIdxEditado && entry.serieIdx === serieIdxEditado
+        ? { ...entry, pesoUsado: editSeriePeso, repsHechas: editSerieReps }
+        : entry
+    )))
+    setEditandoSerie(null)
+  }
+
+  const restarEditSeriePesoPress = useLongPress(() => setEditSeriePeso(p => String(Math.round(Math.max(0, (parsePeso(p) || 0) - 2.5) * 10) / 10)))
+  const sumarEditSeriePesoPress = useLongPress(() => setEditSeriePeso(p => String(Math.round(((parsePeso(p) || 0) + 2.5) * 10) / 10)))
+  const restarEditSerieRepsPress = useLongPress(() => setEditSerieReps(r => String(Math.max(1, (Number(r) || 1) - 1))))
+  const sumarEditSerieRepsPress = useLongPress(() => setEditSerieReps(r => String((Number(r) || 1) + 1)))
+
   function cancelarSesion() {
     setConfirmData({
       titulo: '¿Cancelar entrenamiento?',
@@ -385,6 +423,7 @@ export default function SesionActiva() {
               serieActual={serieActual} totalSeries={totalSeries}
               tabRef={tabRef} setTabRef={setTabRef} refAnterior={refAnterior} refPR={refPR}
               mostrarNota={mostrarNota} setMostrarNota={setMostrarNota}
+              onEditarSerie={abrirEditarSerie}
             />
             <SerieForm {...serieFormProps} />
             <SerieFooter {...footerProps} footerClassName="sa-footer-desktop" />
@@ -398,6 +437,7 @@ export default function SesionActiva() {
               serieActual={serieActual} totalSeries={totalSeries}
               tabRef={tabRef} setTabRef={setTabRef} refAnterior={refAnterior} refPR={refPR}
               mostrarNota={mostrarNota} setMostrarNota={setMostrarNota}
+              onEditarSerie={abrirEditarSerie}
             />
             <SerieForm {...serieFormProps} />
           </div>
@@ -406,6 +446,50 @@ export default function SesionActiva() {
       )}
 
       <ConfirmDialog open={!!confirmData} data={confirmData} onClose={() => setConfirmData(null)} />
+
+      <Modal open={!!editandoSerie} onClose={() => setEditandoSerie(null)}>
+        <p className="resumen-modal-ejercicio">{ejercicio?.nombre}</p>
+        <h2 className="resumen-modal-titulo">Serie {editandoSerie ? editandoSerie.serieIdx + 1 : ''}</h2>
+        <div className="resumen-row">
+          <div className="resumen-field">
+            <label className="resumen-label">Peso (kg)</label>
+            <div className="resumen-stepper">
+              <motion.button className="resumen-stepper-btn" aria-label="Restar 2,5 kg" {...restarEditSeriePesoPress} whileTap={BTN_TAP}>−</motion.button>
+              <input
+                className="resumen-input-num"
+                type="text" inputMode="decimal" placeholder="0"
+                value={editSeriePeso} onChange={e => setEditSeriePeso(sanitizarPeso(e.target.value))}
+                autoFocus
+              />
+              <motion.button className="resumen-stepper-btn" aria-label="Sumar 2,5 kg" {...sumarEditSeriePesoPress} whileTap={BTN_TAP}>+</motion.button>
+            </div>
+          </div>
+          <div className="resumen-field">
+            <label className="resumen-label">Reps</label>
+            <div className="resumen-stepper">
+              <motion.button className="resumen-stepper-btn" aria-label="Restar una repetición" {...restarEditSerieRepsPress} whileTap={BTN_TAP}>−</motion.button>
+              <input
+                className="resumen-input-num"
+                type="number" inputMode="numeric"
+                value={editSerieReps} onChange={e => setEditSerieReps(e.target.value)}
+              />
+              <motion.button className="resumen-stepper-btn" aria-label="Sumar una repetición" {...sumarEditSerieRepsPress} whileTap={BTN_TAP}>+</motion.button>
+            </div>
+          </div>
+        </div>
+        <div className="resumen-modal-btns">
+          <motion.button className="resumen-cancel-btn" onClick={() => setEditandoSerie(null)} whileTap={BTN_TAP}>Cancelar</motion.button>
+          <motion.button
+            className="resumen-save-btn"
+            style={{ opacity: !editSerieReps ? 0.5 : 1 }}
+            onClick={guardarEdicionSerie}
+            disabled={!editSerieReps}
+            whileTap={BTN_TAP}
+          >
+            Guardar
+          </motion.button>
+        </div>
+      </Modal>
 
       <AnimatePresence>{celebrar && <Confetti />}</AnimatePresence>
     </motion.div>

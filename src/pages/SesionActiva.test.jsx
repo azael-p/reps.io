@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -40,7 +40,9 @@ vi.mock('firebase/firestore', () => ({
 }))
 vi.mock('../components/ui', () => ({
   ConfirmDialog: () => null,
+  EmptyState: ({ mensaje }) => <div>{mensaje}</div>,
   Badge: ({ children }) => <span>{children}</span>,
+  Modal: ({ children, open }) => (open ? <div data-testid="modal">{children}</div> : null),
 }))
 // Estables entre renders: `cargar` depende de `show`, así que un vi.fn() nuevo
 // por render re-dispara su efecto y resetea la posición y los inputs. En la app
@@ -59,7 +61,7 @@ vi.mock('../hooks/useSyncStatus', () => ({ useSyncStatus: mockUseSyncStatus }))
 
 import { getDoc } from 'firebase/firestore'
 import { getEjerciciosDia } from '../firebase/ejerciciosDia'
-import { getRegistrosSesion, agregarRegistro } from '../firebase/registros'
+import { getRegistrosSesion, agregarRegistro, editarRegistro } from '../firebase/registros'
 import { getStatsEjerciciosConFallback } from '../firebase/statsEjercicios'
 import SesionActiva from './SesionActiva'
 
@@ -347,5 +349,68 @@ describe('SesionActiva — punto de sincronización en el header', () => {
     renderSesion()
     const dot = await screen.findByRole('img', { name: '2 series sin sincronizar' })
     expect(dot).toHaveClass('sa-sync-dot--pendiente')
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('SesionActiva — corrección no lineal (editar una serie ya completada)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'dia1', completada: false }) })
+    getEjerciciosDia.mockResolvedValue([EJ1])
+    // 2 de 3 series completadas → restaura en la serie 3, con series 1 y 2 tocables.
+    getRegistrosSesion.mockResolvedValue([
+      { id: 'r1', ejercicioId: 'ej1', numeroSerie: 1, pesoUsado: 80, repsHechas: 8, nota: '' },
+      { id: 'r2', ejercicioId: 'ej1', numeroSerie: 2, pesoUsado: 82.5, repsHechas: 7, nota: '' },
+    ])
+    editarRegistro.mockResolvedValue(undefined)
+  })
+
+  it('tocar el dot de la serie 1 abre el modal precargado con sus valores', async () => {
+    const user = userEvent.setup()
+    renderSesion()
+    await screen.findByText(/serie.*3/i)
+
+    await user.click(screen.getByRole('button', { name: 'Editar serie 1' }))
+
+    const modal = within(screen.getByTestId('modal'))
+    expect(modal.getByText('Serie 1')).toBeInTheDocument()
+    expect(modal.getByDisplayValue('80')).toBeInTheDocument()
+    expect(modal.getByDisplayValue('8')).toBeInTheDocument()
+  })
+
+  it('guardar la edición llama a editarRegistro con el id correcto y no altera la serie en curso', async () => {
+    const user = userEvent.setup()
+    renderSesion()
+    await screen.findByText(/serie.*3/i)
+
+    await user.click(screen.getByRole('button', { name: 'Editar serie 2' }))
+    const modal = within(screen.getByTestId('modal'))
+    const pesoInput = modal.getByDisplayValue('82.5')
+    await user.clear(pesoInput)
+    await user.type(pesoInput, '85')
+    await user.click(modal.getByRole('button', { name: 'Guardar' }))
+
+    await waitFor(() => {
+      expect(editarRegistro).toHaveBeenCalledWith('r2', { pesoUsado: 85, repsHechas: 7 })
+    })
+    expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
+    // Sigue en la serie 3 (la que estaba en curso antes de editar) — el modal
+    // no toca ejIdx/serieIdx.
+    expect(screen.getByText(/serie.*3/i)).toBeInTheDocument()
+  })
+
+  it('cancelar cierra el modal sin llamar a editarRegistro', async () => {
+    const user = userEvent.setup()
+    renderSesion()
+    await screen.findByText(/serie.*3/i)
+
+    await user.click(screen.getByRole('button', { name: 'Editar serie 1' }))
+    await user.click(within(screen.getByTestId('modal')).getByRole('button', { name: 'Cancelar' }))
+
+    expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
+    expect(editarRegistro).not.toHaveBeenCalled()
   })
 })

@@ -5,7 +5,7 @@ import ReferenciaCard from './ReferenciaCard'
 export default function EjercicioInfo({
   ejIdx, serieIdx, ejercicio, serieActual, totalSeries,
   tabRef, setTabRef, refAnterior, refPR,
-  mostrarNota, setMostrarNota,
+  mostrarNota, setMostrarNota, onEditarSerie,
 }) {
   return (
     <AnimatePresence mode="wait">
@@ -37,10 +37,22 @@ export default function EjercicioInfo({
           </p>
           <div className="sa-serie-dots">
             {Array.from({ length: totalSeries }).map((_, i) => (
-              <span
-                key={i}
-                className={`sa-serie-dot ${i < serieIdx ? 'sa-serie-dot--done' : ''} ${i === serieIdx ? 'sa-serie-dot--active' : ''}`}
-              />
+              i < serieIdx ? (
+                <button
+                  key={i}
+                  type="button"
+                  className="sa-serie-dot-btn"
+                  onClick={() => onEditarSerie(i)}
+                  aria-label={`Editar serie ${i + 1}`}
+                >
+                  <span className="sa-serie-dot sa-serie-dot--done" />
+                </button>
+              ) : (
+                <span
+                  key={i}
+                  className={`sa-serie-dot ${i === serieIdx ? 'sa-serie-dot--active' : ''}`}
+                />
+              )
             ))}
           </div>
         </div>
