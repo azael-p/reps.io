@@ -1655,8 +1655,8 @@ select:focus-visible {
 }
 .sa-ref-tab--activo { background: var(--bg-card); color: var(--text); border-color: var(--border-strong); }
 .sa-ref-card-compact { display: flex; gap: 4px; padding: 4px 0; align-items: baseline; flex-wrap: wrap; }
-.sa-ref-label-compact { font-size: 0.68rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
-.sa-ref-valor-compact { font-size: 0.85rem; font-weight: 600; color: var(--text-mute); }
+.sa-ref-label-compact { font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+.sa-ref-valor-compact { font-size: 1rem; font-weight: 600; color: var(--text); }
 .sa-ref-skeleton { color: transparent; background: var(--bg-elev); border-radius: 4px; }
 
 /* ---- SerieForm ---- */
@@ -1723,13 +1723,13 @@ select:focus-visible {
 .sa-ref-serie-icon { font-size: 1.1rem; flex-shrink: 0; }
 .sa-ref-serie-label {
   display: block;
-  font-size: 0.65rem; font-weight: 700;
+  font-size: 0.72rem; font-weight: 700;
   color: var(--orange);
   text-transform: uppercase; letter-spacing: 0.06em;
   margin-bottom: 3px;
 }
 .sa-ref-serie-label--pr { color: var(--blue); }
-.sa-ref-serie-valor { display: block; font-size: 1.15rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
+.sa-ref-serie-valor { display: block; font-size: 1.25rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
 
 /* ---- SerieFooter ---- */
 .sa-completar-btn {
