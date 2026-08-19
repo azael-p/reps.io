@@ -301,7 +301,7 @@ export default function ResumenSesion() {
           {Object.entries(porEjercicio).map(([nombre, series], i) => (
             <motion.div
               key={nombre}
-              className="resumen-ejercicio-card"
+              className="card resumen-ejercicio-card"
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 + Math.min(i, 8) * 0.06, type: 'spring', stiffness: 220, damping: 22 }}

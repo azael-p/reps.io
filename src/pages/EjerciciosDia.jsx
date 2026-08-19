@@ -133,7 +133,7 @@ export default function EjerciciosDia() {
           renderItem={(e, i) => ({ dragHandleProps }) => (
             <SwipeToDelete onDelete={() => eliminar(e)}>
               <motion.div
-                className="ejercicios-card"
+                className="card ejercicios-card"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}

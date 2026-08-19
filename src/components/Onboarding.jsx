@@ -28,7 +28,7 @@ export default function Onboarding({ onCompletar, usuarioId }) {
 
   return (
     <motion.div
-      className="onboarding-card"
+      className="card onboarding-card"
       initial={{ opacity: 0, y: 16, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.97 }}

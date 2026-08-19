@@ -438,13 +438,8 @@ select:focus-visible {
 
 /* ---- Programas / Dias: tarjeta simple ---- */
 .crud-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-top: 1px solid var(--highlight);
-  border-radius: var(--r-lg);
   padding: 16px;
   display: flex; flex-direction: column; gap: 12px;
-  box-shadow: var(--shadow-sm);
   cursor: pointer;
 }
 .crud-card-main { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
@@ -461,13 +456,8 @@ select:focus-visible {
 
 /* ---- EjerciciosDia: tarjeta con series ---- */
 .ejercicios-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-top: 1px solid var(--highlight);
-  border-radius: var(--r-lg);
   padding: 16px;
   display: flex; flex-direction: column; gap: 10px;
-  box-shadow: var(--shadow-sm);
 }
 .ejercicios-card-top { display: flex; align-items: center; justify-content: space-between; }
 .ejercicios-card-num { font-size: 0.7rem; color: var(--text-dim); font-weight: 700; letter-spacing: 0.08em; }
@@ -499,8 +489,6 @@ select:focus-visible {
 .onboarding-card {
   margin: 0 0 8px;
   padding: 24px 20px 20px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-md);
   display: flex; flex-direction: column; gap: 18px;
@@ -634,9 +622,8 @@ select:focus-visible {
 .timer-fin-titulo { font-size: 3rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text); }
 .timer-fin-stats {
   display: flex; align-items: center; gap: 32px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
   border-radius: var(--r-xl);
+  box-shadow: none;
   padding: 24px 20px;
   width: 100%; box-sizing: border-box;
   justify-content: center;
@@ -649,12 +636,7 @@ select:focus-visible {
 
 /* ============== Calendario ============== */
 .calendario-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-top: 1px solid var(--highlight);
-  border-radius: var(--r-lg);
   padding: 14px 14px 12px;
-  box-shadow: var(--shadow-sm);
   width: 100%; box-sizing: border-box;
 }
 .calendario-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -1025,13 +1007,7 @@ select:focus-visible {
 .resumen-stat-label { font-size: 0.68rem; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700; }
 .resumen-stat-divider { width: 1px; background: var(--border); align-self: stretch; }
 .resumen-ejercicios { display: flex; flex-direction: column; gap: 10px; padding: 0 16px; }
-.resumen-ejercicio-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 16px;
-  box-shadow: var(--shadow-sm);
-}
+.resumen-ejercicio-card { padding: 16px; }
 .resumen-ejercicio-nombre { margin: 0 0 12px; font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; }
 .resumen-series-wrap { display: flex; flex-direction: column; gap: 2px; }
 .resumen-serie-row {
@@ -1286,8 +1262,6 @@ select:focus-visible {
 .login-feature-card {
   display: flex; gap: 14px; align-items: flex-start;
   padding: 14px 16px;
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--r-lg); box-shadow: var(--shadow-sm);
 }
 .login-feature-icon { font-size: 1.5rem; line-height: 1; flex-shrink: 0; margin-top: 2px; }
 .login-feature-titulo { font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 0 0 3px; }
@@ -1392,12 +1366,8 @@ select:focus-visible {
 .progreso-barra-label { font-size: 0.62rem; color: var(--text-dim); }
 .progreso-lista { display: flex; flex-direction: column; gap: 8px; padding: 0 16px 8px; }
 .progreso-sesion-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
   padding: 14px;
   display: flex; flex-direction: column; gap: 12px;
-  box-shadow: var(--shadow-sm);
 }
 .progreso-sesion-info { display: flex; gap: 14px; align-items: center; cursor: pointer; background: none; border: none; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left; width: 100%; }
 .progreso-fecha-badge {

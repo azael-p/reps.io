@@ -56,7 +56,7 @@ export default function Calendario({ fechas = [] }) {
   const sesionesEsteMes = celdas.filter(d => d && tieneSesion(d)).length
 
   return (
-    <div className="calendario-card">
+    <div className="card calendario-card">
       <div className="calendario-header">
         <motion.button
           className="calendario-nav-btn"

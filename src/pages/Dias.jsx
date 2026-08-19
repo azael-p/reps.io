@@ -104,7 +104,7 @@ export default function Dias() {
           {dias.map((d, i) => (
             <motion.div
               key={d.id}
-              className="crud-card"
+              className="card crud-card"
               onClick={() => navigate(`/programas/${programaId}/${d.id}`)}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -146,7 +146,7 @@ export default function Dias() {
           renderItem={(d, i) => ({ dragHandleProps }) => (
             <SwipeToDelete onDelete={() => eliminar(d)} onClick={() => navigate(`/programas/${programaId}/${d.id}`)}>
               <motion.div
-                className="crud-card"
+                className="card crud-card"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}

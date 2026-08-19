@@ -33,7 +33,7 @@ export default function TimerFin({ setsCompletados, tiempoTotal, onVolver }) {
         </motion.h1>
 
         <motion.div
-          className="timer-fin-stats"
+          className="card timer-fin-stats"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}

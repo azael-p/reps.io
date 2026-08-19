@@ -95,7 +95,7 @@ export default function Programas() {
             {programas.map((p, i) => (
               <motion.div
                 key={p.id}
-                className="crud-card"
+                className="card crud-card"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: Math.min(i, 8) * 0.05, type: 'spring', stiffness: 200, damping: 22 }}
@@ -137,7 +137,7 @@ export default function Programas() {
             renderItem={(p) => ({ dragHandleProps }) => (
               <SwipeToDelete onDelete={() => eliminar(p)} onClick={() => navigate(`/programas/${p.id}`)}>
                 <motion.div
-                  className="crud-card"
+                  className="card crud-card"
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}

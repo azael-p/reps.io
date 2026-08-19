@@ -52,7 +52,7 @@ export default function HistorialTab({
               {sesionesFiltradas.map((sesion, i) => (
                 <motion.div
                   key={sesion.id}
-                  className="progreso-sesion-card"
+                  className="card progreso-sesion-card"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -16, transition: { duration: 0.2 } }}

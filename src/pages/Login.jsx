@@ -106,7 +106,7 @@ export default function Login() {
             transition={{ delay: 0.25, duration: 0.4 }}
           >
             {FEATURES.map((f) => (
-              <div key={f.titulo} className="login-feature-card">
+              <div key={f.titulo} className="card login-feature-card">
                 <span className="login-feature-icon">{f.icon}</span>
                 <div>
                   <p className="login-feature-titulo">{f.titulo}</p>
@@ -286,7 +286,7 @@ export default function Login() {
           transition={{ delay: 0.45, duration: 0.4 }}
         >
           {FEATURES.map((f) => (
-            <div key={f.titulo} className="login-feature-card">
+            <div key={f.titulo} className="card login-feature-card">
               <span className="login-feature-icon">{f.icon}</span>
               <div>
                 <p className="login-feature-titulo">{f.titulo}</p>
