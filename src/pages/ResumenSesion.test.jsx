@@ -35,7 +35,7 @@ vi.mock('../components/Toast', () => ({
   useToast: () => ({ show: mockShow }),
 }))
 
-import { getDoc } from 'firebase/firestore'
+import { doc, getDoc } from 'firebase/firestore'
 import { backfillResumen } from '../firebase/sesiones'
 import { completarSesionConAgregados } from '../firebase/completarSesion'
 import { aplicarSesionAResumenGlobal } from '../firebase/statsGlobal'
@@ -228,12 +228,20 @@ describe('ResumenSesion — edición de serie (stepper)', () => {
 
 // ---------------------------------------------------------------------------
 
+// Resuelve cada getDoc por colección en vez de por orden de llamada: los
+// mockResolvedValueOnce encadenados son frágiles (el componente lee el
+// programa solo a veces, y clearAllMocks no vacía la cola de Once).
+function mockFirestorePorColeccion(docsPorColeccion) {
+  doc.mockImplementation((_db, coleccion, id) => ({ coleccion, id }))
+  getDoc.mockImplementation(async (ref) => {
+    const data = docsPorColeccion[ref.coleccion]
+    return { exists: () => data !== undefined, data: () => data }
+  })
+}
+
 describe('ResumenSesion — el día ya no existe (programa eliminado)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // clearAllMocks no vacía la cola de mockResolvedValueOnce: sin esto, los
-    // sobrantes de los describes anteriores se cuelan en este getDoc.
-    getDoc.mockReset()
     localStorage.clear()
     getRegistrosSesion.mockResolvedValue([
       { id: 'r1', ejercicioId: 'e1', nombreEjercicio: 'Press Banca', grupoMuscular: 'Pecho', numeroSerie: 1, pesoUsado: 80, repsHechas: 8 },
@@ -241,18 +249,49 @@ describe('ResumenSesion — el día ya no existe (programa eliminado)', () => {
   })
 
   it('cae al diaNombre denormalizado del resumen en vez de dejar el título vacío', async () => {
-    getDoc
-      .mockResolvedValueOnce({
-        exists: () => true,
-        data: () => ({
-          diaId: 'dia-borrado', nota: '', completada: true,
-          resumen: { ejercicios: [], volumenTotal: 640, diaNombre: 'Push', programaNombre: 'Fuerza' },
-        }),
-      })
-      .mockResolvedValueOnce({ exists: () => false, data: () => undefined })
+    mockFirestorePorColeccion({
+      sesiones: {
+        diaId: 'dia-borrado', nota: '', completada: true,
+        resumen: { ejercicios: [], volumenTotal: 640, diaNombre: 'Push', programaNombre: 'Fuerza' },
+      },
+      // dias: ausente — el programa fue eliminado.
+    })
 
     renderResumen()
 
     expect(await screen.findByRole('heading', { name: 'Push' })).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('ResumenSesion — el mismo ejercicio repetido en el día', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    // "Press Banca" dos veces en el mismo día: dos entradas de ejerciciosDia
+    // distintas (ej1 y ej3) con el mismo nombre.
+    getRegistrosSesion.mockResolvedValue([
+      { id: 'r1', ejercicioId: 'ej1', nombreEjercicio: 'Press Banca', grupoMuscular: 'Pecho', numeroSerie: 1, pesoUsado: 80, repsHechas: 8 },
+      { id: 'r2', ejercicioId: 'ej1', nombreEjercicio: 'Press Banca', grupoMuscular: 'Pecho', numeroSerie: 2, pesoUsado: 82, repsHechas: 7 },
+      { id: 'r3', ejercicioId: 'ej3', nombreEjercicio: 'Press Banca', grupoMuscular: 'Pecho', numeroSerie: 1, pesoUsado: 60, repsHechas: 12 },
+    ])
+    mockFirestorePorColeccion({
+      sesiones: {
+        diaId: 'dia1', nota: '', completada: true,
+        resumen: { ejercicios: [], volumenTotal: 100, diaNombre: 'Push', programaNombre: 'Fuerza' },
+      },
+      dias: { nombre: 'Push', programaId: 'prog1' },
+      programas: { nombre: 'Fuerza' },
+    })
+  })
+
+  it('lo muestra como dos bloques separados, no fusionado en uno', async () => {
+    const { container } = renderResumen()
+
+    await screen.findByRole('heading', { name: 'Push' })
+    expect(container.querySelectorAll('.resumen-ejercicio-card')).toHaveLength(2)
+    // Y el contador "Ejercicios" cuenta los dos, igual que el resumen guardado.
+    expect(screen.getAllByText('Press Banca')).toHaveLength(2)
   })
 })

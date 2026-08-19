@@ -220,9 +220,13 @@ export default function ResumenSesion() {
     notaTimeoutRef.current = setTimeout(() => setNotaGuardada(false), 1800)
   }
 
+  // Por ejercicioId, igual que buildResumen: un día puede repetir el mismo
+  // ejercicio (al principio y al final es una rutina normal), y agrupando por
+  // nombre las dos entradas se fusionaban en una card con las series
+  // renumeradas 1,2,3,1,2,3. El nombre queda como etiqueta.
   const porEjercicio = useMemo(() => registros.reduce((acc, r) => {
-    if (!acc[r.nombreEjercicio]) acc[r.nombreEjercicio] = []
-    acc[r.nombreEjercicio].push(r)
+    if (!acc[r.ejercicioId]) acc[r.ejercicioId] = { nombre: r.nombreEjercicio, series: [] }
+    acc[r.ejercicioId].series.push(r)
     return acc
   }, {}), [registros])
 
@@ -303,9 +307,9 @@ export default function ResumenSesion() {
 
       <div className={isDesktop ? 'resumen-desktop-grid' : undefined}>
         <div className="resumen-ejercicios">
-          {Object.entries(porEjercicio).map(([nombre, series], i) => (
+          {Object.entries(porEjercicio).map(([ejercicioId, { nombre, series }], i) => (
             <motion.div
-              key={nombre}
+              key={ejercicioId}
               className="card resumen-ejercicio-card"
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
