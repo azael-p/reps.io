@@ -118,6 +118,13 @@ export default function SesionActiva() {
       }
     }
 
+    // Un día sin ejercicios cae al EmptyState y la sesión queda SIN completar.
+    // Antes entraba en la guarda de abajo (el for no corre, restoredEjIdx
+    // queda en 0, y 0 >= 0 mandaba al resumen), que la completaba vacía y la
+    // dejaba en el historial, en el calendario y en la racha sin una sola
+    // serie hecha.
+    if (ejs.length === 0) { setCargando(false); return }
+
     if (restoredEjIdx >= ejs.length) {
       navigate(`/sesion/${sesionId}/resumen`)
       return

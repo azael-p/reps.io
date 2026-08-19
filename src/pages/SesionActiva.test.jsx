@@ -414,3 +414,22 @@ describe('SesionActiva — corrección no lineal (editar una serie ya completada
     expect(editarRegistro).not.toHaveBeenCalled()
   })
 })
+
+// ---------------------------------------------------------------------------
+
+describe('SesionActiva — día sin ejercicios', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'dia1', completada: false }) })
+    getEjerciciosDia.mockResolvedValue([])
+    getRegistrosSesion.mockResolvedValue([])
+  })
+
+  it('muestra el EmptyState y NO manda al resumen (que completaría una sesión vacía)', async () => {
+    renderSesion()
+
+    expect(await screen.findByText('Este día no tiene ejercicios')).toBeInTheDocument()
+    expect(screen.queryByTestId('resumen')).not.toBeInTheDocument()
+  })
+})
