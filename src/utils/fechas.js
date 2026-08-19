@@ -5,11 +5,19 @@ export function toDate(x) {
   return typeof x.toDate === 'function' ? x.toDate() : new Date(x)
 }
 
+// Medianoche local del día al que pertenece una fecha. Mismo criterio que
+// epochDia() en statsGlobal.js y que calcularStreaks() en stats.js.
+const inicioDelDia = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+
 // "hoy" / "ayer" / "hace N días" / "hace N sem" / "hace N mes".
 export function tiempoRelativo(timestamp) {
   if (!timestamp) return ''
   const fecha = toDate(timestamp)
-  const dias = Math.floor((Date.now() - fecha.getTime()) / 86400000)
+  // Días de CALENDARIO, no milisegundos absolutos: entrenar ayer a las 20:00
+  // y mirar la app hoy a las 9:00 son 13 h, y con un delta absoluto eso daba
+  // "hoy". El round absorbe las horas de más o de menos de los cambios de
+  // horario (un día local puede durar 23 o 25 h).
+  const dias = Math.round((inicioDelDia(new Date()) - inicioDelDia(fecha)) / 86400000)
   if (dias === 0) return 'hoy'
   if (dias === 1) return 'ayer'
   if (dias < 7) return `hace ${dias} días`
