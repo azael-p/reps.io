@@ -15,11 +15,12 @@ vi.mock('firebase/firestore', () => ({
   query: vi.fn((...args) => args),
   where: vi.fn(),
   getDocs: vi.fn(),
+  getDoc: vi.fn(),
   writeBatch: vi.fn(() => mockBatch),
 }))
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { addDoc, getDocs, updateDoc, writeBatch, where } from 'firebase/firestore'
+import { addDoc, getDocs, getDoc, writeBatch, where } from 'firebase/firestore'
 import { getProgramas, crearPrograma, marcarParaEliminar, desmarcarParaEliminar, eliminarProgramaDefinitivo as eliminarPrograma, reordenarProgramas } from './programas'
 
 beforeEach(() => {
@@ -172,16 +173,53 @@ describe('getProgramas — soft-delete filter', () => {
 // ---------------------------------------------------------------------------
 
 describe('marcarParaEliminar / desmarcarParaEliminar', () => {
-  it('marcar setea eliminadoEn con un timestamp', async () => {
+  const mkDia = (id, data = {}) => ({ id, ref: { _id: id }, data: () => data })
+
+  it('marcar setea eliminadoEn con el mismo timestamp en el programa y sus días activos', async () => {
+    const dia1 = mkDia('dia1')
+    const dia2 = mkDia('dia2')
+    getDocs.mockResolvedValueOnce({ docs: [dia1, dia2] })
+
     const before = Date.now()
     await marcarParaEliminar('prog1')
-    const [, update] = updateDoc.mock.calls[0]
-    expect(update.eliminadoEn).toBeGreaterThanOrEqual(before)
+    const after = Date.now()
+
+    expect(writeBatch).toHaveBeenCalledOnce()
+    const programaUpdate = mockBatch.update.mock.calls.find(([ref]) => ref._id === 'prog1')[1]
+    expect(programaUpdate.eliminadoEn).toBeGreaterThanOrEqual(before)
+    expect(programaUpdate.eliminadoEn).toBeLessThanOrEqual(after)
+
+    const dia1Update = mockBatch.update.mock.calls.find(([ref]) => ref === dia1.ref)[1]
+    const dia2Update = mockBatch.update.mock.calls.find(([ref]) => ref === dia2.ref)[1]
+    expect(dia1Update.eliminadoEn).toBe(programaUpdate.eliminadoEn)
+    expect(dia2Update.eliminadoEn).toBe(programaUpdate.eliminadoEn)
+    expect(mockBatch.commit).toHaveBeenCalledOnce()
   })
 
-  it('desmarcar envía deleteField', async () => {
+  it('marcar no pisa el eliminadoEn de un día ya eliminado individualmente antes', async () => {
+    const diaYaEliminado = mkDia('dia1', { eliminadoEn: 111 })
+    getDocs.mockResolvedValueOnce({ docs: [diaYaEliminado] })
+
+    await marcarParaEliminar('prog1')
+
+    expect(mockBatch.update.mock.calls.some(([ref]) => ref === diaYaEliminado.ref)).toBe(false)
+    // solo se actualiza el programa
+    expect(mockBatch.update).toHaveBeenCalledTimes(1)
+  })
+
+  it('desmarcar restaura el programa y solo los días marcados en la misma cascada', async () => {
+    const diaDeLaCascada = mkDia('dia1', { eliminadoEn: 500 })
+    const diaEliminadoAntes = mkDia('dia2', { eliminadoEn: 999 })
+    getDoc.mockResolvedValueOnce({ data: () => ({ eliminadoEn: 500 }) })
+    getDocs.mockResolvedValueOnce({ docs: [diaDeLaCascada, diaEliminadoAntes] })
+
     await desmarcarParaEliminar('prog1')
-    const [, update] = updateDoc.mock.calls[0]
-    expect(update.eliminadoEn).toBe('__DELETE__')
+
+    const programaUpdate = mockBatch.update.mock.calls.find(([ref]) => ref._id === 'prog1')[1]
+    expect(programaUpdate.eliminadoEn).toBe('__DELETE__')
+    const dia1Update = mockBatch.update.mock.calls.find(([ref]) => ref === diaDeLaCascada.ref)
+    expect(dia1Update[1].eliminadoEn).toBe('__DELETE__')
+    expect(mockBatch.update.mock.calls.some(([ref]) => ref === diaEliminadoAntes.ref)).toBe(false)
+    expect(mockBatch.commit).toHaveBeenCalledOnce()
   })
 })
