@@ -65,10 +65,12 @@ export default function EjerciciosDia() {
   }
 
   async function guardarEdicion() {
-    if (!editReps || !editSeries || Number(editReps) < 1 || Number(editSeries) < 1) { setErrorMsg('Series y reps deben ser mayores a 0'); return }
+    const seriesNum = Number(editSeries)
+    const repsNum = Number(editReps)
+    if (!editReps || !editSeries || Number.isNaN(seriesNum) || Number.isNaN(repsNum) || seriesNum < 1 || repsNum < 1) { setErrorMsg('Series y reps deben ser mayores a 0'); return }
     setErrorMsg('')
     try {
-      await editarEjercicioDia(editando.id, { nombre: editando.nombre, seriesEsperadas: Number(editSeries), repsEsperadas: Number(editReps) })
+      await editarEjercicioDia(editando.id, { nombre: editando.nombre, seriesEsperadas: seriesNum, repsEsperadas: repsNum })
       show({ message: 'Ejercicio actualizado', variant: 'success' })
       setEditando(null)
     } catch (e) { console.error(e); setErrorMsg('Error al guardar. Intentá de nuevo.') }

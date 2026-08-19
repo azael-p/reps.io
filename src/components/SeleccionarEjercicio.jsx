@@ -111,12 +111,25 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
     return resultado.slice(0, MAX_SUGERENCIAS)
   }, [busqueda, grupoActivo, catalogo, fuse])
 
+  // Series/reps se resetean acá, no en el useEffect de arriba: son un
+  // setState directo (no dependen de nada async), así que el handler de
+  // selección es el lugar correcto — evita además re-disparar el efecto que
+  // maneja el pushState del historial por un cambio que no le compete.
+  function elegirEjercicio(e) {
+    setSeries('3')
+    setReps('10')
+    setErrorConfig('')
+    setEjercicioElegido(e)
+  }
+
   function confirmar() {
-    if (!series || !reps || Number(series) < 1 || Number(reps) < 1) {
+    const seriesNum = Number(series)
+    const repsNum = Number(reps)
+    if (!series || !reps || Number.isNaN(seriesNum) || Number.isNaN(repsNum) || seriesNum < 1 || repsNum < 1) {
       setErrorConfig('Series y reps deben ser mayores a 0')
       return
     }
-    onSeleccionar({ nombre: ejercicioElegido.nombre, grupoMuscular: ejercicioElegido.grupoMuscular, esCustom: false, catalogoId: ejercicioElegido.id, seriesEsperadas: Number(series), repsEsperadas: Number(reps) })
+    onSeleccionar({ nombre: ejercicioElegido.nombre, grupoMuscular: ejercicioElegido.grupoMuscular, esCustom: false, catalogoId: ejercicioElegido.id, seriesEsperadas: seriesNum, repsEsperadas: repsNum })
   }
 
   if (ejercicioElegido) {
@@ -253,7 +266,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
                   key={e.id}
                   layout
                   className="card picker-ejercicio-item"
-                  onClick={() => setEjercicioElegido(e)}
+                  onClick={() => elegirEjercicio(e)}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
