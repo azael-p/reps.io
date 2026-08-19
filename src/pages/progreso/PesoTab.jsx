@@ -29,7 +29,7 @@ export default function PesoTab({ cargandoPeso, historialPeso, onRegistrarPeso }
       ) : (
         <>
           <motion.div
-            className="progreso-chart-card"
+            className="card progreso-chart-card"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
           >
@@ -77,7 +77,7 @@ export default function PesoTab({ cargandoPeso, historialPeso, onRegistrarPeso }
           </motion.div>
           <div style={{ padding: '0 16px 24px' }}>
             <motion.button
-              className="progreso-registrar-peso-btn"
+              className="card progreso-registrar-peso-btn"
               onClick={onRegistrarPeso}
               whileTap={{ scale: 0.97 }}
             >

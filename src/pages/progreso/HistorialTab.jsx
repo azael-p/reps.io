@@ -24,7 +24,7 @@ export default function HistorialTab({
         <EmptyState mensaje="Cero sesiones. ¿La primera?" icon="📊" sub="Empezá a entrenar para ver tu progreso acá" action={{ label: 'Empezar entrenamiento', onClick: () => navigate('/entrenar') }} />
       ) : (
         <>
-          <div className="progreso-frecuencia-card">
+          <div className="card progreso-frecuencia-card">
             <p className="progreso-sec-label">Frecuencia semanal</p>
             <div className="progreso-barras">
               {frec.map(({ semana, dias }, i) => (

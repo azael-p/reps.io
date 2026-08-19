@@ -842,7 +842,7 @@ select:focus-visible {
   left: 68px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--r-md);
   padding: 6px 12px;
   font-size: 0.85rem;
   font-weight: 600;
@@ -951,15 +951,11 @@ select:focus-visible {
 }
 .picker-lista { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 0 16px; }
 .picker-ejercicio-item {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-top: 1px solid var(--highlight);
   color: var(--text);
   padding: 14px 16px;
   display: flex; justify-content: space-between; align-items: center;
   text-align: left;
   border-radius: var(--r-md);
-  box-shadow: var(--shadow-sm);
   gap: 12px;
 }
 .picker-ejercicio-nombre { font-size: 0.98rem; font-weight: 500; }
@@ -999,9 +995,6 @@ select:focus-visible {
 .resumen-titulo { margin: 2px 0 0; font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
 .resumen-stats {
   display: flex; margin: 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
   padding: 22px 0;
   box-shadow: var(--shadow-md);
 }
@@ -1244,11 +1237,10 @@ select:focus-visible {
 .login-tagline-lg { color: var(--text-mute); font-size: 1rem; margin: 0; }
 .login-google-btn {
   width: 100%; padding: 15px 20px;
-  background: var(--bg-card); color: var(--text);
-  border: 1px solid var(--border); border-radius: var(--r-lg);
+  color: var(--text);
   display: flex; align-items: center; justify-content: center; gap: 12px;
   font-size: 1rem; font-weight: 600;
-  box-shadow: var(--shadow-sm); cursor: pointer;
+  cursor: pointer;
 }
 .login-error { color: var(--danger); font-size: 0.88rem; text-align: center; margin-bottom: 10px; }
 .login-spinner {
@@ -1307,11 +1299,8 @@ select:focus-visible {
 .progreso-desktop-col { display: flex; flex-direction: column; gap: 24px; }
 .progreso-desktop-col-narrow { display: flex; flex-direction: column; gap: 24px; }
 .progreso-desktop-panel {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
   border-radius: var(--r-xl);
   padding: 20px;
-  box-shadow: var(--shadow-sm);
 }
 .progreso-desktop-panel-titulo {
   margin: 0 0 16px;
@@ -1347,14 +1336,7 @@ select:focus-visible {
   text-transform: uppercase; letter-spacing: 0.07em;
   font-weight: 700;
 }
-.progreso-frecuencia-card {
-  margin: 16px;
-  padding: 18px 16px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-sm);
-}
+.progreso-frecuencia-card { margin: 16px; padding: 18px 16px 14px; }
 .progreso-barras { display: flex; gap: 8px; align-items: flex-end; height: 120px; padding-top: 20px; }
 .progreso-barra-item { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; height: 100%; }
 .progreso-barra-wrap { width: 100%; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
@@ -1412,9 +1394,6 @@ select:focus-visible {
 .progreso-chart-card {
   margin: 8px 16px 24px;
   padding: 18px 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
   box-shadow: var(--shadow-md);
 }
 .progreso-chart-titulo { margin: 0; font-size: 1rem; color: var(--text); font-weight: 700; letter-spacing: -0.01em; }
@@ -1435,9 +1414,6 @@ select:focus-visible {
 .progreso-streak-card {
   display: flex; align-items: center; justify-content: center; gap: 20px;
   padding: 32px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-top: 1px solid var(--highlight);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-md);
 }
@@ -1458,22 +1434,14 @@ select:focus-visible {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 20px;
   margin-top: 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-top: 1px solid var(--highlight);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-sm);
 }
 .progreso-streak-meta-num { font-size: 1.6rem; font-weight: 800; color: var(--text); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .progreso-streak-meta-label { font-size: 0.7rem; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700; }
 .progreso-registrar-peso-btn {
   width: 100%; padding: 14px;
-  background: var(--bg-card);
   color: var(--blue);
   border: 1px solid rgba(133, 183, 235, 0.3);
-  border-radius: var(--r-lg);
   font-size: 0.95rem; font-weight: 600;
-  box-shadow: var(--shadow-sm);
 }
 .progreso-modal-titulo { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.25; }
 .progreso-peso-modal-row { display: flex; align-items: center; gap: 10px; }

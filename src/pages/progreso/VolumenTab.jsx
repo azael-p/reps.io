@@ -9,7 +9,7 @@ export default function VolumenTab({ datosVolumen }) {
         <EmptyState mensaje="No hay datos de volumen todavía." icon="📊" />
       ) : (
         <motion.div
-          className="progreso-chart-card"
+          className="card progreso-chart-card"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
         >

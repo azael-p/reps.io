@@ -146,7 +146,7 @@ export default function Login() {
                 </motion.p>
               )}
               <motion.button
-                className="login-google-btn"
+                className="card login-google-btn"
                 style={{ opacity: procesando ? 0.6 : 1 }}
                 onClick={handleGoogle}
                 disabled={procesando}
@@ -243,7 +243,7 @@ export default function Login() {
             </motion.p>
           )}
           <motion.button
-            className="login-google-btn"
+            className="card login-google-btn"
             style={{ opacity: procesando ? 0.6 : 1 }}
             onClick={handleGoogle}
             disabled={procesando}

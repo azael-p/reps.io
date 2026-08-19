@@ -244,7 +244,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
                 <motion.button
                   key={e.id}
                   layout
-                  className="picker-ejercicio-item"
+                  className="card picker-ejercicio-item"
                   onClick={() => setEjercicioElegido(e)}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}

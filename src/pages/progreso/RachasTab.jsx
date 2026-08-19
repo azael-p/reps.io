@@ -13,7 +13,7 @@ export default function RachasTab({ resumenGlobal, streaks }) {
       ) : (
         <>
           <motion.div
-            className="progreso-streak-card"
+            className="card progreso-streak-card"
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 20 }}
@@ -33,7 +33,7 @@ export default function RachasTab({ resumenGlobal, streaks }) {
           </motion.div>
 
           <motion.div
-            className="progreso-streak-meta"
+            className="card progreso-streak-meta"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}

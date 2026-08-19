@@ -273,7 +273,7 @@ export default function ResumenSesion() {
       </motion.div>
 
       <motion.div
-        className="resumen-stats"
+        className="card resumen-stats"
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.15, type: 'spring', stiffness: 220, damping: 22 }}

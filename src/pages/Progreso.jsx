@@ -303,25 +303,25 @@ export default function Progreso() {
         ) : (
           <div className="progreso-desktop-grid">
             <div className="progreso-desktop-col">
-              <div className="progreso-desktop-panel">
+              <div className="card progreso-desktop-panel">
                 <p className="progreso-desktop-panel-titulo">Evolución de ejercicios</p>
                 <LazyPanel minHeight={320}>{graficoContent}</LazyPanel>
               </div>
-              <div className="progreso-desktop-panel">
+              <div className="card progreso-desktop-panel">
                 <p className="progreso-desktop-panel-titulo">Volumen total</p>
                 <LazyPanel minHeight={280}>{volumenContent}</LazyPanel>
               </div>
-              <div className="progreso-desktop-panel">
+              <div className="card progreso-desktop-panel">
                 <p className="progreso-desktop-panel-titulo">Peso corporal</p>
                 {pesoContent}
               </div>
             </div>
             <div className="progreso-desktop-col-narrow">
-              <div className="progreso-desktop-panel">
+              <div className="card progreso-desktop-panel">
                 <p className="progreso-desktop-panel-titulo">Rachas</p>
                 <LazyPanel minHeight={200}>{rachasContent}</LazyPanel>
               </div>
-              <div className="progreso-desktop-panel">
+              <div className="card progreso-desktop-panel">
                 <p className="progreso-desktop-panel-titulo">Historial de sesiones</p>
                 {historialContent}
               </div>
@@ -331,7 +331,7 @@ export default function Progreso() {
       ) : (
         <>
           {!cargando && (
-            <div className="resumen-stats" data-testid="progreso-resumen-mini">
+            <div className="card resumen-stats" data-testid="progreso-resumen-mini">
               <div className="resumen-stat">
                 <span className="resumen-stat-num">{streaks.actual}</span>
                 <span className="resumen-stat-label">Racha actual</span>

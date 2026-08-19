@@ -75,7 +75,7 @@ export default function GraficoTab({
             <EmptyState mensaje="No hay registros para este ejercicio." icon="📉" />
           ) : (
             <motion.div
-              className="progreso-chart-card"
+              className="card progreso-chart-card"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
             >
