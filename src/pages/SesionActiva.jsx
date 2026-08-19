@@ -272,8 +272,12 @@ export default function SesionActiva() {
     if (volumenSerieActual > 0 && statsCache) {
       const statsEj = statsCache.find(st => esMismoEjercicio(st, ejercicio))
       const volumenPrevio = (statsEj?.prVolumen && statsEj.prVolumen.sesionId !== sesionId) ? statsEj.prVolumen.volumen : 0
+      // Por identidad del ejercicio, no por ejIdx: el mismo ejercicio puede
+      // repetirse en dos posiciones distintas del día (ver el fix análogo en
+      // ResumenSesion.jsx), y comparar solo por posición se perdía una mejora
+      // ya lograda en la otra aparición dentro de esta misma sesión.
       const volumenEnEstaSesion = Math.max(0, ...historial
-        .filter(h => h.ejIdx === ejIdx)
+        .filter(h => esMismoEjercicio(ejercicios[h.ejIdx], ejercicio))
         .map(h => (parsePeso(h.pesoUsado) || 0) * (Number(h.repsHechas) || 0)))
       if (volumenSerieActual > Math.max(volumenPrevio, volumenEnEstaSesion)) {
         show({ variant: 'success', message: `🏆 Nuevo récord de volumen en ${ejercicio.nombre}: ${pesoUsado || 0}kg × ${repsHechas}`, duration: 4000 })

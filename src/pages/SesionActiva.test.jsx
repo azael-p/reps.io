@@ -378,6 +378,39 @@ describe('SesionActiva — festejo en vivo de récord de volumen (peso × reps)'
       }))
     })
   })
+
+  it('el mismo ejercicio repetido en dos posiciones del día se compara por identidad, no por posición', async () => {
+    // Press Banca al principio (ejIdx 0) y al final (ejIdx 1) del día, cada
+    // uno con un ejercicioId distinto pero el mismo catalogoId.
+    const PRESS_INICIO = { id: 'ej-a', catalogoId: 'press-banca-plano', nombre: 'Press Banca', grupoMuscular: 'Pecho', seriesEsperadas: 1, repsEsperadas: 8, orden: 1 }
+    const PRESS_FINAL = { id: 'ej-b', catalogoId: 'press-banca-plano', nombre: 'Press Banca', grupoMuscular: 'Pecho', seriesEsperadas: 1, repsEsperadas: 8, orden: 2 }
+    getEjerciciosDia.mockResolvedValue([PRESS_INICIO, PRESS_FINAL])
+    getStatsEjerciciosConFallback.mockResolvedValue([])
+    const user = userEvent.setup()
+    renderSesion()
+    await waitFor(() => expect(getEjerciciosDia).toHaveBeenCalled())
+
+    // ejIdx 0: única serie de ese ejercicio (seriesEsperadas 1) — el botón
+    // dice "Siguiente ejercicio" porque hay otro ejercicio después.
+    // 80kg × 8 = 640, primera vez, dispara (trivial, nada que superar).
+    await user.clear(inputPeso())
+    await user.type(inputPeso(), '80')
+    await user.click(screen.getByRole('button', { name: /Siguiente ejercicio/ }))
+    await waitFor(() => expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Nuevo récord de volumen') })))
+    mockShow.mockClear()
+
+    // ejIdx 1, MISMO ejercicio (último del día → "Finalizar entrenamiento"):
+    // 50kg × 8 = 400, menos que los 640 ya logrados en ejIdx 0 — no debe
+    // disparar, aunque agrupar por ejIdx en vez de por identidad lo haría
+    // (nada completado todavía en ejIdx 1).
+    await screen.findByRole('button', { name: /Finalizar entrenamiento/ })
+    await user.clear(inputPeso())
+    await user.type(inputPeso(), '50')
+    await user.click(screen.getByRole('button', { name: /Finalizar entrenamiento/ }))
+
+    await waitFor(() => expect(agregarRegistro).toHaveBeenCalledTimes(2))
+    expect(mockShow).not.toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('Nuevo récord de volumen') }))
+  })
 })
 
 // ---------------------------------------------------------------------------
