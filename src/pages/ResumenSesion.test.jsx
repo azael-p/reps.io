@@ -225,3 +225,34 @@ describe('ResumenSesion — edición de serie (stepper)', () => {
     expect(screen.getByDisplayValue('1')).toBeTruthy()
   })
 })
+
+// ---------------------------------------------------------------------------
+
+describe('ResumenSesion — el día ya no existe (programa eliminado)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // clearAllMocks no vacía la cola de mockResolvedValueOnce: sin esto, los
+    // sobrantes de los describes anteriores se cuelan en este getDoc.
+    getDoc.mockReset()
+    localStorage.clear()
+    getRegistrosSesion.mockResolvedValue([
+      { id: 'r1', ejercicioId: 'e1', nombreEjercicio: 'Press Banca', grupoMuscular: 'Pecho', numeroSerie: 1, pesoUsado: 80, repsHechas: 8 },
+    ])
+  })
+
+  it('cae al diaNombre denormalizado del resumen en vez de dejar el título vacío', async () => {
+    getDoc
+      .mockResolvedValueOnce({
+        exists: () => true,
+        data: () => ({
+          diaId: 'dia-borrado', nota: '', completada: true,
+          resumen: { ejercicios: [], volumenTotal: 640, diaNombre: 'Push', programaNombre: 'Fuerza' },
+        }),
+      })
+      .mockResolvedValueOnce({ exists: () => false, data: () => undefined })
+
+    renderResumen()
+
+    expect(await screen.findByRole('heading', { name: 'Push' })).toBeInTheDocument()
+  })
+})

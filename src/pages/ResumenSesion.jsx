@@ -100,7 +100,12 @@ export default function ResumenSesion() {
       setRegistros(regs)
       const diaSnap = await getDoc(doc(db, 'dias', sesionData.diaId))
       const diaData = diaSnap.data()
-      const diaNombreVal = diaData?.nombre ?? ''
+      // El nombre denormalizado del resumen es el fallback cuando el día ya
+      // no existe (programa eliminado) — para eso se guarda. Sin él, el
+      // título de la pantalla quedaba vacío, y por la rama de reparación de
+      // más abajo ese '' se persistía en el resumen, perdiendo el nombre
+      // para siempre. Mismo orden de fallback que enrichSesionesConPrograma.
+      const diaNombreVal = diaData?.nombre ?? sesionData.resumen?.diaNombre ?? ''
       setDiaNombre(diaNombreVal)
 
       // Si la sesión ya lo tiene denormalizado, no se lee el programa: en el
