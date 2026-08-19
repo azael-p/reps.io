@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { getDias, crearDia, editarDia, marcarDiaParaEliminar, desmarcarDiaParaEliminar, eliminarDiaDefinitivo, reordenarDias } from '../firebase/dias'
@@ -28,18 +28,28 @@ export default function Dias() {
   const [errorMsg, setErrorMsg] = useState('')
   const [errorCarga, setErrorCarga] = useState(false)
 
+  const cargarSeqRef = useRef(0)
+
   const cargar = useCallback(async () => {
+    const seq = ++cargarSeqRef.current
     try {
       const [snap, data] = await Promise.all([
         getDoc(doc(db, 'programas', programaId)),
         getDias(programaId),
       ])
+      // Una llamada más nueva (pull-to-refresh, crear/editar/eliminar) ya
+      // está en vuelo o ya resolvió: no pisar su resultado con esta
+      // respuesta vieja.
+      if (seq !== cargarSeqRef.current) return
       if (!snap.exists()) { navigate('/programas'); return }
       setPrograma({ id: snap.id, ...snap.data() })
       setDias(data)
       setErrorCarga(false)
-    } catch (e) { console.error(e); setErrorCarga(true) }
-    setCargando(false)
+    } catch (e) {
+      if (seq !== cargarSeqRef.current) return
+      console.error(e); setErrorCarga(true)
+    }
+    if (seq === cargarSeqRef.current) setCargando(false)
   }, [programaId, navigate])
 
   useEffect(() => { cargar() }, [cargar])

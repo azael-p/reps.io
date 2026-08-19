@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useUser } from '../context/UserContext'
@@ -26,12 +26,23 @@ export default function Programas() {
   const [errorMsg, setErrorMsg] = useState('')
   const [errorCarga, setErrorCarga] = useState(false)
 
+  const cargarSeqRef = useRef(0)
+
   const cargar = useCallback(async () => {
+    const seq = ++cargarSeqRef.current
     try {
-      setProgramas(await getProgramas(usuario.id))
+      const data = await getProgramas(usuario.id)
+      // Una llamada más nueva (pull-to-refresh, crear/editar/eliminar) ya
+      // está en vuelo o ya resolvió: no pisar su resultado con esta
+      // respuesta vieja.
+      if (seq !== cargarSeqRef.current) return
+      setProgramas(data)
       setErrorCarga(false)
-    } catch (e) { console.error(e); setErrorCarga(true) }
-    setCargando(false)
+    } catch (e) {
+      if (seq !== cargarSeqRef.current) return
+      console.error(e); setErrorCarga(true)
+    }
+    if (seq === cargarSeqRef.current) setCargando(false)
   }, [usuario])
 
   useEffect(() => { cargar() }, [cargar])

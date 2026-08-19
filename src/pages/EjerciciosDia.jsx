@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { getEjerciciosDia, agregarEjercicioDia, editarEjercicioDia, marcarEjercicioParaEliminar, desmarcarEjercicioParaEliminar, eliminarEjercicioDefinitivo, reordenarEjercicios } from '../firebase/ejerciciosDia'
@@ -28,20 +28,30 @@ export default function EjerciciosDia() {
   const [errorMsg, setErrorMsg] = useState('')
   const [errorCarga, setErrorCarga] = useState(false)
 
+  const cargarSeqRef = useRef(0)
+
   const cargar = useCallback(async () => {
+    const seq = ++cargarSeqRef.current
     try {
       const [diaSnap, data, progSnap] = await Promise.all([
         getDoc(doc(db, 'dias', diaId)),
         getEjerciciosDia(diaId),
         getDoc(doc(db, 'programas', programaId)),
       ])
+      // Una llamada más nueva (pull-to-refresh, agregar/editar/eliminar) ya
+      // está en vuelo o ya resolvió: no pisar su resultado con esta
+      // respuesta vieja.
+      if (seq !== cargarSeqRef.current) return
       if (!diaSnap.exists()) { navigate(`/programas/${programaId}`); return }
       setDia({ id: diaSnap.id, ...diaSnap.data() })
       setProgramaNombre(progSnap.data()?.nombre ?? '')
       setEjercicios(data)
       setErrorCarga(false)
-    } catch (e) { console.error(e); setErrorCarga(true) }
-    setCargando(false)
+    } catch (e) {
+      if (seq !== cargarSeqRef.current) return
+      console.error(e); setErrorCarga(true)
+    }
+    if (seq === cargarSeqRef.current) setCargando(false)
   }, [diaId, programaId, navigate])
 
   useEffect(() => { cargar() }, [cargar])
