@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parsePeso, sanitizarPeso } from './stats'
+import { parsePeso, sanitizarPeso, lunesDeSemana, volumenSemanal, sesionesEsteMes, prMasReciente } from './stats'
 
 // Los campos de peso usan type="text" + inputMode="decimal" en vez de
 // type="number": con type="number" el navegador descartaba "82," y el estado
@@ -52,5 +52,59 @@ describe('sanitizarPeso + parsePeso', () => {
 
   it('el peso entero sigue funcionando igual', () => {
     expect(parsePeso(sanitizarPeso('60'))).toBe(60)
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('volumenSemanal', () => {
+  it('suma el volumen de esta semana y de la anterior por separado', () => {
+    const lunesActual = lunesDeSemana(new Date()).getTime()
+    const lunesAnterior = lunesActual - 7 * 86400000
+    const volumenPorSesion = [
+      { fecha: lunesActual + 86400000, volumen: 500 },
+      { fecha: lunesActual + 2 * 86400000, volumen: 300 },
+      { fecha: lunesAnterior + 86400000, volumen: 1000 },
+    ]
+    expect(volumenSemanal(volumenPorSesion)).toEqual({ actual: 800, anterior: 1000 })
+  })
+
+  it('sin registros, ambos en 0', () => {
+    expect(volumenSemanal([])).toEqual({ actual: 0, anterior: 0 })
+  })
+
+  it('ignora semanas más viejas que la anterior', () => {
+    const hace3Semanas = lunesDeSemana(new Date()).getTime() - 21 * 86400000
+    expect(volumenSemanal([{ fecha: hace3Semanas, volumen: 999 }])).toEqual({ actual: 0, anterior: 0 })
+  })
+})
+
+describe('sesionesEsteMes', () => {
+  it('cuenta solo los epochs del mes calendario actual', () => {
+    const hoy = new Date()
+    const esteMes = new Date(hoy.getFullYear(), hoy.getMonth(), 5).getTime()
+    const mesPasado = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 5).getTime()
+    expect(sesionesEsteMes([esteMes, mesPasado])).toBe(1)
+  })
+
+  it('sin días entrenados, devuelve 0', () => {
+    expect(sesionesEsteMes([])).toBe(0)
+    expect(sesionesEsteMes(undefined)).toBe(0)
+  })
+})
+
+describe('prMasReciente', () => {
+  it('devuelve el ejercicio con el pr.fecha más reciente', () => {
+    const statsEjercicios = [
+      { nombre: 'Press Banca', pr: { maxPeso: 80, fecha: 1000 } },
+      { nombre: 'Sentadilla', pr: { maxPeso: 102.5, fecha: 2000 } },
+      { nombre: 'Peso Muerto', pr: null },
+    ]
+    expect(prMasReciente(statsEjercicios)).toEqual({ nombre: 'Sentadilla', maxPeso: 102.5, fecha: 2000 })
+  })
+
+  it('sin ningún PR todavía, devuelve null', () => {
+    expect(prMasReciente([{ nombre: 'X', pr: null }])).toBeNull()
+    expect(prMasReciente([])).toBeNull()
   })
 })

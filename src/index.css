@@ -1336,6 +1336,29 @@ select:focus-visible {
   text-transform: uppercase; letter-spacing: 0.07em;
   font-weight: 700;
 }
+/* ---- "De un vistazo": racha / volumen semana / sesiones / PR reciente ---- */
+.progreso-dash-wrap { padding: 16px 16px 4px; display: flex; flex-direction: column; gap: 10px; }
+.progreso-dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.progreso-dash-tile { padding: 16px; display: flex; flex-direction: column; gap: 5px; min-height: 104px; border-radius: var(--r-xl); }
+.progreso-dash-tile-header { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+.progreso-dash-tile-icon { width: 14px; height: 14px; color: var(--text-dim); flex-shrink: 0; }
+.progreso-dash-tile-label { font-size: 0.64rem; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+.progreso-dash-streak-row { display: flex; align-items: baseline; gap: 6px; }
+.progreso-dash-streak-num {
+  font-size: 2.1rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, #f0997b, #ffd166);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.progreso-dash-fire { font-size: 1.3rem; }
+.progreso-dash-num { font-size: 1.65rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; }
+.progreso-dash-delta { display: flex; align-items: center; gap: 2px; font-size: 0.78rem; font-weight: 700; }
+.progreso-dash-delta--up { color: var(--green); }
+.progreso-dash-delta--down { color: var(--danger); }
+.progreso-dash-sub { font-size: 0.7rem; color: var(--text-dim); }
+.progreso-dash-pr-name { font-size: 0.92rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+.progreso-dash-pr-val { font-size: 1.3rem; font-weight: 800; color: var(--orange); letter-spacing: -0.02em; line-height: 1; }
+
 .progreso-frecuencia-card { margin: 16px; padding: 18px 16px 14px; }
 .progreso-barras { display: flex; gap: 8px; align-items: flex-end; height: 120px; padding-top: 20px; }
 .progreso-barra-item { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; height: 100%; }

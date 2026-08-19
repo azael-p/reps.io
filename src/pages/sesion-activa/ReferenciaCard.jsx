@@ -1,16 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react'
-
-function tiempoRelativo(timestamp) {
-  if (!timestamp) return ''
-  const ms = timestamp?.toMillis?.() ?? new Date(timestamp).getTime()
-  const diff = Date.now() - ms
-  const dias = Math.floor(diff / 86400000)
-  if (dias === 0) return 'hoy'
-  if (dias === 1) return 'ayer'
-  if (dias < 7) return `hace ${dias} días`
-  if (dias < 30) return `hace ${Math.floor(dias / 7)} sem`
-  return `hace ${Math.floor(dias / 30)} mes`
-}
+import { tiempoRelativo } from '../../utils/fechas'
 
 // Bloque destacado con el dato puntual de la serie actual (si esa sesión de
 // referencia llegó a tener esa misma serie) — lo primero que importa entre

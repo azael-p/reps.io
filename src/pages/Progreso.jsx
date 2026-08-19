@@ -12,8 +12,8 @@ import PullToRefresh from '../components/PullToRefresh'
 import LazyPanel from '../components/LazyPanel'
 import { useDesktop } from '../hooks/useDesktop'
 import { useToast } from '../components/Toast'
-import { frecuenciaSemanal, calcularStreaks, parsePeso } from '../utils/stats'
-import { toDate } from '../utils/fechas'
+import { frecuenciaSemanal, calcularStreaks, volumenSemanal, sesionesEsteMes, prMasReciente, parsePeso } from '../utils/stats'
+import { toDate, tiempoRelativo } from '../utils/fechas'
 import { formatFecha, formatFechaCorta } from './progreso/format'
 import HeaderProgreso from './progreso/HeaderProgreso'
 import HistorialTab from './progreso/HistorialTab'
@@ -155,6 +155,22 @@ export default function Progreso() {
   const streaks = useMemo(
     () => calcularStreaks(resumenGlobal?.diasEntrenados ?? []),
     [resumenGlobal]
+  )
+
+  // "De un vistazo" (mobile): volumen de esta semana vs. la anterior,
+  // sesiones del mes y el PR más reciente — todo derivado de datos que
+  // cargar() ya trae, sin lecturas nuevas.
+  const volSemana = useMemo(
+    () => volumenSemanal(resumenGlobal?.volumenPorSesion ?? []),
+    [resumenGlobal]
+  )
+  const sesionesMes = useMemo(
+    () => sesionesEsteMes(resumenGlobal?.diasEntrenados ?? []),
+    [resumenGlobal]
+  )
+  const prReciente = useMemo(
+    () => prMasReciente(statsEjercicios ?? []),
+    [statsEjercicios]
   )
 
   // Peso corporal — sigue siendo Firestore (subcollección separada)
@@ -331,20 +347,74 @@ export default function Progreso() {
       ) : (
         <>
           {!cargando && (
-            <div className="card resumen-stats" data-testid="progreso-resumen-mini">
-              <div className="resumen-stat">
-                <span className="resumen-stat-num">{streaks.actual}</span>
-                <span className="resumen-stat-label">Racha actual</span>
-              </div>
-              <div className="resumen-stat-divider" />
-              <div className="resumen-stat">
-                <span className="resumen-stat-num">{streaks.maxima}</span>
-                <span className="resumen-stat-label">Mejor racha</span>
-              </div>
-              <div className="resumen-stat-divider" />
-              <div className="resumen-stat">
-                <span className="resumen-stat-num">{frec.at(-1)?.dias ?? 0}</span>
-                <span className="resumen-stat-label">Esta semana</span>
+            <div className="progreso-dash-wrap" data-testid="progreso-resumen-mini">
+              <p className="progreso-sec-label">De un vistazo</p>
+              <div className="progreso-dash-grid">
+                <div className="card progreso-dash-tile">
+                  <div className="progreso-dash-tile-header">
+                    <span className="progreso-dash-fire">🔥</span>
+                    <span className="progreso-dash-tile-label">Racha actual</span>
+                  </div>
+                  <div className="progreso-dash-streak-row">
+                    <span className="progreso-dash-streak-num">{streaks.actual}</span>
+                  </div>
+                  <span className="progreso-dash-sub">días seguidos</span>
+                </div>
+
+                <div className="card progreso-dash-tile">
+                  <div className="progreso-dash-tile-header">
+                    <svg className="progreso-dash-tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                      <polyline points="17 6 23 6 23 12" />
+                    </svg>
+                    <span className="progreso-dash-tile-label">Volumen semana</span>
+                  </div>
+                  <span className="progreso-dash-num">{Math.round(volSemana.actual).toLocaleString('es-UY')} kg</span>
+                  {volSemana.anterior > 0 && (
+                    <div className={`progreso-dash-delta ${volSemana.actual >= volSemana.anterior ? 'progreso-dash-delta--up' : 'progreso-dash-delta--down'}`}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        {volSemana.actual >= volSemana.anterior
+                          ? <><line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" /></>
+                          : <><line x1="12" y1="5" x2="12" y2="19" /><polyline points="5 12 12 19 19 12" /></>}
+                      </svg>
+                      {volSemana.actual >= volSemana.anterior ? '+' : ''}{Math.round(((volSemana.actual - volSemana.anterior) / volSemana.anterior) * 100)}%
+                    </div>
+                  )}
+                  <span className="progreso-dash-sub">vs {Math.round(volSemana.anterior).toLocaleString('es-UY')} kg sem. pasada</span>
+                </div>
+
+                <div className="card progreso-dash-tile">
+                  <div className="progreso-dash-tile-header">
+                    <svg className="progreso-dash-tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    <span className="progreso-dash-tile-label">Sesiones</span>
+                  </div>
+                  <span className="progreso-dash-num">{sesionesMes}</span>
+                  <span className="progreso-dash-sub">este mes</span>
+                </div>
+
+                <div className="card progreso-dash-tile">
+                  <div className="progreso-dash-tile-header">
+                    <svg className="progreso-dash-tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="8" r="6" />
+                      <path d="M8.5 13.5 7 22l5-3 5 3-1.5-8.5" />
+                    </svg>
+                    <span className="progreso-dash-tile-label">PR reciente</span>
+                  </div>
+                  {prReciente ? (
+                    <>
+                      <span className="progreso-dash-pr-name">{prReciente.nombre}</span>
+                      <span className="progreso-dash-pr-val">{prReciente.maxPeso} kg</span>
+                      <span className="progreso-dash-sub">{tiempoRelativo(prReciente.fecha)}</span>
+                    </>
+                  ) : (
+                    <span className="progreso-dash-sub">Todavía sin marcas</span>
+                  )}
+                </div>
               </div>
             </div>
           )}

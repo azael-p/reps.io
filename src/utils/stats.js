@@ -55,7 +55,7 @@ export function calcularStreaks(epochsDias) {
   return { actual, maxima }
 }
 
-const lunesDeSemana = (d) => {
+export const lunesDeSemana = (d) => {
   const lunes = new Date(d)
   lunes.setDate(d.getDate() - ((d.getDay() + 6) % 7))
   lunes.setHours(0, 0, 0, 0)
@@ -93,4 +93,44 @@ export function frecuenciaSemanal(sesiones) {
     semanas.push({ semana, dias: diasPorSemana[lunes.getTime()] ?? 0 })
   }
   return semanas
+}
+
+// Volumen (kg) de esta semana y de la semana anterior — mismo corte lunes a
+// domingo que frecuenciaSemanal, para el tile "Volumen semana" de Progreso.
+export function volumenSemanal(volumenPorSesion) {
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+  const lunesActual = lunesDeSemana(hoy).getTime()
+  const lunesAnterior = lunesDeSemana(new Date(lunesActual - 7 * 86400000)).getTime()
+
+  let actual = 0
+  let anterior = 0
+  for (const v of volumenPorSesion ?? []) {
+    if (!v.fecha) continue
+    const lunes = lunesDeSemana(new Date(v.fecha)).getTime()
+    if (lunes === lunesActual) actual += v.volumen
+    else if (lunes === lunesAnterior) anterior += v.volumen
+  }
+  return { actual, anterior }
+}
+
+// Días entrenados en el mes calendario actual, para el tile "Sesiones" de Progreso.
+export function sesionesEsteMes(diasEntrenados) {
+  const hoy = new Date()
+  return (diasEntrenados ?? []).filter(epoch => {
+    const d = new Date(epoch)
+    return d.getFullYear() === hoy.getFullYear() && d.getMonth() === hoy.getMonth()
+  }).length
+}
+
+// El PR más reciente entre todos los ejercicios (por pr.fecha), para el tile
+// "PR reciente" de Progreso. null si ningún ejercicio tiene marca todavía.
+export function prMasReciente(statsEjercicios) {
+  let masReciente = null
+  for (const ej of statsEjercicios ?? []) {
+    if (!ej.pr) continue
+    if (!masReciente || ej.pr.fecha > masReciente.fecha) {
+      masReciente = { nombre: ej.nombre, maxPeso: ej.pr.maxPeso, fecha: ej.pr.fecha }
+    }
+  }
+  return masReciente
 }

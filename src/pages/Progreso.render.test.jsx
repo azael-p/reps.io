@@ -43,6 +43,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { getSesionesPaginadas } from '../firebase/sesiones'
 import { eliminarSesionConAgregados } from '../firebase/eliminarSesion'
+import { lunesDeSemana } from '../utils/stats'
 import Progreso from './Progreso'
 
 const ts = (y, m, d) => {
@@ -174,7 +175,7 @@ describe('Progreso — registrar peso con coma decimal', () => {
 })
 
 describe('Progreso — resumen de un vistazo (mobile)', () => {
-  it('muestra racha actual, mejor racha y días de esta semana sin entrar a ningún tab', async () => {
+  it('muestra la racha actual sin entrar a ningún tab', async () => {
     const { getResumenGlobalConFallback } = await import('../firebase/statsGlobal')
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
     const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1)
@@ -185,16 +186,77 @@ describe('Progreso — resumen de un vistazo (mobile)', () => {
     renderPage()
 
     const resumen = await screen.findByTestId('progreso-resumen-mini')
-    expect(resumen).toHaveTextContent('2')
     expect(resumen).toHaveTextContent('Racha actual')
-    expect(resumen).toHaveTextContent('Mejor racha')
-    expect(resumen).toHaveTextContent('Esta semana')
+    expect(resumen).toHaveTextContent('2')
+    expect(resumen).toHaveTextContent('días seguidos')
   })
 
-  it('sin datos, muestra el resumen en cero en vez de no renderizarlo', async () => {
+  it('muestra el volumen de esta semana con la variación vs. la semana pasada', async () => {
+    const { getResumenGlobalConFallback } = await import('../firebase/statsGlobal')
+    const lunesActual = lunesDeSemana(new Date()).getTime()
+    const lunesAnterior = lunesActual - 7 * 86400000
+    getResumenGlobalConFallback.mockResolvedValue({
+      diasEntrenados: [],
+      volumenPorSesion: [
+        { sesionId: 's1', fecha: lunesActual + 86400000, volumen: 800, diaNombre: 'Push' },
+        { sesionId: 's2', fecha: lunesAnterior + 86400000, volumen: 1000, diaNombre: 'Push' },
+      ],
+    })
+    renderPage()
+
+    const resumen = await screen.findByTestId('progreso-resumen-mini')
+    expect(resumen).toHaveTextContent('Volumen semana')
+    expect(resumen).toHaveTextContent('800 kg')
+    expect(resumen).toHaveTextContent('-20%')
+    expect(resumen).toHaveTextContent('vs 1.000 kg sem. pasada')
+  })
+
+  it('muestra las sesiones entrenadas en el mes calendario actual', async () => {
+    const { getResumenGlobalConFallback } = await import('../firebase/statsGlobal')
+    const hoy = new Date()
+    const esteMes = new Date(hoy.getFullYear(), hoy.getMonth(), 3).getTime()
+    const mesPasado = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 3).getTime()
+    getResumenGlobalConFallback.mockResolvedValue({
+      diasEntrenados: [esteMes, mesPasado],
+      volumenPorSesion: [],
+    })
+    renderPage()
+
+    const resumen = await screen.findByTestId('progreso-resumen-mini')
+    expect(resumen).toHaveTextContent('Sesiones')
+    expect(resumen).toHaveTextContent('este mes')
+  })
+
+  it('muestra el PR más reciente entre todos los ejercicios', async () => {
+    const { getStatsEjerciciosConFallback } = await import('../firebase/statsEjercicios')
+    getStatsEjerciciosConFallback.mockResolvedValue([
+      { id: 'e1', nombre: 'Press Banca', grupoMuscular: 'Pecho', puntos: [], pr: { maxPeso: 80, fecha: 1000, sesionId: 's1', series: [] } },
+      { id: 'e2', nombre: 'Sentadilla', grupoMuscular: 'Piernas', puntos: [], pr: { maxPeso: 102.5, fecha: 2000, sesionId: 's2', series: [] } },
+    ])
+    renderPage()
+
+    const resumen = await screen.findByTestId('progreso-resumen-mini')
+    expect(resumen).toHaveTextContent('PR reciente')
+    expect(resumen).toHaveTextContent('Sentadilla')
+    expect(resumen).toHaveTextContent('102.5 kg')
+  })
+
+  it('sin ningún PR todavía, muestra un mensaje en vez de un valor vacío', async () => {
+    const { getStatsEjerciciosConFallback } = await import('../firebase/statsEjercicios')
+    getStatsEjerciciosConFallback.mockResolvedValue([])
+    renderPage()
+    const resumen = await screen.findByTestId('progreso-resumen-mini')
+    expect(resumen).toHaveTextContent('Todavía sin marcas')
+  })
+
+  it('sin datos, igual renderiza las 4 tarjetas en cero', async () => {
     renderPage()
     const resumen = await screen.findByTestId('progreso-resumen-mini')
     expect(resumen).toBeInTheDocument()
+    expect(resumen).toHaveTextContent('Racha actual')
+    expect(resumen).toHaveTextContent('Volumen semana')
+    expect(resumen).toHaveTextContent('Sesiones')
+    expect(resumen).toHaveTextContent('PR reciente')
   })
 })
 
