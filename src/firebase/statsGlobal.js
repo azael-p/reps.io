@@ -1,6 +1,6 @@
 import { db } from './config'
 import { doc, getDoc, setDoc, arrayUnion, writeBatch, serverTimestamp, collection, query, where, getDocs, orderBy } from 'firebase/firestore'
-import { toDate } from '../utils/fechas'
+import { toDate, inicioDelDia } from '../utils/fechas'
 import { getSesionesConResumen } from './sesiones'
 
 // Agregado global por usuario (doc único usuarios/{uid}/stats/global):
@@ -20,7 +20,7 @@ const statsRef = (uid) => doc(db, 'usuarios', uid, 'stats', 'global')
 export function epochDia(fecha) {
   const d = toDate(fecha)
   if (!d) return null
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  return inicioDelDia(d)
 }
 
 // Construye el agregado desde las sesiones completadas (fallback y reparación).

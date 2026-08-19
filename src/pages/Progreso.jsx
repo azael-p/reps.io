@@ -146,7 +146,10 @@ export default function Progreso() {
   const datosVolumen = useMemo(() => {
     if (!resumenGlobal) return []
     if (tab !== 'Volumen' && !isDesktop) return []
-    return (resumenGlobal.volumenPorSesion ?? [])
+    // Sin `?? []`: getResumenGlobalConFallback ya garantiza el array (ver
+    // normalizarResumen en statsGlobal.js) — repetir el guard acá contradice
+    // la razón por la que ese normalizador existe.
+    return resumenGlobal.volumenPorSesion
       .map(d => ({ fecha: formatFechaCorta(d.fecha), volumen: d.volumen }))
       .map((d, i) => ({ ...d, xKey: `${d.fecha}#${i}` }))
   }, [tab, isDesktop, resumenGlobal])

@@ -5,9 +5,9 @@ export function toDate(x) {
   return typeof x.toDate === 'function' ? x.toDate() : new Date(x)
 }
 
-// Medianoche local del día al que pertenece una fecha. Mismo criterio que
-// epochDia() en statsGlobal.js y que calcularStreaks() en stats.js.
-const inicioDelDia = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+// Medianoche local del día al que pertenece una fecha. Único lugar con esta
+// fórmula — epochDia() en statsGlobal.js la reusa en vez de reimplementarla.
+export const inicioDelDia = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
 
 // "hoy" / "ayer" / "hace N días" / "hace N sem" / "hace N mes".
 export function tiempoRelativo(timestamp) {
