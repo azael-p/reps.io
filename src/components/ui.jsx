@@ -151,7 +151,7 @@ export function ErrorState({ titulo = 'Algo salió mal', mensaje, onRetry }) {
       }}>
         <AlertCircle color="var(--danger)" />
       </div>
-      <h3 style={{ color: 'var(--text)' }}>{titulo}</h3>
+      <h3 style={{ color: 'var(--text)', margin: 0, fontSize: '17px', fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1.3 }}>{titulo}</h3>
       {mensaje && <p style={{ color: 'var(--text-mute)', textAlign: 'center' }}>{mensaje}</p>}
       {onRetry && <button className="btn btn-secondary" onClick={onRetry}>Reintentar</button>}
     </motion.div>
@@ -336,7 +336,7 @@ const hs = {
   bcLink: { cursor: 'pointer', color: 'var(--text-dim)', background: 'none', border: 'none', padding: 0, font: 'inherit' },
   bcSep: { color: 'var(--border-strong)', margin: '0 1px' },
   sub: { margin: 0, fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' },
-  titulo: { margin: '2px 0 0', fontSize: '1.2rem', fontWeight: 700, letterSpacing: '-0.02em' },
+  titulo: { margin: '2px 0 0', fontSize: '32px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15 },
   addBtn: {
     color: '#fff', border: 'none', borderRadius: '12px',
     width: '44px', height: '44px', fontSize: '1.6rem',
@@ -411,7 +411,7 @@ const cd = {
     margin: '2px auto 4px',
   },
   icon: { fontSize: '1.5rem' },
-  titulo: { margin: 0, fontSize: '1.1rem', fontWeight: 700, textAlign: 'center', letterSpacing: '-0.01em' },
+  titulo: { margin: 0, fontSize: '22px', fontWeight: 700, textAlign: 'center', letterSpacing: '-0.015em', lineHeight: 1.25 },
   descripcion: { margin: 0, color: 'var(--text-mute)', fontSize: '0.9rem', textAlign: 'center', lineHeight: 1.45 },
   btns: { display: 'flex', gap: '10px', marginTop: '4px' },
   cancelBtn: { flex: 1, padding: '14px', background: 'var(--bg-input)', color: 'var(--text-mute)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', fontSize: '0.95rem', fontWeight: 500 },
