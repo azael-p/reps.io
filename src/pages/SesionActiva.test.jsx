@@ -41,6 +41,12 @@ vi.mock('firebase/firestore', () => ({
 vi.mock('../components/ui', () => ({
   ConfirmDialog: () => null,
   EmptyState: ({ mensaje }) => <div>{mensaje}</div>,
+  ErrorState: ({ mensaje, onRetry }) => (
+    <div>
+      <span>{mensaje}</span>
+      <button onClick={onRetry}>Reintentar</button>
+    </div>
+  ),
   Badge: ({ children }) => <span>{children}</span>,
   Modal: ({ children, open }) => (open ? <div data-testid="modal">{children}</div> : null),
 }))
@@ -467,5 +473,42 @@ describe('SesionActiva — día sin ejercicios', () => {
 
     expect(await screen.findByText('Este día no tiene ejercicios')).toBeInTheDocument()
     expect(screen.queryByTestId('resumen')).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('SesionActiva — fallo de carga (no confundir con día sin ejercicios)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    getDoc.mockResolvedValue({ exists: () => true, data: () => ({ diaId: 'dia1', completada: false }) })
+    getRegistrosSesion.mockResolvedValue([])
+  })
+
+  it('si getEjerciciosDia falla, muestra el ErrorState con reintentar — no "Este día no tiene ejercicios"', async () => {
+    getEjerciciosDia.mockRejectedValue(new Error('sin red'))
+
+    renderSesion()
+
+    expect(await screen.findByText('No se pudo cargar la sesión.')).toBeInTheDocument()
+    expect(screen.queryByText('Este día no tiene ejercicios')).not.toBeInTheDocument()
+    expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({ variant: 'error' }))
+  })
+
+  it('tocar "Reintentar" vuelve a pedir los ejercicios, y si esta vez responde OK, sale del error', async () => {
+    getEjerciciosDia
+      .mockRejectedValueOnce(new Error('sin red'))
+      .mockResolvedValueOnce([EJ1])
+    const user = userEvent.setup()
+
+    renderSesion()
+    await screen.findByText('No se pudo cargar la sesión.')
+
+    await user.click(screen.getByText('Reintentar'))
+
+    await waitFor(() => expect(getEjerciciosDia).toHaveBeenCalledTimes(2))
+    expect(await screen.findByText('Press Banca')).toBeInTheDocument()
+    expect(screen.queryByText('No se pudo cargar la sesión.')).not.toBeInTheDocument()
   })
 })

@@ -7,7 +7,7 @@ import { getEjerciciosDia } from '../firebase/ejerciciosDia'
 import { agregarRegistro, editarRegistro, getRegistrosSesion } from '../firebase/registros'
 import { eliminarSesion, esMismoEjercicio } from '../firebase/sesiones'
 import { getStatsEjerciciosConFallback } from '../firebase/statsEjercicios'
-import { ConfirmDialog, EmptyState, Modal } from '../components/ui'
+import { ConfirmDialog, EmptyState, ErrorState, Modal } from '../components/ui'
 import { useUser } from '../context/UserContext'
 import { logEvento } from '../firebase/analytics'
 import { useDesktop } from '../hooks/useDesktop'
@@ -53,6 +53,7 @@ export default function SesionActiva() {
   const [guardando, setGuardando] = useState(false)
   const [mostrarNota, setMostrarNota] = useState(false)
   const [cargando, setCargando] = useState(true)
+  const [errorCarga, setErrorCarga] = useState(false)
   const [celebrar, setCelebrar] = useState(false)
   const [confirmData, setConfirmData] = useState(null)
   const [editandoSerie, setEditandoSerie] = useState(null)
@@ -71,6 +72,7 @@ export default function SesionActiva() {
   }, [usuario, show])
 
   const cargar = useCallback(async () => {
+    setErrorCarga(false)
     try {
       const snap = await getDoc(doc(db, 'sesiones', sesionId))
       if (!snap.exists()) throw new Error(`Sesión ${sesionId} inexistente`)
@@ -138,7 +140,7 @@ export default function SesionActiva() {
     setSerieIdx(restoredSerieIdx)
     setRepsHechas(String(ejs[restoredEjIdx].repsEsperadas))
     setPesoUsado(ultimoPesoRestaurado[ejs[restoredEjIdx].id] ?? '')
-    } catch (e) { console.error(e); show({ variant: 'error', message: 'No se pudo cargar la sesion.' }) }
+    } catch (e) { console.error(e); setErrorCarga(true); show({ variant: 'error', message: 'No se pudo cargar la sesion.' }) }
     setCargando(false)
   }, [sesionId, navigate, show])
 
@@ -372,6 +374,19 @@ export default function SesionActiva() {
       <div className="sa-progress-bar"><div className="sa-progress-fill" style={{ width: '0%' }} /></div>
       <div className="sa-body" style={{ justifyContent: 'center' }}>
         <span className="spinner" style={{ color: 'var(--orange)' }} />
+      </div>
+    </div>
+  )
+
+  // Debe evaluarse antes que el EmptyState de abajo: un fallo de red en
+  // cargar() deja `ejercicios` en su valor inicial `[]` (recién se setea
+  // después de las llamadas a Firestore), y sin este chequeo el error se
+  // disfrazaba de "día sin ejercicios" — mensaje engañoso para lo que en
+  // realidad es un problema de carga.
+  if (errorCarga) return (
+    <div className="sa-page">
+      <div className="sa-body">
+        <ErrorState mensaje="No se pudo cargar la sesión." onRetry={cargar} />
       </div>
     </div>
   )
