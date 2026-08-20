@@ -51,6 +51,7 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
   useEffect(() => { onCerrarRef.current = onCerrar }, [onCerrar])
 
   const handlerRef = useRef(() => onCerrarRef.current?.())
+  const levelRef = useRef(0) // 0 = catálogo, 1 = "Configurar"
 
   useEffect(() => {
     const timer = setTimeout(() => window.history.pushState({ pickerLevel: 0 }, ''), 0)
@@ -59,25 +60,24 @@ export default function SeleccionarEjercicio({ onSeleccionar, onCerrar }) {
     return () => {
       clearTimeout(timer)
       window.removeEventListener('popstate', dispatch)
-      if (window.history.state?.pickerLevel != null) window.history.back()
+      // Retrocede de una sola vez tantos niveles como quedaron sin cerrar
+      // con "atrás" (0 si solo se abrió el catálogo, 1 si se llegó a
+      // "Configurar" y se salió por otro lado, ej. confirmar()). Un único
+      // history.go(-N) evita depender de que varios history.back()
+      // sucesivos se procesen como pasos separados — inconsistente entre
+      // navegadores cuando se llaman en el mismo tick síncrono.
+      if (window.history.state?.pickerLevel != null) window.history.go(-(levelRef.current + 1))
     }
   }, [])
 
   useEffect(() => {
+    levelRef.current = ejercicioElegido ? 1 : 0
     if (!ejercicioElegido) {
       handlerRef.current = () => onCerrarRef.current?.()
       return
     }
     window.history.pushState({ pickerLevel: 1 }, '')
     handlerRef.current = () => setEjercicioElegido(null)
-    return () => {
-      // Si el popstate ya trajo de vuelta a nivel 0 (usuario tocó "atrás"),
-      // esa entrada del historial ya se consumió sola: repetir el back() acá
-      // se comería una pantalla de más al navegar después. Solo hace falta
-      // popearla nosotros cuando se sale del picker SIN pasar por "atrás"
-      // (ej. confirmar() desmonta el componente directamente).
-      if (window.history.state?.pickerLevel === 1) window.history.back()
-    }
   }, [ejercicioElegido])
 
   const fuse = useMemo(() => new Fuse(
