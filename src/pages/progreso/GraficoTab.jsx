@@ -82,7 +82,14 @@ export default function GraficoTab({
               <p className="progreso-chart-titulo">
                 {{ peso: 'Peso máximo por sesión', '1rm': 'Tu mejor marca personal por sesión', volumen: 'Mejor serie por volumen', volTotal: 'Volumen total del ejercicio por sesión' }[modoGrafico]}
               </p>
-              <p className="progreso-chart-sub">{modoGrafico === 'volumen' || modoGrafico === 'volTotal' ? 'en kg × reps' : 'en kilogramos'}</p>
+              <p className="progreso-chart-sub">
+                {{
+                  peso: 'en kilogramos',
+                  '1rm': 'en kilogramos · estimado con la fórmula de Epley',
+                  volumen: 'en kg × reps',
+                  volTotal: 'en kg × reps',
+                }[modoGrafico]}
+              </p>
               <div style={{ width: '100%', height: 240, marginTop: '12px' }}>
                 <ResponsiveContainer>
                   <LineChart data={datosGrafico} margin={{ top: 12, right: 18, left: -18, bottom: 0 }} key={`g${ejercicioSel}-${modoGrafico}-${datosGrafico.length}`}>
