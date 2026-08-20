@@ -58,7 +58,7 @@ export default function GraficoTab({
 
           <div className="progreso-selector">
             <div className="progreso-toggle-row">
-              {['peso', '1rm', 'volumen', 'volTotal'].map(m => (
+              {['volTotal', 'peso', '1rm', 'volumen'].map(m => (
                 <motion.button
                   key={m}
                   className={`progreso-toggle-chip ${modoGrafico === m ? 'progreso-toggle-chip--activo' : ''}`}
