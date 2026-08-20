@@ -132,12 +132,12 @@ export default function Progreso() {
     const ejercicioObj = ejercicios.find(e => e.nombre === ejercicioSel)
     if (!ejercicioObj) return []
     const stats = statsEjercicios.find(e => esMismoEjercicio(e, ejercicioObj))
-    const key = modoGrafico === '1rm' ? '1rm' : modoGrafico === 'volumen' ? 'volumen' : 'peso'
+    const valorPunto = { peso: p => p.pesoMax, '1rm': p => p.oneRm, volumen: p => p.volSerie, volTotal: p => p.volTotal }[modoGrafico]
     return (stats?.puntos ?? []) // ya vienen antiguo → reciente
       .map(p => ({
         fecha: formatFechaCorta(p.fecha),
         sesionId: p.sesionId,
-        [key]: modoGrafico === '1rm' ? p.oneRm : modoGrafico === 'volumen' ? p.volSerie : p.pesoMax,
+        [modoGrafico]: valorPunto(p),
       }))
       .map((d, i) => ({ ...d, xKey: `${d.fecha}#${i}` }))
   }, [tab, ejercicioSel, ejercicios, modoGrafico, isDesktop, statsEjercicios])

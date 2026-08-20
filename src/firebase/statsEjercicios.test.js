@@ -84,6 +84,13 @@ describe('mergeSesionEnStats', () => {
     expect(r.prVolumen).toEqual({ volumen: 800, pesoUsado: 80, repsHechas: 10, fecha: FECHA1, sesionId: 's1' })
   })
 
+  it('el punto guarda volTotal como la suma de TODAS las series, no solo la mejor', () => {
+    const r = mergeSesionEnStats(null, EJ, FECHA1, 's1')
+    // 80×10 + 100×3 = 800 + 300 = 1100, distinto de volSerie (800: la mejor serie sola)
+    expect(r.puntos[0].volTotal).toBe(1100)
+    expect(r.puntos[0].volSerie).toBe(800)
+  })
+
   it('una sesión posterior con menos peso actualiza ultimaVez pero conserva el PR', () => {
     const base = mergeSesionEnStats(null, EJ, FECHA1, 's1')
     const liviana = { ...EJ, series: [{ numeroSerie: 1, pesoUsado: 60, repsHechas: 10 }] }
@@ -348,6 +355,81 @@ describe('getStatsEjerciciosConFallback', () => {
     expect(r[0].pr.maxPeso).toBe(65)
     expect(r[0].ultimaVez).not.toBeNull()
     expect(r[0].prVolumen).toBeNull()
+  })
+
+  it('un doc con puntos sin volTotal (previo a este campo) se reconstruye desde el historial', async () => {
+    mockGetDocs
+      .mockResolvedValueOnce({
+        docs: [{
+          id: 'press',
+          data: () => ({
+            nombre: 'Press de banca plano', catalogoId: 'press',
+            pr: { maxPeso: 65, fecha: FECHA1, sesionId: 's1', series: [] },
+            prVolumen: { volumen: 390, pesoUsado: 65, repsHechas: 6, fecha: FECHA1, sesionId: 's1' },
+            ultimaVez: { fecha: FECHA1, sesionId: 's1', series: [] },
+            // punto previo a que puntos[] incluyera volTotal
+            puntos: [{ fecha: FECHA1, sesionId: 's1', pesoMax: 65, oneRm: 76, volSerie: 390 }],
+          }),
+        }],
+      })
+      .mockResolvedValueOnce({
+        docs: [{
+          id: 'press',
+          data: () => ({
+            nombre: 'Press de banca plano', catalogoId: 'press',
+            pr: { maxPeso: 65, fecha: FECHA1, sesionId: 's1', series: [] },
+            prVolumen: { volumen: 390, pesoUsado: 65, repsHechas: 6, fecha: FECHA1, sesionId: 's1' },
+            ultimaVez: { fecha: FECHA1, sesionId: 's1', series: [] },
+            puntos: [{ fecha: FECHA1, sesionId: 's1', pesoMax: 65, oneRm: 76, volSerie: 390, volTotal: 390 }],
+          }),
+        }],
+      })
+    getSesionesConResumen.mockResolvedValue([
+      {
+        id: 's1', fecha: new Date(FECHA1),
+        resumen: { ejercicios: [{ ejercicioId: 'a', catalogoId: 'press', nombre: 'Press de banca plano', grupoMuscular: 'Pecho', series: [{ numeroSerie: 1, pesoUsado: 65, repsHechas: 6 }] }] },
+      },
+    ])
+    const r = await getStatsEjerciciosConFallback('user1')
+    expect(getSesionesConResumen).toHaveBeenCalledOnce()
+    expect(mockBatchCommit).toHaveBeenCalledOnce()
+    expect(r[0].puntos[0].volTotal).toBe(390)
+  })
+
+  it('backfill de volTotal: si el historial no tiene match (drift), normaliza los puntos previos en vez de repetir el rebuild en cada carga', async () => {
+    mockGetDocs
+      .mockResolvedValueOnce({
+        docs: [{
+          id: 'press',
+          data: () => ({
+            nombre: 'Press de banca plano', catalogoId: 'press',
+            pr: { maxPeso: 65, fecha: FECHA1, sesionId: 's1', series: [] },
+            prVolumen: { volumen: 390, pesoUsado: 65, repsHechas: 6, fecha: FECHA1, sesionId: 's1' },
+            ultimaVez: { fecha: FECHA1, sesionId: 's1', series: [] },
+            puntos: [{ fecha: FECHA1, sesionId: 's1', pesoMax: 65, oneRm: 76, volSerie: 390 }],
+          }),
+        }],
+      })
+      .mockResolvedValueOnce({
+        docs: [{
+          id: 'press',
+          data: () => ({
+            nombre: 'Press de banca plano', catalogoId: 'press',
+            pr: { maxPeso: 65, fecha: FECHA1, sesionId: 's1', series: [] },
+            prVolumen: { volumen: 390, pesoUsado: 65, repsHechas: 6, fecha: FECHA1, sesionId: 's1' },
+            ultimaVez: { fecha: FECHA1, sesionId: 's1', series: [] },
+            puntos: [{ fecha: FECHA1, sesionId: 's1', pesoMax: 65, oneRm: 76, volSerie: 390, volTotal: 0 }],
+          }),
+        }],
+      })
+    // Historial desincronizado: ninguna sesión matchea "press" (drift ajeno
+    // a este backfill). El doc previo debe conservarse (PR no se vacía) y
+    // sus puntos quedar con volTotal definido para no volver a marcarse
+    // como desactualizado en la próxima carga.
+    getSesionesConResumen.mockResolvedValue([])
+    const r = await getStatsEjerciciosConFallback('user1')
+    expect(r[0].pr.maxPeso).toBe(65)
+    expect(r[0].puntos[0].volTotal).toBe(0)
   })
 
   it('un doc con prVolumen: null legítimo (ej. ejercicio a cuerpo libre) no dispara una reconstrucción', async () => {

@@ -58,14 +58,14 @@ export default function GraficoTab({
 
           <div className="progreso-selector">
             <div className="progreso-toggle-row">
-              {['peso', '1rm', 'volumen'].map(m => (
+              {['peso', '1rm', 'volumen', 'volTotal'].map(m => (
                 <motion.button
                   key={m}
                   className={`progreso-toggle-chip ${modoGrafico === m ? 'progreso-toggle-chip--activo' : ''}`}
                   onClick={() => setModoGrafico(m)}
                   whileTap={{ scale: 0.94 }}
                 >
-                  {{ peso: 'Peso máx.', '1rm': 'PR personal', volumen: 'Vol. serie' }[m]}
+                  {{ peso: 'Peso máx.', '1rm': 'PR personal', volumen: 'Vol. serie', volTotal: 'Vol. total' }[m]}
                 </motion.button>
               ))}
             </div>
@@ -80,9 +80,9 @@ export default function GraficoTab({
               animate={{ opacity: 1, y: 0 }}
             >
               <p className="progreso-chart-titulo">
-                {{ peso: 'Peso máximo por sesión', '1rm': 'Tu mejor marca personal por sesión', volumen: 'Mejor serie por volumen' }[modoGrafico]}
+                {{ peso: 'Peso máximo por sesión', '1rm': 'Tu mejor marca personal por sesión', volumen: 'Mejor serie por volumen', volTotal: 'Volumen total del ejercicio por sesión' }[modoGrafico]}
               </p>
-              <p className="progreso-chart-sub">{modoGrafico === 'volumen' ? 'en kg × reps' : 'en kilogramos'}</p>
+              <p className="progreso-chart-sub">{modoGrafico === 'volumen' || modoGrafico === 'volTotal' ? 'en kg × reps' : 'en kilogramos'}</p>
               <div style={{ width: '100%', height: 240, marginTop: '12px' }}>
                 <ResponsiveContainer>
                   <LineChart data={datosGrafico} margin={{ top: 12, right: 18, left: -18, bottom: 0 }} key={`g${ejercicioSel}-${modoGrafico}-${datosGrafico.length}`}>
@@ -111,14 +111,14 @@ export default function GraficoTab({
                       }}
                       labelFormatter={v => String(v).split('#')[0]}
                       formatter={(v) => {
-                        const label = { peso: 'Peso', '1rm': '1RM', volumen: 'Vol. serie' }[modoGrafico]
-                        const unit = modoGrafico === 'volumen' ? 'kg·rep' : 'kg'
+                        const label = { peso: 'Peso', '1rm': '1RM', volumen: 'Vol. serie', volTotal: 'Vol. total' }[modoGrafico]
+                        const unit = modoGrafico === 'volumen' || modoGrafico === 'volTotal' ? 'kg·rep' : 'kg'
                         return [`${v.toLocaleString()} ${unit}`, label]
                       }}
                       cursor={{ stroke: 'rgba(133, 183, 235, 0.3)', strokeWidth: 2 }}
                     />
                     <Line
-                      type="monotone" dataKey={modoGrafico === 'peso' ? 'peso' : modoGrafico === '1rm' ? '1rm' : 'volumen'}
+                      type="monotone" dataKey={modoGrafico}
                       stroke="url(#lineGrad)" strokeWidth={3}
                       dot={{ fill: '#85b7eb', r: 4, strokeWidth: 0 }}
                       activeDot={{ r: 7, fill: '#fff', stroke: '#85b7eb', strokeWidth: 2 }}

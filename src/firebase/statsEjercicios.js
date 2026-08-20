@@ -9,8 +9,9 @@ import { getSesionesConResumen, esMismoEjercicio } from './sesiones'
 // - prVolumen: { volumen, pesoUsado, repsHechas, fecha(ms), sesionId } ← mejor
 //   serie por volumen (peso × reps), récord independiente del pr de arriba
 // - ultimaVez: { fecha(ms), sesionId, series }
-// - puntos:    [{ fecha(ms), sesionId, pesoMax, oneRm, volSerie }]  cap 150
-//   (máximos POR SERIE de cada sesión — misma semántica que el gráfico previo)
+// - puntos:    [{ fecha(ms), sesionId, pesoMax, oneRm, volSerie, volTotal }]  cap 150
+//   (volSerie/pesoMax/oneRm son máximos POR SERIE de la sesión; volTotal es
+//   la suma de peso×reps de TODAS las series de esa sesión)
 // Reemplaza el recorrido del historial completo para "última vez"/PR
 // (SesionActiva) y el gráfico de progresión (Progreso).
 
@@ -44,6 +45,10 @@ function statsDeSesion(ejercicioResumen, fechaMs, sesionId) {
   const series = ejercicioResumen.series ?? []
   const pesoMax = Math.max(0, ...series.map(s => s.pesoUsado || 0))
   const oneRm = Math.max(0, ...series.map(s => calcular1RM(s.pesoUsado || 0, s.repsHechas || 0) || 0))
+  // Suma primero, redondea al final (no por serie) para no acumular error
+  // de redondeo — distinto de mejorSerieVolumen, que sí redondea por serie
+  // porque necesita comparar records individuales.
+  const volTotal = Math.round(series.reduce((acc, s) => acc + (s.pesoUsado || 0) * (s.repsHechas || 0), 0))
   // La serie con más volumen (peso × reps), guardando también qué peso/reps
   // la lograron: Math.max sobre los números solos alcanza para el gráfico
   // "Vol. serie", pero para anunciar un récord ("110kg × 10") hace falta el
@@ -57,7 +62,7 @@ function statsDeSesion(ejercicioResumen, fechaMs, sesionId) {
   return {
     pesoMax,
     mejorSerieVolumen,
-    punto: { fecha: fechaMs, sesionId, pesoMax, oneRm, volSerie: mejorSerieVolumen.volumen },
+    punto: { fecha: fechaMs, sesionId, pesoMax, oneRm, volSerie: mejorSerieVolumen.volumen, volTotal },
     series,
   }
 }
@@ -190,18 +195,36 @@ export async function getStatsEjerciciosConFallback(uid) {
     // (`prVolumen: null`, legítimo p.ej. en ejercicios a cuerpo libre). Sin
     // esta distinción, SesionActiva compara contra 0 y festeja cualquier
     // serie como "récord" la primera vez que se entrena ese ejercicio tras
-    // el cambio. Se reconstruyen solo esos docs con un único scan de
-    // sesiones (misma ruta que rebuildStatsEjercicios).
-    const sinPrVolumen = existentes.filter(e => (e.pr || e.ultimaVez) && e.prVolumen === undefined)
-    if (sinPrVolumen.length > 0) {
+    // el cambio.
+    // Self-healing #3: docs escritos antes de que `puntos[]` incluyera
+    // `volTotal` (gráfico de volumen total por ejercicio) tienen puntos sin
+    // esa clave. Se detecta por punto, no por campo top-level: `.some()`
+    // sobre `puntos: []` da `false`, así que un doc sin historial no entra acá.
+    // Ambos casos comparten la reconstrucción: un único scan de sesiones
+    // (misma ruta que rebuildStatsEjercicios) corrige los dos campos a la vez.
+    const sinVolTotal = (e) => e.puntos?.some(p => p.volTotal === undefined)
+    const desactualizados = existentes.filter(e => (e.pr || e.ultimaVez) && (e.prVolumen === undefined || sinVolTotal(e)))
+    if (desactualizados.length > 0) {
       // docsPrevios: si el scan no encuentra ninguna sesión que matchee un
       // ejercicio (drift entre el doc de stats y el historial real, no
       // ligado a este backfill), se conserva el doc tal cual (con
-      // prVolumen ya normalizado a null) en vez de vaciar un PR real — este
-      // self-healing corre en un path caliente (SesionActiva, Progreso), no
-      // en una reconstrucción explícita post edición/borrado de sesión.
-      const docsPrevios = new Map(sinPrVolumen.map(({ id, ...resto }) => [id, { ...resto, prVolumen: null }]))
-      await rebuildStatsEjercicios(uid, sinPrVolumen.map(e => ({ catalogoId: e.catalogoId, nombre: e.nombre })), null, { docsPrevios })
+      // prVolumen ya normalizado a null si faltaba) en vez de vaciar un PR
+      // real — este self-healing corre en un path caliente (SesionActiva,
+      // Progreso), no en una reconstrucción explícita post edición/borrado
+      // de sesión.
+      // Los puntos también se normalizan con volTotal (0 si no hay forma de
+      // recalcularlo, al no tener match en el historial): sin esto, un doc
+      // en drift quedaría marcado como desactualizado para siempre y
+      // dispararía este mismo rebuild completo en cada carga de Progreso.
+      const docsPrevios = new Map(desactualizados.map(({ id, ...resto }) => [
+        id,
+        {
+          ...resto,
+          prVolumen: resto.prVolumen ?? null,
+          puntos: (resto.puntos ?? []).map(p => ({ ...p, volTotal: p.volTotal ?? 0 })),
+        },
+      ]))
+      await rebuildStatsEjercicios(uid, desactualizados.map(e => ({ catalogoId: e.catalogoId, nombre: e.nombre })), null, { docsPrevios })
       return await getStatsEjercicios(uid)
     }
     return existentes
