@@ -265,4 +265,59 @@ describe('getStatsEjerciciosConFallback', () => {
     expect(await getStatsEjerciciosConFallback('user1')).toEqual([])
     expect(mockBatchCommit).not.toHaveBeenCalled()
   })
+
+  it('un doc previo al campo prVolumen (clave ausente, no null) se reconstruye desde el historial', async () => {
+    mockGetDocs
+      .mockResolvedValueOnce({
+        docs: [{
+          id: 'press',
+          data: () => ({
+            nombre: 'Press de banca plano', catalogoId: 'press',
+            pr: { maxPeso: 65, fecha: FECHA1, sesionId: 's1', series: [] },
+            ultimaVez: { fecha: FECHA1, sesionId: 's1', series: [] },
+            puntos: [],
+            // sin prVolumen: doc escrito antes de que existiera el campo
+          }),
+        }],
+      })
+      .mockResolvedValueOnce({
+        docs: [{
+          id: 'press',
+          data: () => ({
+            nombre: 'Press de banca plano', catalogoId: 'press',
+            pr: { maxPeso: 65, fecha: FECHA1, sesionId: 's1', series: [] },
+            prVolumen: { volumen: 390, pesoUsado: 65, repsHechas: 6, fecha: FECHA1, sesionId: 's1' },
+            ultimaVez: { fecha: FECHA1, sesionId: 's1', series: [] },
+            puntos: [],
+          }),
+        }],
+      })
+    getSesionesConResumen.mockResolvedValue([
+      {
+        id: 's1', fecha: new Date(FECHA1),
+        resumen: { ejercicios: [{ ejercicioId: 'a', catalogoId: 'press', nombre: 'Press de banca plano', grupoMuscular: 'Pecho', series: [{ numeroSerie: 1, pesoUsado: 65, repsHechas: 6 }] }] },
+      },
+    ])
+    const r = await getStatsEjerciciosConFallback('user1')
+    expect(getSesionesConResumen).toHaveBeenCalledOnce()
+    expect(mockBatchCommit).toHaveBeenCalledOnce()
+    expect(r[0].prVolumen.volumen).toBe(390)
+  })
+
+  it('un doc con prVolumen: null legítimo (ej. ejercicio a cuerpo libre) no dispara una reconstrucción', async () => {
+    mockGetDocs.mockResolvedValue({
+      docs: [{
+        id: 'dominadas',
+        data: () => ({
+          nombre: 'Dominadas', pr: null, prVolumen: null,
+          ultimaVez: { fecha: FECHA1, sesionId: 's1', series: [] },
+          puntos: [],
+        }),
+      }],
+    })
+    const r = await getStatsEjerciciosConFallback('user1')
+    expect(getSesionesConResumen).not.toHaveBeenCalled()
+    expect(mockBatchCommit).not.toHaveBeenCalled()
+    expect(r[0].prVolumen).toBeNull()
+  })
 })

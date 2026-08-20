@@ -170,7 +170,22 @@ export async function rebuildStatsEjercicios(uid, ejercicios, batch = null, { ex
 // Self-healing: si la colección está vacía pero hay historial, la construye.
 export async function getStatsEjerciciosConFallback(uid) {
   const existentes = await getStatsEjercicios(uid)
-  if (existentes.length > 0) return existentes
+  if (existentes.length > 0) {
+    // Self-healing #2: docs escritos antes de que existiera el campo
+    // prVolumen (ver mergeSesionEnStats) no tienen esa clave (`undefined`),
+    // a diferencia de un doc ya procesado sin volumen positivo aún
+    // (`prVolumen: null`, legítimo p.ej. en ejercicios a cuerpo libre). Sin
+    // esta distinción, SesionActiva compara contra 0 y festeja cualquier
+    // serie como "récord" la primera vez que se entrena ese ejercicio tras
+    // el cambio. Se reconstruyen solo esos docs con un único scan de
+    // sesiones (misma ruta que rebuildStatsEjercicios).
+    const sinPrVolumen = existentes.filter(e => (e.pr || e.ultimaVez) && e.prVolumen === undefined)
+    if (sinPrVolumen.length > 0) {
+      await rebuildStatsEjercicios(uid, sinPrVolumen.map(e => ({ catalogoId: e.catalogoId, nombre: e.nombre })))
+      return await getStatsEjercicios(uid)
+    }
+    return existentes
+  }
 
   const sesiones = await getSesionesConResumen(uid)
   if (sesiones.length === 0) return []
