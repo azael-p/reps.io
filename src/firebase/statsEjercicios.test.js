@@ -209,6 +209,17 @@ describe('rebuildStatsEjercicios', () => {
     expect(mockBatchCommit).not.toHaveBeenCalled()
   })
 
+  it('docsPrevios: si no hay match en el historial, conserva el doc previo en vez de vaciarlo', async () => {
+    getSesionesConResumen.mockResolvedValue([])
+    const docsPrevios = new Map([
+      ['press', { nombre: 'Press', pr: { maxPeso: 90, fecha: FECHA1, sesionId: 's1', series: [] }, prVolumen: null, ultimaVez: { fecha: FECHA1, sesionId: 's1', series: [] }, puntos: [] }],
+    ])
+    await rebuildStatsEjercicios('user1', [{ catalogoId: 'press', nombre: 'Press', grupoMuscular: 'Pecho' }], null, { docsPrevios })
+    const escrito = mockBatchSet.mock.calls[0][1]
+    expect(escrito.pr.maxPeso).toBe(90)
+    expect(escrito.ultimaVez).not.toBeNull()
+  })
+
   it('excluirSesionId saca esa sesión del historial usado para reconstruir', async () => {
     getSesionesConResumen.mockResolvedValue([
       {
@@ -302,6 +313,41 @@ describe('getStatsEjerciciosConFallback', () => {
     expect(getSesionesConResumen).toHaveBeenCalledOnce()
     expect(mockBatchCommit).toHaveBeenCalledOnce()
     expect(r[0].prVolumen.volumen).toBe(390)
+  })
+
+  it('backfill de prVolumen: si el historial no tiene match (drift de datos), conserva el PR previo en vez de vaciarlo', async () => {
+    mockGetDocs
+      .mockResolvedValueOnce({
+        docs: [{
+          id: 'press',
+          data: () => ({
+            nombre: 'Press de banca plano', catalogoId: 'press',
+            pr: { maxPeso: 65, fecha: FECHA1, sesionId: 's1', series: [] },
+            ultimaVez: { fecha: FECHA1, sesionId: 's1', series: [] },
+            puntos: [],
+            // sin prVolumen: doc escrito antes de que existiera el campo
+          }),
+        }],
+      })
+      .mockResolvedValueOnce({
+        docs: [{
+          id: 'press',
+          data: () => ({
+            nombre: 'Press de banca plano', catalogoId: 'press',
+            pr: { maxPeso: 65, fecha: FECHA1, sesionId: 's1', series: [] },
+            prVolumen: null,
+            ultimaVez: { fecha: FECHA1, sesionId: 's1', series: [] },
+            puntos: [],
+          }),
+        }],
+      })
+    // Historial desincronizado: ninguna sesión matchea "press" (drift ajeno
+    // a este backfill, no debería poder borrar el PR ya guardado).
+    getSesionesConResumen.mockResolvedValue([])
+    const r = await getStatsEjerciciosConFallback('user1')
+    expect(r[0].pr.maxPeso).toBe(65)
+    expect(r[0].ultimaVez).not.toBeNull()
+    expect(r[0].prVolumen).toBeNull()
   })
 
   it('un doc con prVolumen: null legítimo (ej. ejercicio a cuerpo libre) no dispara una reconstrucción', async () => {

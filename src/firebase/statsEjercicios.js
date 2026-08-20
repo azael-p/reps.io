@@ -141,7 +141,19 @@ export async function aplicarSesionAStats(uid, { sesionId, fecha, resumen }, bat
 // historial usado para reconstruir, aunque su doc todavía exista en
 // Firestore (caso: se está borrando dentro del mismo batch, que no es
 // visible a esta lectura hasta que se comitee).
-export async function rebuildStatsEjercicios(uid, ejercicios, batch = null, { excluirSesionId = null } = {}) {
+//
+// `docsPrevios` (Map statsDocId → doc previo, sin la clave `id`): cuando el
+// caller sabe que el doc previo tiene datos reales (pr/ultimaVez) y solo
+// está reconstruyendo por un motivo ajeno a "este ejercicio ya no tiene
+// historial" (ver self-healing de prVolumen en getStatsEjerciciosConFallback
+// más abajo), se usa como fallback en vez del doc vacío si el scan no
+// encuentra ninguna sesión que matchee. Sin esto, un desincronismo entre el
+// doc de stats y las sesiones reales (drift de datos, no ligado a esta
+// reconstrucción) borraría silenciosamente un PR real del usuario — los
+// callers que SÍ quieren ese vaciado intencional (después de editar/eliminar
+// la sesión que sostenía el único registro del ejercicio) no pasan este
+// parámetro y conservan el comportamiento anterior.
+export async function rebuildStatsEjercicios(uid, ejercicios, batch = null, { excluirSesionId = null, docsPrevios = null } = {}) {
   if (!ejercicios?.length) return
   let sesiones = await getSesionesConResumen(uid) // desc por fecha
   if (excluirSesionId) sesiones = sesiones.filter(s => s.id !== excluirSesionId)
@@ -155,8 +167,9 @@ export async function rebuildStatsEjercicios(uid, ejercicios, batch = null, { ex
       if (!ej) continue
       stats = mergeSesionEnStats(stats, ej, toDate(s.fecha)?.getTime() ?? 0, s.id)
     }
-    const ref = doc(db, 'usuarios', uid, 'statsEjercicios', statsDocId(ejercicio))
-    b.set(ref, stats ?? {
+    const id = statsDocId(ejercicio)
+    const ref = doc(db, 'usuarios', uid, 'statsEjercicios', id)
+    b.set(ref, stats ?? docsPrevios?.get(id) ?? {
       // El ejercicio ya no aparece en ninguna sesión: doc vacío.
       nombre: ejercicio.nombre,
       grupoMuscular: ejercicio.grupoMuscular ?? '',
@@ -181,7 +194,14 @@ export async function getStatsEjerciciosConFallback(uid) {
     // sesiones (misma ruta que rebuildStatsEjercicios).
     const sinPrVolumen = existentes.filter(e => (e.pr || e.ultimaVez) && e.prVolumen === undefined)
     if (sinPrVolumen.length > 0) {
-      await rebuildStatsEjercicios(uid, sinPrVolumen.map(e => ({ catalogoId: e.catalogoId, nombre: e.nombre })))
+      // docsPrevios: si el scan no encuentra ninguna sesión que matchee un
+      // ejercicio (drift entre el doc de stats y el historial real, no
+      // ligado a este backfill), se conserva el doc tal cual (con
+      // prVolumen ya normalizado a null) en vez de vaciar un PR real — este
+      // self-healing corre en un path caliente (SesionActiva, Progreso), no
+      // en una reconstrucción explícita post edición/borrado de sesión.
+      const docsPrevios = new Map(sinPrVolumen.map(({ id, ...resto }) => [id, { ...resto, prVolumen: null }]))
+      await rebuildStatsEjercicios(uid, sinPrVolumen.map(e => ({ catalogoId: e.catalogoId, nombre: e.nombre })), null, { docsPrevios })
       return await getStatsEjercicios(uid)
     }
     return existentes
